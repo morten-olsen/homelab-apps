@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-deployment"
+spec:
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-pod"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-pod"
+    spec:
+      containers:
+        - image: ghcr.io/linuxserver/jellyfin:10.8.12-1-ls233
+          imagePullPolicy: Always
+          name: "{{ .Release.Name }}-jellyfin"
+          env:
+            - name: PUID
+              value: '1000'
+            - name: PGID
+              value: '1001'
+            - name: TZ
+              value: Europe/Amsterdam
+          ports:
+            - containerPort: 8096
+          volumeMounts:
+            - mountPath: /config
+              name: data 
+      volumes:
+        - name: data 
+          persistentVolumeClaim:
+            claimName: "{{.Release.Name }}-data"

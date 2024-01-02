@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "{{ .Release.Name }}-ingress"
+  annotations:
+    cert-manager.io/issuer: "{{ .Values.issuer }}"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - "*.{{ .Values.domain }}"
+        - "{{ .Values.domain }}"
+      secretName: "tls-secret"
+  rules:
+    - host: "{{ .Values.subdomain}}.{{ .Values.domain }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: "{{ .Release.Name }}-svc"
+                port:
+                  number: 80

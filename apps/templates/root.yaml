@@ -1,0 +1,35 @@
+{{- define "root.values" }}
+namespace: {{ .Values.namespace }}
+domain: {{ .Values.domain }}
+{{- end }}
+
+{{- $value := include "root.values" . | fromYaml }}
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apps
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  project: {{ .Values.namespace }}
+  source:
+    path: apps
+    repoURL: "{{ .Values.repo }}"
+    targetRevision: "{{ .Values.revision }}"
+    helm:
+    {{- if .Values.persistValues }}
+    {{- if eq .Values.persistValues true }}
+      values: {{ .Values | toJson | quote }}
+    {{- else }}
+      values: {{ $value | toJson | quote }}
+    {{- end }}
+    {{- end }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

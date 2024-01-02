@@ -1,0 +1,31 @@
+{{- define "jellyfin.values" }}
+domain: {{ .Values.domain }}
+storageClassName: {{ .Values.storageClassName }}
+{{- end }}
+
+{{- if eq .Values.jellyfin.enabled true }}
+{{- $value := merge .Values.jellyfin (include "jellyfin.values" . | fromYaml) }}
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jellyfin
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.namespace }}
+  project: {{ .Values.namespace }}
+  source:
+    path: charts/jellyfin
+    repoURL: "{{ .Values.repo }}"
+    helm:
+      values: {{ $value | toJson | quote }}
+    targetRevision: "{{ .Values.revision }}"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+{{- end }}

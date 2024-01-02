@@ -1,0 +1,4 @@
+domain: dev.local.olsen.cloud
+namespace: dev
+jellyfin:
+  enabled: true

@@ -1,0 +1,6 @@
+persistValues: true
+repo: https://github.com/morten-olsen/homelab-apps
+revision: main
+storageClassName: persisted
+jellyfin:
+  enabled: true
