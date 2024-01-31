@@ -1,0 +1,39 @@
+{{- define "apps.homebox.values" }}
+domain: {{ .Values.domain }}
+image: ghcr.io/hay-kot/homebox:v0.10.3
+volumes:
+  data:
+    data:
+      path: /data
+env:
+  TZ: 'Europe/Amsterdam'
+ingress:
+  http:
+    containerPort: 7745
+    subdomain: teedy
+{{- end }}
+
+{{- $value := include "apps.homebox.values" . | fromYaml }}
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homebox
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.namespace }}
+  project: {{ .Values.namespace }}
+  source:
+    path: charts/apps/standard
+    repoURL: "{{ .Values.baseRepo }}"
+    helm:
+      values: {{ $value | toJson | quote }}
+    targetRevision: "{{ .Values.baseRevision }}"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

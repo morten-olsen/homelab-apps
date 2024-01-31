@@ -1,0 +1,41 @@
+{{- define "apps.baikal.values" }}
+domain: {{ .Values.domain }}
+image: ckulka/baikal:0.9.4
+volumes:
+  data:
+    config:
+      path: /var/www/baikal/config
+    specifics:
+      path: /var/www/baikal/Specific
+env:
+  TZ: 'Europe/Amsterdam'
+ingress:
+  http:
+    containerPort: 80
+    subdomain: baikal
+{{- end }}
+
+{{- $value := include "apps.baikal.values" . | fromYaml }}
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: baikal
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.namespace }}
+  project: {{ .Values.namespace }}
+  source:
+    path: charts/apps/standard
+    repoURL: "{{ .Values.baseRepo }}"
+    helm:
+      values: {{ $value | toJson | quote }}
+    targetRevision: "{{ .Values.baseRevision }}"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,44 @@
+{{- define "apps.freshrss.values" }}
+domain: {{ .Values.domain }}
+image: freshrss/freshrss:1.23.1-alpine
+volumes:
+  data:
+    data:
+      path: /var/www/FreshRSS/data
+    extensions:
+      path: /var/www/FreshRSS/extension
+env:
+  TZ: 'Europe/Amsterdam'
+  ADMIN_EMAIL: morten@olsen.pro
+  ADMIN_PASSWORD: test
+  ADMIN_API_PASSWORD: test
+ingress:
+  http:
+    containerPort: 80
+    subdomain: freshrss
+{{- end }}
+
+{{- $value := include "apps.freshrss.values" . | fromYaml }}
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: freshrss
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.namespace }}
+  project: {{ .Values.namespace }}
+  source:
+    path: charts/apps/standard
+    repoURL: "{{ .Values.baseRepo }}"
+    helm:
+      values: {{ $value | toJson | quote }}
+    targetRevision: "{{ .Values.baseRevision }}"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

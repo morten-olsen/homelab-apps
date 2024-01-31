@@ -1,0 +1,44 @@
+{{- define "apps.calibreweb.values" }}
+domain: {{ .Values.domain }}
+image: ghcr.io/linuxserver/calibre-web:0.6.21-ls239
+volumes:
+  data:
+    config:
+      path: /config
+  shared:
+    books:
+      path: /books
+env:
+  PUID: '1000'
+  PGID: '1000'
+  TZ: 'Europe/Amsterdam'
+ingress:
+  http:
+    containerPort: 8083
+    subdomain: calibre
+{{- end }}
+
+{{- $value := include "apps.calibreweb.values" . | fromYaml }}
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: calibreweb 
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.namespace }}
+  project: {{ .Values.namespace }}
+  source:
+    path: charts/apps/standard
+    repoURL: "{{ .Values.baseRepo }}"
+    helm:
+      values: {{ $value | toJson | quote }}
+    targetRevision: "{{ .Values.baseRevision }}"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,43 @@
+{{- define "apps.homarr.values" }}
+domain: {{ .Values.domain }}
+image: ghcr.io/ajnart/homarr:0.14.3
+volumes:
+  data:
+    config:
+      path: /app/data/configs
+    data:
+      path: /data
+    icons:
+      path: /app/public/icons
+env:
+  TZ: 'Europe/Amsterdam'
+ingress:
+  http:
+    containerPort: 7575
+    subdomain: dash
+{{- end }}
+
+{{- $value := include "apps.homarr.values" . | fromYaml }}
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homarr
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.namespace }}
+  project: {{ .Values.namespace }}
+  source:
+    path: charts/apps/standard
+    repoURL: "{{ .Values.baseRepo }}"
+    helm:
+      values: {{ $value | toJson | quote }}
+    targetRevision: "{{ .Values.baseRevision }}"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

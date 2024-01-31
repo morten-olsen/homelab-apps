@@ -1,0 +1,44 @@
+{{- define "apps.jellyfin.values" }}
+domain: {{ .Values.domain }}
+image: ghcr.io/linuxserver/jellyfin:10.8.12-1-ls233
+volumes:
+  data:
+    data:
+      path: /config
+  shared:
+    movies:
+      path: /media/movies
+env:
+  PUID: '1000'
+  PGID: '1000'
+  TZ: 'Europe/Amsterdam'
+ingress:
+  http:
+    containerPort: 8096
+    subdomain: jellyfin
+{{- end }}
+
+{{- $value := include "apps.jellyfin.values" . | fromYaml }}
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jellyfin
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.namespace }}
+  project: {{ .Values.namespace }}
+  source:
+    path: charts/apps/standard
+    repoURL: "{{ .Values.baseRepo }}"
+    helm:
+      values: {{ $value | toJson | quote }}
+    targetRevision: "{{ .Values.baseRevision }}"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

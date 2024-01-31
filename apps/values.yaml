@@ -1,0 +1,6 @@
+repo: https://github.com/morten-olsen/homelab-apps
+revision: main
+namespace: apps
+domain: local.olsen.cloud
+baseRepo: https://github.com/morten-olsen/homelab
+baseRevision: main
