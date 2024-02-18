@@ -1,0 +1,15 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: "{{ .Release.Name }}-web"
+spec:
+  hosts:
+  - "{{ .Values.subdomain }}.{{ .Values.domain }}"
+  gateways:
+  - istio-ingress/{{ $.Release.Namespace }}-gateway
+  http:
+  - route:
+    - destination:
+        host: "{{ .Release.Name }}-web.{{ .Release.Namespace }}.svc.cluster.local"
+        port:
+          number: 80

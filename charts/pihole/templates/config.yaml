@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Release.Name }}-config"
+data:
+  TZ: "Europe/Amsterdam"
+  ADMIN_EMAIL: "<admin@example.com>"
+  DNS1: "1.1.1.1"
+  DNS2: "8.8.8.8"
