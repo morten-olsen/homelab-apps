@@ -1,17 +1,14 @@
 {{- define "apps.freshrss.values" }}
 domain: {{ .Values.domain }}
-image: freshrss/freshrss:1.23.1-alpine
+image: lscr.io/linuxserver/freshrss:1.23.1
 volumes:
   data:
-    data:
-      path: /var/www/FreshRSS/data
-    extensions:
-      path: /var/www/FreshRSS/extension
+    config:
+      path: /config
 env:
   TZ: 'Europe/Amsterdam'
-  ADMIN_EMAIL: morten@olsen.pro
-  ADMIN_PASSWORD: test
-  ADMIN_API_PASSWORD: test
+  PUID: '1000'
+  PGID: '911'
 ingress:
   http:
     containerPort: 80

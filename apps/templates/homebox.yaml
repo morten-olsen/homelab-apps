@@ -7,10 +7,11 @@ volumes:
       path: /data
 env:
   TZ: 'Europe/Amsterdam'
+  HBOX_OPTIONS_ALLOW_REGISTRATION: 'false'
 ingress:
   http:
     containerPort: 7745
-    subdomain: teedy
+    subdomain: homebox
 {{- end }}
 
 {{- $value := include "apps.homebox.values" . | fromYaml }}

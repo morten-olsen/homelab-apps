@@ -1,6 +1,12 @@
 {
   "packageRules": [
     {
+      "packagePatterns": [
+        "^ghcr.io\\/linuxserver\\/"
+      ],
+      "versionScheme": "regex:^(?<compatibility>.*(\\d+\\.)?)(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)?$"
+    },
+    {
       "matchUpdateTypes": [
         "patch",
         "minor"
@@ -10,8 +16,7 @@
     {
       "matchUpdateTypes": [
         "major"
-      ],
-      "groupName": "major"
+      ]
     }
   ],
   "kubernetes": {
