@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: "{{ .Release.Name }}"
-          image: docker.io/pihole/pihole:2023.11.0
+          image: docker.io/pihole/pihole:2024.02.0
           envFrom:
             - configMapRef:
                 name: "{{ .Release.Name }}-config"
