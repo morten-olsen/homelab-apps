@@ -8,6 +8,10 @@ volumes:
   shared:
     movies:
       path: /media/movies
+    tv:
+      path: /media/tv-shows
+    music:
+      path: /media/music
 env:
   PUID: '1000'
   PGID: '1000'
