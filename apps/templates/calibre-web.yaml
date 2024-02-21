@@ -1,6 +1,6 @@
 {{- define "apps.calibreweb.values" }}
 domain: {{ .Values.domain }}
-image: ghcr.io/linuxserver/calibre-web:0.6.21
+image: ghcr.io/linuxserver/calibre-web:5.33.2
 volumes:
   data:
     config:
