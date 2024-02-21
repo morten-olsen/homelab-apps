@@ -3,7 +3,7 @@ domain: {{ .Values.domain }}
 image: ollama/ollama:0.1.26
 ingress:
   http:
-    containerPort: 80
+    containerPort: 11434
     subdomain: ollama
 {{- end }}
 
