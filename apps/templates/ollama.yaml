@@ -1,0 +1,33 @@
+{{- define "apps.ollama.values" }}
+domain: {{ .Values.domain }}
+image: ollama/ollama:0.1.26
+ingress:
+  http:
+    containerPort: 80
+    subdomain: ollama
+{{- end }}
+
+{{- $value := include "apps.ollama.values" . | fromYaml }}
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ollama
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.namespace }}
+  project: {{ .Values.namespace }}
+  source:
+    path: charts/apps/standard
+    repoURL: "{{ .Values.baseRepo }}"
+    helm:
+      values: {{ $value | toJson | quote }}
+    targetRevision: "{{ .Values.baseRevision }}"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
