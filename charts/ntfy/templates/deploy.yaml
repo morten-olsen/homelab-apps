@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: "{{ .Release.Name }}"
-          image: binwiederhier/ntfy:v2.8.0
+          image: binwiederhier/ntfy:v2.10.0
           args: ["serve"]
           ports:
             - name: svc-web
