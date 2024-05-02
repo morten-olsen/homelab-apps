@@ -1,6 +1,6 @@
 {{- define "apps.baikal.values" }}
 domain: {{ .Values.domain }}
-image: ckulka/baikal:0.9.4
+image: ckulka/baikal:0.9.5
 volumes:
   data:
     config:
