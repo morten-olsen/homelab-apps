@@ -1,6 +1,6 @@
 {{- define "apps.homarr.values" }}
 domain: {{ .Values.domain }}
-image: ghcr.io/ajnart/homarr:0.15.2
+image: ghcr.io/ajnart/homarr:0.15.3
 volumes:
   data:
     config:

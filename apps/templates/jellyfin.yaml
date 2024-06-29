@@ -1,6 +1,6 @@
 {{- define "apps.jellyfin.values" }}
 domain: {{ .Values.domain }}
-image: ghcr.io/linuxserver/jellyfin:10.8.13
+image: ghcr.io/linuxserver/jellyfin:10.9.7
 volumes:
   data:
     data:
