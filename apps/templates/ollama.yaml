@@ -1,6 +1,6 @@
 {{- define "apps.ollama.values" }}
 domain: {{ .Values.domain }}
-image: ollama/ollama:0.1.33
+image: ollama/ollama:0.1.48
 ingress:
   http:
     containerPort: 11434
