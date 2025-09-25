@@ -2,6 +2,6 @@ globals:
   environment: prod
 image:
   repository: ghcr.io/open-webui/open-webui
-  tag: main@sha256:05aaa81eb4094038a16f0ae056342e3515d1912a30e41b828bfd3731fbe36a6c
+  tag: v0.6.31
   pullPolicy: IfNotPresent
 subdomain: openwebui
