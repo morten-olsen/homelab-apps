@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+  labels:
+    app: "{{ .Release.Name }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 9000
+              name: http
+          env:
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+            - name: BASE_URL
+              value: https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}
+            - name: ALLOW_SIGNUP
+              value: "false"
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: OIDC_AUTH_ENABLED
+              value: "true"
+            - name: OIDC_SIGNUP_ENABLED
+              value: "true"
+            - name: OIDC_USER_GROUP
+              value: "mealie-users"
+            - name: OIDC_ADMIN_GROUP
+              value: "admin"
+            - name: OIDC_AUTO_REDIRECT
+              value: "true"
+            - name: OIDC_PROVIDER_NAME
+              value: Authentik
+            - name: OIDC_REMEMBER_ME
+              value: "true"
+            - name: OIDC_SIGNING_ALGORITHM
+              value: RS256
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientId
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientSecret
+            - name: OIDC_CONFIGURATION_URL
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: configuration
+
+          volumeMounts:
+            - mountPath: /app/data
+              name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-data"

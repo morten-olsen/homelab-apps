@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{ .Release.Name }}'
+  labels:
+    app: '{{ .Release.Name }}'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: '{{ .Release.Name }}'
+  template:
+    metadata:
+      labels:
+        app: '{{ .Release.Name }}'
+    spec:
+      # To expose WireGuard UDP directly, we need a NodePort service.
+      # The Pod needs to be aware of the external port it's being exposed on.
+      # The easiest way to get WireGuard to listen on the correct port and make it
+      # externally accessible is to use `hostNetwork: true` for the UDP component,
+      # or by directly specifying the listen port in Headscale config if the NodePort is stable.
+
+      # OPTION 1: Best for simple homelab on bare metal where host network traffic isn't an issue
+      # hostNetwork: true # This makes the pod listen directly on the node's IPs
+      # dnsPolicy: ClusterFirstWithHostNet # Required if using hostNetwork
+
+      initContainers:
+        - name: generate-config
+          image: alpine/git # A small image with 'envsubst' available or easily installable
+          imagePullPolicy: IfNotPresent
+          command: ['sh', '-c']
+          args:
+            - |
+              # Install envsubst if it's not present (alpine/git may not have it by default)
+              apk update && apk add bash gettext
+
+              # Substitute environment variables into the template
+              # The vars are passed via `env` section below
+              envsubst < /config-template/config.yaml.template > /etc/headscale/config.yaml
+
+              mkdir -p /etc/headscale
+              # Optional: Verify the generated config
+              echo "--- Generated Headscale Configuration ---"
+              cat /etc/headscale/config.yaml
+              echo "---------------------------------------"
+          env:
+            # These are the variables that `envsubst` will look for and replace
+            - name: PUBLIC_URL
+              value: 'https://{{ .Values.subdomain }}.olsen.cloud'
+            - name: OIDC_ISSUER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: '{{ .Release.Name }}-client'
+                  key: configurationIssuer
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: '{{ .Release.Name }}-client'
+                  key: clientId
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: '{{ .Release.Name }}-client'
+                  key: clientSecret
+            # Add any other variables used in config.yaml.template here
+          volumeMounts:
+            - name: config-template
+              mountPath: /config-template # Mount the ConfigMap as a volume
+              readOnly: true
+            - name: headscale-config
+              mountPath: /etc/headscale # Destination for the generated config
+
+      containers:
+        - name: '{{ .Release.Name }}'
+          image: headscale/headscale:latest # Use the official image
+          command: ['headscale', 'serve']
+          ports:
+            - name: http-api
+              containerPort: 8080
+              protocol: TCP
+            - name: wireguard-udp
+              containerPort: 41641
+              protocol: UDP
+          volumeMounts:
+            - name: headscale-data
+              mountPath: /var/lib/headscale
+            - name: headscale-config
+              mountPath: /etc/headscale
+      volumes:
+        - name: config-template
+          configMap:
+            name: '{{ .Release.Name }}-config-template'
+        - name: headscale-config
+          emptyDir: {}
+        - name: headscale-data
+          persistentVolumeClaim:
+            claimName: '{{ .Release.Name }}-data'

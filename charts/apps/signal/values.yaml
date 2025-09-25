@@ -1,0 +1,10 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+  domain: olsen.cloud
+image:
+  repository: bbernhard/signal-cli-rest-api
+  tag: latest@sha256:e4bc92213b2a4da10fc429d16ed1754e90c2c169f186efbb9ce5f04da5322771
+  pullPolicy: IfNotPresent
+subdomain: apprise
+mode: json-rpc

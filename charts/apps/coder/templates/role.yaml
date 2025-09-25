@@ -1,0 +1,21 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: '{{ .Release.Name }}-workspace-creator'
+rules:
+  - apiGroups: [''] # "" indicates the core API group (for Pods, PVCs, Services)
+    resources: ['pods', 'pods/exec', 'pods/log', 'persistentvolumeclaims', 'services']
+    verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
+  - apiGroups: ['apps'] # For Deployments, StatefulSets
+    resources: ['deployments', 'statefulsets']
+    verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
+  - apiGroups: ['networking.k8s.io'] # For Ingresses
+    resources: ['ingresses']
+    verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
+  - apiGroups: ['events.k8s.io'] # For events related to workspace activity
+    resources: ['events']
+    verbs: ['create', 'patch', 'update'] # Coder might create events for workspace lifecycle
+  # Add any other resources that Coder workspace templates might create (e.g., secrets, configmaps)
+  # - apiGroups: [""]
+  #   resources: ["secrets", "configmaps"]
+  #   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

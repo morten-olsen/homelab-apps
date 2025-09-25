@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          ports:
+            - name: http
+              containerPort: 7575
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - mountPath: /appdata
+              name: data
+          env:
+            - name: BASE_URL
+              value: https://homarr.olsen.cloud # TODO
+
+            - name: NEXTAUTH_URL
+              value: https://homarr.olsen.cloud
+
+            - name: AUTH_PROVIDERS
+              value: oidc
+
+            - name: AUTH_OIDC_CLIENT_NAME
+              value: Authentik
+
+            - name: AUTH_OIDC_SCOPE_OVERWRITE
+              value: openid email profile
+
+            - name: AUTH_OIDC_GROUPS_ATTRIBUTE
+              value: groups
+
+            - name: AUTH_OIDC_AUTO_LOGIN
+              value: "true"
+
+            - name: SECRET_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: encryptionkey
+
+            - name: AUTH_OIDC_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: configurationIssuer
+
+            - name: AUTH_OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientId
+
+            - name: AUTH_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientSecret
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-data"

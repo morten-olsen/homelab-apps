@@ -1,0 +1,8 @@
+globals:
+  environment: prod
+  domain: olsen.cloud
+  timezone: Europe/Amsterdam
+subdomain: mealie
+image:
+  repository: ghcr.io/mealie-recipes/mealie
+  tag: latest@sha256:322369a5b748eddb091417e708f0667d21994e6119278d1b8c509900ba41e54b

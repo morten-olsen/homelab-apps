@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config-template
+data:
+  secrets.tpl.json: |
+    {
+      "clientid": "${CLIENT_ID}",
+      "clientsecret": "${CLIENT_SECRET}"
+    }
+  config.tpl.json: |
+    {
+      "storage": {
+        "rootDirectory": "/var/lib/registry",
+        "commit": false,
+        "dedupe": true,
+        "gc": true,
+        "gcDelay": "1h",
+        "gcInterval": "24h"
+      },
+      "log": {
+        "level": "info"
+      },
+      "http": {
+        "address": "0.0.0.0",
+        "port": "5000",
+        "externalUrl": "https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}",
+        "ratelimit": {
+          "rate": 10,
+          "methods": [
+              {
+                  "method": "GET",
+                  "rate": 20
+              }
+          ]
+        },
+        "auth": {
+          "failDelay": 5,
+          "htpasswd": {
+            "path": "/etc/zot/htpasswd"
+          },
+          "openid": {
+            "providers": {
+              "oidc": {
+                "name": "main",
+                "credentialsFile": "/etc/zot/secrets.json",
+                "issuer": "${ISSUER}",
+                "scopes": ["openid", "profile", "email"]
+              }
+            }
+          }
+        },
+        "accessControl": {
+          "adminPolicy": {
+            "groups": ["admin"],
+            "actions": ["read", "create", "update", "delete"]
+          },
+          "repositories": {
+            "public/**": {
+              "anonymousPolicy": ["read"],
+              "defaultPolicy": ["read"],
+              "policies": [
+                {
+                  "users": ["*"],
+                  "actions": ["create", "update", "delete"]
+                }
+              ]
+            },
+            "**": {
+              "defaultPolicy": ["read"],
+              "policies": [
+                {
+                  "users": ["*"],
+                  "actions": ["create", "update", "delete"]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "extensions": {
+        "ui": { "enable": true },
+        "metrics": { "enable": true },
+        "search": { "enable": true },
+        "scrub": {
+          "enable": true,
+          "interval": "24h"
+        },
+        "trust": {
+          "enable": true,
+          "cosign": true,
+          "notation": true
+        }
+        
+      }
+    }

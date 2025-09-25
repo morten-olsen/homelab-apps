@@ -1,0 +1,25 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: '{{ .Release.Name }}-falco'
+spec:
+  interval: 1h
+  url: https://falcosecurity.github.io/charts
+
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: '{{ .Release.Name }}-falco'
+spec:
+  chart:
+    spec:
+      chart: falco
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        apiVersion: source.toolkit.fluxcd.io/v1
+        kind: HelmRepository
+        name: '{{ .Release.Name }}-falco'
+        namespace: '{{ .Release.Namespace }}'
+  interval: 1h
+  values: {}

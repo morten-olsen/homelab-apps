@@ -1,0 +1,13 @@
+apiVersion: homelab.mortenolsen.pro/v1
+kind: OidcClient
+metadata:
+  name: '{{ .Release.Name }}'
+spec:
+  environment: '{{ .Values.globals.environment }}'
+  redirectUris:
+    - path: /audiobookshelf/auth/openid/callback
+      subdomain: '{{ .Values.subdomain }}'
+      matchingMode: strict
+    - path: /audiobookshelf/auth/openid/mobile-redirect
+      subdomain: '{{ .Values.subdomain }}'
+      matchingMode: strict

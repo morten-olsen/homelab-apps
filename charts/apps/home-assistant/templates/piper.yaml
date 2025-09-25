@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-piper"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-piper"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-piper"
+    spec:
+      hostNetwork: true
+
+      containers:
+        - name: "{{ .Release.Name }}-piper"
+          image: "{{ .Values.piper.image.repository }}:{{ .Values.piper.image.tag }}"
+          imagePullPolicy: "{{ .Values.piper.image.pullPolicy }}"
+          args:
+            - --piper
+            - /usr/share/piper/piper
+            - --data-dir
+            - /usr/share/piper-voices
+            - --voice
+            - "{{ .Values.piper.model }}"
+          env:
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+          ports:
+            - name: http
+              containerPort: 10200
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-piper"
+  labels:
+    app: "{{ .Release.Name }}-piper"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 10200
+      protocol: TCP
+      name: http
+  selector:
+    app: "{{ .Release.Name }}-piper"

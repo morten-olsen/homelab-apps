@@ -1,0 +1,7 @@
+globals:
+  environment: prod
+image:
+  repository: ghcr.io/coder/coder
+  tag: latest@sha256:73714e0685addde01bbff905cf5b647d6b677d77977c8009b6293d40fdf0f562
+  pullPolicy: IfNotPresent
+subdomain: coder

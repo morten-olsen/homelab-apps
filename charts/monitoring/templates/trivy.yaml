@@ -1,0 +1,25 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: '{{ .Release.Name }}-aqua'
+spec:
+  interval: 1h
+  url: https://aquasecurity.github.io/helm-charts/
+
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: '{{ .Release.Name }}-aqua'
+spec:
+  chart:
+    spec:
+      chart: trivy-operator
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        apiVersion: source.toolkit.fluxcd.io/v1
+        kind: HelmRepository
+        name: '{{ .Release.Name }}-aqua'
+        namespace: '{{ .Release.Namespace }}'
+  interval: 1h
+  values: {}

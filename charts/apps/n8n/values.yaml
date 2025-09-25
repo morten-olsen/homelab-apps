@@ -1,0 +1,9 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+  domain: olsen.cloud
+image:
+  repository: docker.n8n.io/n8nio/n8n
+  tag: latest@sha256:4a159553c22d41f6167c7ddf01e4078c97726af863eae59579f3b2d9e8b12fe2
+  pullPolicy: IfNotPresent
+subdomain: n8n

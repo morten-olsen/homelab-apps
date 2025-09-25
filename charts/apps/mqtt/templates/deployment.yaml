@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          ports:
+            - name: mqtt
+              containerPort: 1883
+              protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mosquitto_pub -h localhost -p 1883 -t health/ready -m "ready" -q 0 -i readiness_client -V 5
+            initialDelaySeconds: 10 # Give broker time to start
+            periodSeconds: 20 # Check every 20 seconds
+            timeoutSeconds: 5 # Fail if command takes longer than 5 seconds
+            failureThreshold: 3 # Restart if 3 consecutive failures
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mosquitto_pub -h localhost -p 1883 -t health/ready -m "ready" -q 0 -i readiness_client -V 5
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          env:
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+            - name: MODE
+              value: "{{ .Values.mode }}"
+          volumeMounts:
+            - mountPath: /mosquitto/config
+              name: config
+            - mountPath: /mosquitto/data
+              name: data
+
+      volumes:
+        - name: config
+          configMap:
+            name: "{{ .Release.Name }}-config"
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-data"

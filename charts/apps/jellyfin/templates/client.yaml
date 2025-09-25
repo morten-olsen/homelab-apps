@@ -1,0 +1,10 @@
+apiVersion: homelab.mortenolsen.pro/v1
+kind: OidcClient
+metadata:
+  name: '{{ .Release.Name }}'
+spec:
+  environment: '{{ .Values.environment }}'
+  redirectUris:
+    - path: /sso/OID/redirect/Authentik
+      subdomain: '{{ .Values.globals.subdomain }}'
+      matchingMode: strict

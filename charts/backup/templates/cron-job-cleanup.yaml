@@ -1,0 +1,43 @@
+{{- $values := .Values -}}
+{{- $release := .Release -}}
+
+---
+{{- range $key, $value := $values.jobs}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: "{{ $release.Name }}-{{ $key }}-cleanup"
+spec:
+  schedule: "{{ $value.cron.cleanup }}"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          containers:
+            - name: "{{ $release.Name }}-{{ $key }}-cleanup"
+              image: ghcr.io/morten-olsen/homelab-operator-backup:main
+              imagePullPolicy: Always
+              command: ["/app/cleanup.sh"]
+              env:
+                - name: RESTIC_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: "{{ $values.password.name }}"
+                      key: "{{ $values.password.key }}"
+              volumeMounts:
+                - name: target
+                  mountPath: "/mnt/backup"
+                  subPath: "{{ $release.Name }}-{{ $key }}"
+          volumes:
+            - name: target
+              persistentVolumeClaim:
+                claimName: "{{ $values.target }}"
+          restartPolicy: OnFailure
+---
+{{- end }}

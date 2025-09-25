@@ -1,0 +1,32 @@
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  name: enforce-immutable-filesystem
+  annotations:
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: |
+      This policy automatically sets 'readOnlyRootFilesystem: true' for all containers
+      within new Pods, enforcing an immutable root filesystem. This enhances security
+      by preventing applications from writing to their root filesystem at runtime,
+      making it harder for attackers to persist changes or introduce malware.
+spec:
+  validationFailureAction: Audit
+  rules:
+    - name: enforce-read-only-root-filesystem
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      mutate:
+        patchStrategicMerge:
+          spec:
+            containers:
+              - (name): '*' # Apply to all containers
+                securityContext:
+                  readOnlyRootFilesystem: true
+            initContainers:
+              - (name): '*' # Apply to all init containers
+                securityContext:
+                  readOnlyRootFilesystem: true

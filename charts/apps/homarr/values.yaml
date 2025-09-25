@@ -1,0 +1,7 @@
+globals:
+  environment: prod
+image:
+  repository: ghcr.io/homarr-labs/homarr
+  tag: latest@sha256:9ba9831d43347b6d66143a0754c97b9790a2ffe9bdf5004083668864b3328e65
+  pullPolicy: IfNotPresent
+subdomain: homarr

@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+  labels:
+    app: "{{ .Release.Name }}"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      initContainers:
+        - name: render-config
+          image: alpine:3.20
+          command: ["/bin/sh", "-c"]
+          env:
+            - name: ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: configurationIssuer
+            - name: CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientId
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientSecret
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-cluster"
+                  key: password
+          args:
+            - |
+              apk add --no-cache gettext apache2-utils >/dev/null
+              envsubst < /config-tpl/config.tpl.json > /config-out/config.json
+              echo "Rendered /etc/zot/config.json"
+              echo "---------------------------------------"
+              cat /config-out/config.json
+              echo "---------------------------------------"
+              envsubst < /config-tpl/secrets.tpl.json > /config-out/secrets.json
+              echo "Rendered /etc/zot/secrets.json"
+              echo "---------------------------------------"
+              cat /config-out/secrets.json
+              echo "---------------------------------------"
+              htpasswd -nbB cluster "$PASSWORD" > /config-out/htpasswd
+          volumeMounts:
+            - name: config-tpl
+              mountPath: /config-tpl
+            - name: config
+              mountPath: /config-out
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+            - name: BASE_URL
+              value: https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}
+          volumeMounts:
+            - mountPath: /var/lib/registry
+              name: data
+            - mountPath: /etc/zot
+              name: config
+          # readinessProbe:
+          #   httpGet:
+          #     path: /v2/
+          #     port: http
+          #   initialDelaySeconds: 3
+          #   periodSeconds: 10
+          # livenessProbe:
+          #   httpGet:
+          #     path: /v2/
+          #     port: http
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-data"
+        - name: config-tpl
+          configMap:
+            name: {{ .Release.Name }}-config-template
+            items:
+              - key: config.tpl.json
+                path: config.tpl.json
+              - key: secrets.tpl.json
+                path: secrets.tpl.json
+        - name: config
+          emptyDir: {}

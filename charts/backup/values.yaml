@@ -1,0 +1,19 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+  domain: olsen.cloud
+image:
+  repository: garethgeorge/backrest
+  tag: latest@sha256:f8306faef0a3cbedc7daa55756f1d4c105d8c104aa773656bdad4fa8553dab5a
+  pullPolicy: IfNotPresent
+subdomain: restic
+password:
+  name: backup
+  key: password
+jobs:
+  pictures:
+    cron:
+      backup: "0 2 * * *"
+      cleanup: "0 4 * * SUN"
+    source: pictures
+target: backups

@@ -1,0 +1,7 @@
+globals:
+  environment: prod
+image:
+  repository: ghcr.io/music-assistant/server
+  tag: latest@sha256:f534116c53d49b3120961c908a5fa24f28684806bf222ccd74add9e16b105aa4
+  pullPolicy: IfNotPresent
+subdomain: music-assistant

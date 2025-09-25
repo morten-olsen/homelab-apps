@@ -1,0 +1,21 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+image:
+  repository: ghcr.io/home-assistant/home-assistant
+  tag: stable@sha256:89ec0583c7f47c8a150204f6b5ed48b5432026012bebe1226cf72775a795a5e1
+  pullPolicy: IfNotPresent
+subdomain: home-assistant
+piper:
+  image:
+    repository: ghcr.io/morten-olsen/glados-voice
+    tag: main@sha256:8fcc19bd9e7e846bdfd9e9e569c8c944dcfb1d0b47e3f479cbaa7f5587c7206c
+    pullPolicy: Always
+  model: en_US-glados-medium
+whisper:
+  image:
+    repository: rhasspy/wyoming-whisper
+    tag: latest@sha256:f03456914affe8076fc7688c0890f4c708d93ebfac7340b0b2467f721412012d
+    pullPolicy: IfNotPresent
+  model: tiny-int8
+  language: us

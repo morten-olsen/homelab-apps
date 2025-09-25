@@ -1,0 +1,9 @@
+globals:
+  environment: prod
+  domain: olsen.cloud
+  timezone: Europe/Amsterdam
+image:
+  repository: ghcr.io/linkwarden/linkwarden
+  tag: latest@sha256:c1c6f417ea566de2c2dac6e79353ee5f40cb6a44fd9dd3970c83e6fc098de1df
+  pullPolicy: IfNotPresent
+subdomain: linkwarden

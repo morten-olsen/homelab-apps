@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-whisper"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-whisper"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-whisper"
+    spec:
+      hostNetwork: true
+
+      containers:
+        - name: "{{ .Release.Name }}-whisper"
+          image: "{{ .Values.whisper.image.repository }}:{{ .Values.whisper.image.tag }}"
+          imagePullPolicy: "{{ .Values.whisper.image.pullPolicy }}"
+          args:
+            - --model
+            - "{{ .Values.whisper.model }}"
+            - --language
+            - "{{ .Values.whisper.language }}"
+          env:
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+          ports:
+            - name: http
+              containerPort: 10300
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-whisper"
+  labels:
+    app: "{{ .Release.Name }}-whisper"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 10300
+      protocol: TCP
+      name: http
+  selector:
+    app: "{{ .Release.Name }}-whisper"

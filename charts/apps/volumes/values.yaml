@@ -1,0 +1,16 @@
+host: 192.168.20.106
+shares:
+  movies:
+    path: /mnt/HDD/Movies
+  tvshows:
+    path: /mnt/HDD/TV-Shows
+  music:
+    path: /mnt/HDD/Music2
+  books:
+    path: /mnt/HDD/Books
+  podcasts:
+    path: /mnt/HDD/Podcasts
+  pictures:
+    path: /mnt/HDD/Pictures
+  backups:
+    path: /mnt/HDD/Backups
