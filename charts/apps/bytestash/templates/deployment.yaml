@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: "{{ .Release.Name }}"
-          image: ghcr.io/jordan-dalby/bytestash:latest
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 5000
               name: http

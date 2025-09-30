@@ -3,7 +3,7 @@ globals:
   timezone: Europe/Amsterdam
 image:
   repository: ghcr.io/home-assistant/home-assistant
-  tag: stable@sha256:89ec0583c7f47c8a150204f6b5ed48b5432026012bebe1226cf72775a795a5e1
+  tag: 2025.9.4
   pullPolicy: IfNotPresent
 subdomain: home-assistant
 piper:

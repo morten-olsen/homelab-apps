@@ -1,3 +1,6 @@
 globals:
   environment: prod
 subdomain: bytestash
+image:
+  repository: ghcr.io/jordan-dalby/bytestash
+  tag: 1.5.8
