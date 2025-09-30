@@ -1,28 +1,35 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:base"
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
   ],
-  "packageRules": [
+  packageRules: [
     {
-      "groupName": "Docker images",
-      "groupSlug": "dockerimages",
-      "matchDatasources": ["docker"],
-      "pinDigests": true
-    }
-  ],
-  "helm-values": {
-    "fileMatch": ["^charts/.*/values\\.yaml$"]
-  },
-  "regexManagers": [
-    {
-      "fileMatch": ["^charts/.*/values\\.yaml$"],
-      "matchStrings": [
-        "repository:\s*'(?<depName>.*?)'\n\s*tag:\s*'(?<currentValue>.*?)'",
-        "repository:\s*\"(?<depName>.*?)\"\n\s*tag:\s*\"(?<currentValue>.*?)\"",
-        "repository:\s*(?<depName>.*?)\n\s*tag:\s*(?<currentValue>.*)"
+      groupName: 'Docker images',
+      groupSlug: 'dockerimages',
+      matchDatasources: [
+        'docker',
       ],
-      "datasourceTemplate": "docker"
-    }
-  ]
+      pinDigests: true,
+    },
+  ],
+  'helm-values': {
+    managerFilePatterns: [
+      '/^charts/.*/values\\.yaml$/',
+    ],
+  },
+  customManagers: [
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^charts/.*/values\\.yaml$/',
+      ],
+      matchStrings: [
+        "repository:s*'(?<depName>.*?)'\ns*tag:s*'(?<currentValue>.*?)'",
+        'repository:s*"(?<depName>.*?)"\ns*tag:s*"(?<currentValue>.*?)"',
+        'repository:s*(?<depName>.*?)\ns*tag:s*(?<currentValue>.*)',
+      ],
+      datasourceTemplate: 'docker',
+    },
+  ],
 }
