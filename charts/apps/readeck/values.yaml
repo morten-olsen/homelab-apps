@@ -1,7 +1,3 @@
-globals:
-  environment: prod
-  domain: olsen.cloud
-  timezone: Europe/Amsterdam
 image:
   repository: codeberg.org/readeck/readeck
   tag: latest@sha256:432cc2026f9dca3c33ce331f52c225287a2fa91a3c1dce8a4b0b7e9de4185c2f

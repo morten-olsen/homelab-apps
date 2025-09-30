@@ -1,0 +1,4 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+  domain: olsen.cloud

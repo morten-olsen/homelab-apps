@@ -1,6 +1,3 @@
-globals:
-  environment: prod
-  timezone: Europe/Amsterdam
 image:
   repository: ghcr.io/home-assistant/home-assistant
   tag: 2025.9.4@sha256:89ec0583c7f47c8a150204f6b5ed48b5432026012bebe1226cf72775a795a5e1

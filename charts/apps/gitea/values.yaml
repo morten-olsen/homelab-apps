@@ -1,6 +1,3 @@
-globals:
-  environment: prod
-  timezone: Europe/Amsterdam
 image:
   repository: docker.gitea.com/gitea
   tag: 1.24.6@sha256:2edc102cbb636ae1ddac5fa0c715aa5b03079dee13ac6800b2cef6d4e912e718

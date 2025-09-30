@@ -1,5 +1,3 @@
-globals:
-  environment: prod
 image:
   repository: photoprism/photoprism
   tag: latest@sha256:2ba3a774ca1acc498096d7a5cb50df9cfecb7e3117a617d648093ff74eec2793

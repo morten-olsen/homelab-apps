@@ -1,7 +1,3 @@
-globals:
-  environment: prod
-  timezone: Europe/Amsterdam
-  domain: olsen.cloud
 image:
   repository: ghcr.io/esphome/esphome
   tag: 2025.9.2@sha256:a455a4b9f8c513eeab0d4f575d8209b8178445cda4fbb4847ef90625cf84f500

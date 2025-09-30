@@ -1,7 +1,3 @@
-globals:
-  environment: prod
-  domain: olsen.cloud
-  timezone: Europe/Amsterdam
 image:
   repository: nocodb/nocodb
   tag: 0.264.9@sha256:71d5b23640a9f5068bab26cf5b4c6a733709677a2c78664b132beaf24d766246

@@ -1,7 +1,3 @@
-globals:
-  environment: prod
-  domain: olsen.cloud
-  timezone: Europe/Amsterdam
 image:
   repository: lscr.io/linuxserver/calibre-web
   tag: latest@sha256:527654dc74db8e03ef643ade642cadc69f142de02913f42fa9a2dee79bab492d
