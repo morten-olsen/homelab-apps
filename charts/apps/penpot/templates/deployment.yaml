@@ -1,0 +1,176 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-frontend"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-frontend"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-frontend"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-frontend"
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: "{{ .Values.frontend.image.pullPolicy }}"
+          env:
+            - name: PENPOT_PUBLIC_URI
+              value: "https://{{ .Values.frontend.subdomain }}.{{ .Values.globals.domain }}"
+            - name: PENPOT_FLAGS
+              value: disable-email-verification enable-smtp enable-prepl-server disable-secure-session-cookies disable-registration enable-login-with-oidc disable-login-with-password
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - mountPath: /opt/data/assets
+              name: assets
+      volumes:
+        - name: assets
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-assets"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-valkey"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-valkey"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-valkey"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-valkey"
+          image: "{{ .Values.valkey.image.repository }}:{{ .Values.valkey.image.tag }}"
+          imagePullPolicy: "{{ .Values.valkey.image.pullPolicy }}"
+          ports:
+            - name: tcp
+              containerPort: 6379
+              protocol: TCP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-backend"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-backend"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-backend"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-backend"
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: "{{ .Values.backend.image.pullPolicy }}"
+          ports:
+            - name: http
+              containerPort: 6060
+              protocol: TCP
+          env:
+            - name: PENPOT_PUBLIC_URI
+              value: "https://{{ .Values.frontend.subdomain }}.{{ .Values.globals.domain }}"
+            - name: PENPOT_FLAGS
+              value: disable-email-verification enable-smtp enable-prepl-server disable-secure-session-cookies disable-registration enable-login-with-oidc disable-login-with-password
+            - name: PENPOT_DATABASE_URI
+              value: "postgresql://prod-postgres-cluster.homelab.svc.cluster.local/prod_penpot"
+            - name: PENPOT_DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-pg-connection"
+                  key: user
+            - name: PENPOT_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-pg-connection"
+                  key: password
+            - name: PENPOT_OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientId
+            - name: PENPOT_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientSecret
+            - name: PENPOT_OIDC_BASE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: configurationIssuer
+            # - name: PENPOT_OIDC_ROLES
+            #   value: admins
+            # - name: PENPOT_OIDC_ROLES_ATTR
+            #   value: groups
+
+            - name: PENPOT_REDIS_URI
+              value: "redis://{{ .Release.Name }}-valkey/0"
+            - name: PENPOT_ASSETS_STORAGE_BACKEND
+              value: assets-fs
+            - name: PENPOT_STORAGE_ASSETS_FS_DIRECTORY
+              value: /opt/data/assets
+            - name: PENPOT_TELEMETRY_ENABLED
+              value: "false"
+          volumeMounts:
+            - mountPath: /opt/data/assets
+              name: assets
+      volumes:
+        - name: assets
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-assets"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-exporter"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-exporter"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-exporter"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-exporter"
+          image: "{{ .Values.exporter.image.repository }}:{{ .Values.exporter.image.tag }}"
+          imagePullPolicy: "{{ .Values.exporter.image.pullPolicy }}"
+          ports:
+            - name: http
+              containerPort: 6061
+              protocol: TCP
+          env:
+            - name: PENPOT_PUBLIC_URI
+              value: "https://{{ .Values.frontend.subdomain }}.{{ .Values.globals.domain }}"
+            - name: PENPOT_REDIS_URI
+              value: "redis://{{ .Release.Name }}-valkey.{{ .Release.Namespace }}.svc.cluster.local/0"

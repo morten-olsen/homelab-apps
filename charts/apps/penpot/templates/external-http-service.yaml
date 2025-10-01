@@ -1,11 +1,11 @@
 apiVersion: homelab.mortenolsen.pro/v1
-kind: HttpService
+kind: ExternalHttpService
 metadata:
   name: "{{ .Release.Name }}"
 spec:
   environment: "{{ .Values.globals.environment }}"
-  subdomain: "{{ .Values.subdomain }}"
+  subdomain: "{{ .Values.frontend.subdomain }}"
   destination:
-    host: "{{ .Release.Name }}"
+    host: "{{ .Release.Name }}-frontend.{{ .Release.Namespace }}.svc.cluster.local"
     port:
       number: 80

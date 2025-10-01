@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-valkey"
+  labels:
+    app: "{{ .Release.Name }}-valkey"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
+      name: tcp
+  selector:
+    app: "{{ .Release.Name }}-valkey"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-frontend"
+  labels:
+    app: "{{ .Release.Name }}-frontend"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: "{{ .Release.Name }}-frontend"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-backend"
+  labels:
+    app: "{{ .Release.Name }}-backend"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6060
+      targetPort: 6060
+      protocol: TCP
+      name: http
+  selector:
+    app: "{{ .Release.Name }}-backend"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-exporter"
+  labels:
+    app: "{{ .Release.Name }}-exporter"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6061
+      targetPort: 6061
+      protocol: TCP
+      name: http
+  selector:
+    app: "{{ .Release.Name }}-exporter"

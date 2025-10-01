@@ -1,0 +1,21 @@
+frontend:
+  image:
+    repository: penpotapp/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  subdomain: penpot
+backend:
+  image:
+    repository: penpotapp/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+exporter:
+  image:
+    repository: penpotapp/exporter
+    tag: latest
+    pullPolicy: IfNotPresent
+valkey:
+  image:
+    repository: valkey/valkey
+    tag: 8.1
+    pullPolicy: IfNotPresent

@@ -1,9 +1,0 @@
-globals:
-  environment: prod
-  timezone: Europe/Amsterdam
-  domain: olsen.cloud
-image:
-  repository: docker.io/caronc/apprise
-  tag: latest@sha256:127b3834f0679502529397ead8ffeaadf5189019c4c863fa6652e9b942fdccf8
-  pullPolicy: IfNotPresent
-subdomain: apprise

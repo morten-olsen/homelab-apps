@@ -1,10 +1,6 @@
 apiVersion: homelab.mortenolsen.pro/v1
-kind: OidcClient
+kind: PostgresDatabase
 metadata:
   name: '{{ .Release.Name }}'
 spec:
   environment: '{{ .Values.globals.environment }}'
-  redirectUris:
-    - path: /oauth/oidc/callback
-      subdomain: '{{ .Values.subdomain }}'
-      matchingMode: strict
