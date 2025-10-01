@@ -1,36 +1,37 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: '{{ .Release.Name }}-runner'
+  name: "{{ .Release.Name }}-runner"
   labels:
-    app: '{{ .Release.Name }}-runner'
+    app: "{{ .Release.Name }}-runner"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: '{{ .Release.Name }}-runner'
+      app: "{{ .Release.Name }}-runner"
   template:
     metadata:
       labels:
-        app: '{{ .Release.Name }}-runner'
+        app: "{{ .Release.Name }}-runner"
     spec:
       containers:
-        - name: '{{ .Release.Name }}-runner'
+        - name: "{{ .Release.Name }}-runner"
           image: docker.io/gitea/act_runner:latest-dind-rootless
           env:
             - name: GITEA_INSTANCE_URL
-              value: '{{ .Release.Name }}'
+              value: "https://{{ .Release.Name }}.{{ .Values.globals.domain }}"
             - name: GITEA_RUNNER_NAME
+              value: default
             - name: GITEA_RUNNER_REGISTRATION_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: '{{ .Release.Name }}-runner'
+                  name: "{{ .Release.Name }}-runner"
                   key: registration_token
             - name: DOCKER_HOST
               value: tcp://localhost:2376
             - name: DOCKER_CERT_PATH
               value: /certs/client
             - name: DOCKER_TLS_VERIFY
-              value: '1'
+              value: "1"
           securityContext:
             privileged: true
