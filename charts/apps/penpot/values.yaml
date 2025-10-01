@@ -1,18 +1,18 @@
 frontend:
   image:
     repository: penpotapp/frontend
-    tag: latest
+    tag: latest@sha256:91b80791f37b44c9aba3490720ae90fc01c691562c0862abeebcb8bc0a7198d2
     pullPolicy: IfNotPresent
   subdomain: penpot
 backend:
   image:
     repository: penpotapp/backend
-    tag: latest
+    tag: latest@sha256:cfae17cff120a73c80e2237b7f664b44765b859a874896a377f09d8083463514
     pullPolicy: IfNotPresent
 exporter:
   image:
     repository: penpotapp/exporter
-    tag: latest
+    tag: latest@sha256:79c4988d0ac1986e3e8a7a1e1041d54869bcf1b17779f0cc6553795666f685e4
     pullPolicy: IfNotPresent
 valkey:
   image:
