@@ -1,0 +1,5 @@
+image:
+  repository: b3log/siyuan
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: siyuan

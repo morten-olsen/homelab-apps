@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          env:
+            - name: TZ
+              value: "{{ .Values.globals.timezone}}"
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: SIYUAN_ACCESS_AUTH_CODE
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secret"
+                  key: password
+          ports:
+            - name: http
+              containerPort: 6806
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - mountPath: /siyuan/workspace
+              name: workspace
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-workspace"
