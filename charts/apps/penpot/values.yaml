@@ -17,5 +17,5 @@ exporter:
 valkey:
   image:
     repository: valkey/valkey
-    tag: 9.0@sha256:34ecbbe536de15b4750d0c76701eb6b889c6de9b697f782e73165f3ef9cc17c0
+    tag: 9.0@sha256:c1efaa42b614031d2b186214900d6fc353ed39d9d24a9c2b781b70d03808469c
     pullPolicy: IfNotPresent
