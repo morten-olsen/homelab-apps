@@ -1,10 +1,10 @@
 apiVersion: homelab.mortenolsen.pro/v1
 kind: OidcClient
 metadata:
-  name: '{{ .Release.Name }}'
+  name: "{{ .Release.Name }}"
 spec:
-  environment: '{{ .Values.globals.environment }}'
+  environment: "{{ .Values.globals.environment }}"
   redirectUris:
-    - path: /api/auth/oidc/callback
-      subdomain: '{{ .Values.subdomain }}'
+    - path: api/auth/oauth2/callback/oidc
+      subdomain: "{{ .Values.subdomain }}"
       matchingMode: strict

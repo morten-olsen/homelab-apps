@@ -38,6 +38,8 @@ spec:
               value: "https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}"
             - name: NEXT_PUBLIC_APP_URL
               value: "https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}"
+            - name: BETTER_AUTH_URL
+              value: "https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}"
             - name: BETTER_AUTH_SECRET
               valueFrom:
                 secretKeyRef:
@@ -73,8 +75,6 @@ spec:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-pg-connection"
                   key: password
-            - name: OIDC_PROVIDER_ID
-              value: oidc
             - name: OIDC_SCOPES
               value: openid email profile
             - name: OIDC_PKCE
@@ -94,6 +94,8 @@ spec:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-client"
                   key: configuration
+            - name: OIDC_AUTHORIZATION_URL
+              value: "https://authentik.{{ .Values.globals.domain }}/application/o/authorize/"
       volumes:
         - name: data
           persistentVolumeClaim:
