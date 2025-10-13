@@ -1,6 +1,5 @@
 environments:
   default: {}
-
 ---
 releases:
   - name: volumes
@@ -138,8 +137,13 @@ releases:
     namespace: prod
     values:
       - values.yaml
-  - name: siyuan
-    chart: charts/apps/siyuan
+  # - name: siyuan
+  #   chart: charts/apps/siyuan
+  #   namespace: prod
+  #   values:
+  #     - values.yaml
+  - name: tika
+    chart: charts/apps/tika
     namespace: prod
     values:
       - values.yaml

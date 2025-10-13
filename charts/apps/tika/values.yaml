@@ -1,0 +1,5 @@
+image:
+  repository: apache/tika
+  tag: 3.2.3.0-full
+  pullPolicy: IfNotPresent
+subdomain: tika
