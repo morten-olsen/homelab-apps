@@ -124,6 +124,11 @@ spec:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-client"
                   key: configurationIssuer
+            - name: PENPOT_OIDC_AUTH_URI
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: authorization
             # - name: PENPOT_OIDC_ROLES
             #   value: admins
             # - name: PENPOT_OIDC_ROLES_ATTR

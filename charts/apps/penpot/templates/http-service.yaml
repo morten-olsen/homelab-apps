@@ -4,8 +4,8 @@ metadata:
   name: "{{ .Release.Name }}"
 spec:
   environment: "{{ .Values.globals.environment }}"
-  subdomain: "{{ .Values.subdomain }}"
+  subdomain: "{{ .Values.frontend.subdomain }}"
   destination:
-    host: "{{ .Release.Name }}"
+    host: "{{ .Release.Name }}-frontend"
     port:
       number: 80
