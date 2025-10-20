@@ -149,6 +149,10 @@ releases:
       - values.yaml
   - name: mindsdb
     chart: charts/apps/mindsdb
+    values:
+      - values.yaml
+  - name: pigeonpod
+    chart: charts/apps/pigeon-pod
     namespace: prod
     values:
       - values.yaml
