@@ -1,0 +1,5 @@
+image:
+  repository: docker.io/mindsdb/mindsdb
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: mindsdb

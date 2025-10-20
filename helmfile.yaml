@@ -147,3 +147,8 @@ releases:
     namespace: prod
     values:
       - values.yaml
+  - name: mindsdb
+    chart: charts/apps/mindsdb
+    namespace: prod
+    values:
+      - values.yaml

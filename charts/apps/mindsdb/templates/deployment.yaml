@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          ports:
+            - name: http
+              containerPort: 47334
+              protocol: TCP
+            - name: mysql
+              containerPort: 47335
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          env:
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+            - name: MINDSDB_APIS
+              value: http,postgres
+            - name: MINDSDB_DB_CON
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-pg-connection"
+                  key: url
+          volumeMounts:
+            - mountPath: mdb_data:/root/mdb_storage mindsdb/mindsdb
+              name: data
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-data"
