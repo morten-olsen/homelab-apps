@@ -4,7 +4,7 @@ globals:
   domain: olsen.cloud
 image:
   repository: garethgeorge/backrest
-  tag: latest@sha256:f8306faef0a3cbedc7daa55756f1d4c105d8c104aa773656bdad4fa8553dab5a
+  tag: latest@sha256:1308397161321b3c5aeca8acc6bf26eccb990df385f2532d3ce0eaa8b483dedf
   pullPolicy: IfNotPresent
 subdomain: restic
 password:

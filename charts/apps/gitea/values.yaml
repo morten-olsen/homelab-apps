@@ -1,5 +1,5 @@
 image:
   repository: docker.gitea.com/gitea
-  tag: 1.24.7@sha256:918955f16b1e91732af6c449bb2db3a34271748dbed1ccfbae48f8a2fb5480b8
+  tag: 1.25.0@sha256:5ee853917e9b4d3ac5f35afe6929a9505e8237ea1faaef9f9e1cc395e035074f
   pullPolicy: IfNotPresent
 subdomain: gitea
