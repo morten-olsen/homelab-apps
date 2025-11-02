@@ -16,3 +16,5 @@ shares:
     path: /mnt/HDD/Backups
   youtube:
     path: /mnt/HDD/Youtube
+  misc:
+    path: /mnt/HDD/Misc

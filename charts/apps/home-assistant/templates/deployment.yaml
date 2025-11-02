@@ -37,9 +37,14 @@ spec:
           volumeMounts:
             - mountPath: /config
               name: config
+            - mountPath: /media/misc
+              name: misc
           securityContext:
             privileged: true
       volumes:
         - name: config
           persistentVolumeClaim:
             claimName: "{{ .Release.Name }}-config"
+        - name: misc
+          persistentVolumeClaim:
+            claimName: misc
