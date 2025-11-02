@@ -25,6 +25,8 @@ spec:
             - "{{ .Values.whisper.model }}"
             - --language
             - "{{ .Values.whisper.language }}"
+            - --data-dir
+            - /data
           env:
             - name: TZ
               value: "{{ .Values.globals.timezone }}"
