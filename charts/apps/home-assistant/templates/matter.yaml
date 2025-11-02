@@ -1,0 +1,72 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: "{{ .Release.Name }}-matter"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "1Gi"
+  storageClassName: "{{ .Values.globals.environment }}"
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-matter"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-matter"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-matter"
+    spec:
+      hostNetwork: true
+      containers:
+        - name: "{{ .Release.Name }}-matter"
+          image: "{{ .Values.matter.image.repository }}:{{ .Values.matter.image.tag }}"
+          imagePullPolicy: "{{ .Values.matter.image.pullPolicy }}"
+          env:
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+          ports:
+            - name: http
+              containerPort: 5580
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - mountPath: /data
+              name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-matter"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-matter"
+  labels:
+    app: "{{ .Release.Name }}-matter"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 5580
+      protocol: TCP
+      name: http
+  selector:
+    app: "{{ .Release.Name }}-matter"

@@ -16,3 +16,8 @@ whisper:
     pullPolicy: IfNotPresent
   model: tiny-int8
   language: us
+matter:
+  image:
+    repository: ghcr.io/home-assistant-libs/python-matter-server
+    tag: stable
+    pullPolicy: IfNotPresent

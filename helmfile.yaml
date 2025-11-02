@@ -62,11 +62,11 @@ releases:
     namespace: prod
     values:
       - values.yaml
-  - name: linkwarden
-    chart: charts/apps/linkwarden
-    namespace: prod
-    values:
-      - values.yaml
+  # - name: linkwarden
+  #   chart: charts/apps/linkwarden
+  #   namespace: prod
+  #   values:
+  #     - values.yaml
   - name: mealie
     chart: charts/apps/mealie
     namespace: prod
@@ -147,10 +147,10 @@ releases:
     namespace: prod
     values:
       - values.yaml
-  - name: mindsdb
-    chart: charts/apps/mindsdb
-    values:
-      - values.yaml
+  # - name: mindsdb
+  #   chart: charts/apps/mindsdb
+  #   values:
+  #     - values.yaml
   - name: pigeonpod
     chart: charts/apps/pigeon-pod
     namespace: prod
