@@ -122,11 +122,11 @@ releases:
     namespace: prod
     values:
       - values.yaml
-  # - name: signal
-  #   chart: charts/apps/signal
-  #   namespace: prod
-  #   values:
-  #     - values.yaml
+  - name: signal
+    chart: charts/apps/signal
+    namespace: prod
+    values:
+      - values.yaml
   - name: zot
     chart: charts/apps/zot
     namespace: prod

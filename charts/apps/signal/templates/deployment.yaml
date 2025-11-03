@@ -18,6 +18,12 @@ spec:
         - name: "{{ .Release.Name }}"
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          command:
+            - /usr/bin/signal-cli
+          args:
+            - --config=/home/.local/share/signal-cli
+            - daemon
+            - --http=0.0.0.0:8080
           ports:
             - name: http
               containerPort: 8080
