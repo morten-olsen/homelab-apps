@@ -1,5 +1,5 @@
 image:
   repository: ghcr.io/morten-olsen/reservoir
-  tag: main@sha256:9ac3d41f5f757f314a9ab47f235025ab1c16cdcf1145b137d31e4d302b20e9d2
+  tag: main@sha256:cbcdcecc6632adef0019a5a92f2ac3ebdaa2fa2bc0442869b21668d3dbaf0859
   pullPolicy: IfNotPresent
 subdomain: reservoir
