@@ -156,3 +156,8 @@ releases:
     namespace: prod
     values:
       - values.yaml
+  - name: reservoir
+    chart: charts/apps/reservoir
+    namespace: prod
+    values:
+      - values.yaml

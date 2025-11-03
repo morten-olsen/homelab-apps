@@ -1,0 +1,5 @@
+image:
+  repository: ghcr.io/morten-olsen/reservoir
+  tag: main
+  pullPolicy: IfNotPresent
+subdomain: reservoir
