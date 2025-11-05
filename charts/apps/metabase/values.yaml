@@ -1,0 +1,4 @@
+subdomain: metabase
+image:
+  repository: index.docker.io/metabase/metabase
+  tag: latest

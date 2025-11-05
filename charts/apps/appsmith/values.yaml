@@ -1,0 +1,4 @@
+subdomain: appsmith
+image:
+  repository: index.docker.io/appsmith/appsmith-ce
+  tag: latest
