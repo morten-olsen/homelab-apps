@@ -1,4 +1,4 @@
 subdomain: metabase
 image:
   repository: index.docker.io/metabase/metabase
-  tag: latest
+  tag: latest@sha256:7cde7e7129ed13ec153ba7f5d08d79f4cb7db84dc06d9a47d411e66f65fd6933

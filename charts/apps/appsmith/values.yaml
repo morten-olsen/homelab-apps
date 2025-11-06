@@ -1,4 +1,4 @@
 subdomain: appsmith
 image:
   repository: index.docker.io/appsmith/appsmith-ce
-  tag: latest
+  tag: latest@sha256:786b61e3f60557386caa40cc647bc48484198ead189ee36e071d3ad686f6d558
