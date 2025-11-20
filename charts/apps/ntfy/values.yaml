@@ -1,0 +1,5 @@
+image:
+  repository: binwiederhier/ntfy
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: ntfy

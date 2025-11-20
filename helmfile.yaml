@@ -171,3 +171,8 @@ releases:
     namespace: prod
     values:
       - values.yaml
+  - name: ntfy
+    chart: charts/apps/ntfy
+    namespace: prod
+    values:
+      - values.yaml
