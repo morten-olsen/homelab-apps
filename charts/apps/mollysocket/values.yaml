@@ -1,0 +1,5 @@
+image:
+  repository: ghcr.io/mollyim/mollysocket
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: mollysocket

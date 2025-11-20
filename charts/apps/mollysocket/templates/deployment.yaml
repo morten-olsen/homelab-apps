@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      initContainers:
+        - name: mollysocket-vapid-gentor
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}" # Use the mollysocket image itself
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          command: ["sh", "-c"]
+          args:
+            - |
+              # Define paths within the volume
+              VAPID_DIR="/data/vapid"
+              PRIVATE_KEY_PATH="${VAPID_DIR}/private_key.txt"
+
+              echo "Checking for existing VAPID keys in ${VAPID_DIR}..."
+
+              # Create the VAPID directory if it doesn't exist
+              mkdir -p "${VAPID_DIR}"
+
+              # Check if the private key file already exists
+              if [ -f "${PRIVATE_KEY_PATH}" ]; then
+                echo "VAPID private key already exists. Skipping generation."
+              else
+                echo "VAPID private key not found. Generating new keys..."
+                # Run the mollysocket command to generate keys
+                # The output format is:
+                # VAPD private key: <private_key_string>
+
+                mollysocket vapid gen > "${PRIVATE_KEY_PATH}"
+              fi
+          volumeMounts:
+            - mountPath: /data # Mount the PVC here, same as the main container
+              name: data
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          args: ["serve"]
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - name: http
+              containerPort: 8020
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          env:
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+            - name: MOLLY_DB
+              value: /data/db.sqlite
+            - name: MOLLY_HOST
+              value: 0.0.0.0
+            - name: MOLLY_PORT
+              value: '8020'
+            - name: MOLLY_VAPID_KEY_FILE
+              value: /data/vapid/private_key.txt
+            - name: MOLLY_ALLOWED_ENDPOINTS
+              value: '["*","https://ntfy.{{ .Values.globals.domain }}/"]'
+            - name: RUST_LOG
+              value: info
+          volumeMounts:
+            - mountPath: /data
+              name: data
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-data"

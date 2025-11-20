@@ -50,6 +50,8 @@ spec:
               value: /var/lib/ntfy/attachments
             - name: NTFY_ENABLE_LOGIN
               value: 'true'
+            - name: NTFY_REQUIRE_LOGIN
+              value: 'true'
           volumeMounts:
             - mountPath: /var/lib/ntfy
               name: data
