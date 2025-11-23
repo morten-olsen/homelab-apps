@@ -1,5 +1,5 @@
 image:
   repository: ghcr.io/metatool-ai/metamcp
-  tag: 2.4.17@sha256:6bc426b3fb457a71f589a8fbfff3f5b354d8a5e434a7808a8908fb6bd78f31ee
+  tag: 2.4.18@sha256:474102b1bf4e7df312eedcfb9d611547b1227924f99dba570bdc5ce4a077e598
   pullPolicy: IfNotPresent
 subdomain: metamcp
