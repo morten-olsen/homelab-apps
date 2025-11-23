@@ -1,5 +1,5 @@
 image:
   repository: b3log/siyuan
-  tag: latest@sha256:992b12388ec10c73dbb99b5f274eae5467cc5fb2808eb9f6075cd8324c0cf73a
+  tag: latest@sha256:d63485de0b47af96aa7b9fc2dc9d53cb682f114510b2b0e8068f8ea11bfd4579
   pullPolicy: IfNotPresent
 subdomain: siyuan
