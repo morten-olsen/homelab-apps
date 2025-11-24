@@ -37,6 +37,8 @@ spec:
               name: tvshows
             - mountPath: /media/music
               name: music
+            - mountPath: /media/kids-music
+              name: kidsmusic
       volumes:
         - name: config
           persistentVolumeClaim:
@@ -50,3 +52,6 @@ spec:
         - name: music
           persistentVolumeClaim:
             claimName: music
+        - name: kidsmusic
+          persistentVolumeClaim:
+            claimName: kidsmusic

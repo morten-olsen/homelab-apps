@@ -18,3 +18,5 @@ shares:
     path: /mnt/HDD/Youtube
   misc:
     path: /mnt/HDD/Misc
+  kidsmusic:
+    path: /mnt/HDD/Misc/Kids_Music
