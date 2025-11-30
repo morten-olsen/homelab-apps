@@ -1,5 +1,5 @@
 image:
   repository: ghcr.io/aizhimou/pigeon-pod
-  tag: latest@sha256:2d7623d736382e7a740cf0ea1017473cc3afaf2741f98316000787a5b18468d8
+  tag: latest@sha256:4c1e971db7aa10bdcd5e479c21b492cdde92f48759397debdf3efce8c1b8abb9
   pullPolicy: IfNotPresent
 subdomain: pigeonpod
