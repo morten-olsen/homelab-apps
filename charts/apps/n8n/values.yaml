@@ -1,5 +1,5 @@
 image:
   repository: docker.n8n.io/n8nio/n8n
-  tag: 1.122.1@sha256:99c1347d5fcd4c3ccef642700e1d1646987738435afefade1dfef3ce0ddd1920
+  tag: 1.122.4@sha256:890c57b244dc8dd2688a05f70759f4b7792871f2a318395882908e751dfdc7f3
   pullPolicy: IfNotPresent
 subdomain: n8n
