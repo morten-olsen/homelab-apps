@@ -1,5 +1,5 @@
 image:
   repository: docker.io/mindsdb/mindsdb
-  tag: latest@sha256:9994ff55f9e7c57b34e58ff0a558fa110d6b3f9306cbae728e9b9f7f61476c0f
+  tag: latest@sha256:5cc19398bd07093845e0703b54e3bea5e0022d311043b16aac2156ad992b7945
   pullPolicy: IfNotPresent
 subdomain: mindsdb
