@@ -1,24 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: '{{ .Release.Name }}'
+  name: "{{ .Release.Name }}"
 spec:
   strategy:
     type: Recreate
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
-      app: '{{ .Release.Name }}'
+      app: "{{ .Release.Name }}"
   template:
     metadata:
       labels:
-        app: '{{ .Release.Name }}'
+        app: "{{ .Release.Name }}"
     spec:
-      serviceAccountName: '{{ .Release.Name }}-serviceaccount'
+      serviceAccountName: "{{ .Release.Name }}-serviceaccount"
       containers:
-        - name: '{{ .Release.Name }}'
-          image: '{{ .Values.image.repository }}:{{ .Values.image.tag }}'
-          imagePullPolicy: '{{ .Values.image.pullPolicy }}'
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
           ports:
             - name: http
               containerPort: 7080
@@ -34,7 +35,7 @@ spec:
               name: data
           env:
             - name: CODER_HTTP_ADDRESS
-              value: '0.0.0.0:7080'
+              value: "0.0.0.0:7080"
             - name: CODER_OIDC_ALLOWED_GROUPS
               value: admin
             - name: CODER_OIDC_GROUP_FIELD
@@ -44,30 +45,30 @@ spec:
             - name: CODER_OIDC_ICON_URL
               value: https://authentik.olsen.cloud/static/dist/assets/icons/icon.png
             - name: CODER_DISABLE_PASSWORD_AUTH
-              value: 'true'
+              value: "true"
             - name: CODER_OAUTH2_GITHUB_ALLOW_SIGNUPS
-              value: 'false'
+              value: "false"
             - name: CODER_OIDC_SIGN_IN_TEXT
-              value: 'Sign in with OIDC'
+              value: "Sign in with OIDC"
             - name: CODER_OIDC_SCOPES
               value: openid,profile,email,offline_access
             - name: CODER_OIDC_ISSUER_URL
               valueFrom:
                 secretKeyRef:
-                  name: '{{ .Release.Name }}-client'
+                  name: "{{ .Release.Name }}-client"
                   key: configurationIssuer
             - name: CODER_OIDC_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: '{{ .Release.Name }}-client'
+                  name: "{{ .Release.Name }}-client"
                   key: clientId
             - name: CODER_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: '{{ .Release.Name }}-client'
+                  name: "{{ .Release.Name }}-client"
                   key: clientSecret
 
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: '{{ .Release.Name }}-data'
+            claimName: "{{ .Release.Name }}-data"

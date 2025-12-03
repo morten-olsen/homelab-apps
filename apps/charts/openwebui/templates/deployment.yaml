@@ -1,23 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: '{{ .Release.Name }}'
+  name: "{{ .Release.Name }}"
 spec:
   strategy:
     type: Recreate
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
-      app: '{{ .Release.Name }}'
+      app: "{{ .Release.Name }}"
   template:
     metadata:
       labels:
-        app: '{{ .Release.Name }}'
+        app: "{{ .Release.Name }}"
     spec:
       containers:
-        - name: '{{ .Release.Name }}'
-          image: '{{ .Values.image.repository }}:{{ .Values.image.tag }}'
-          imagePullPolicy: '{{ .Values.image.pullPolicy }}'
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
           ports:
             - name: http
               containerPort: 8080
@@ -33,38 +34,38 @@ spec:
               name: data
           env:
             - name: ENABLE_SIGNUP
-              value: 'false'
+              value: "false"
             - name: WEBUI_URL # TODO: remove
               value: https://openwebui.olsen.cloud
             - name: ENABLE_OAUTH_PERSISTENT_CONFIG
-              value: 'false'
+              value: "false"
             - name: ENABLE_OAUTH_SIGNUP
-              value: 'true'
+              value: "true"
             - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
-              value: 'true'
+              value: "true"
             - name: OAUTH_PROVIDER_NAME
               value: authentik
             - name: OPENID_PROVIDER_URL
               valueFrom:
                 secretKeyRef:
-                  name: '{{ .Release.Name }}-client'
+                  name: "{{ .Release.Name }}-client"
                   key: configuration
             - name: OAUTH_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: '{{ .Release.Name }}-client'
+                  name: "{{ .Release.Name }}-client"
                   key: clientId
             - name: OAUTH_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: '{{ .Release.Name }}-client'
+                  name: "{{ .Release.Name }}-client"
                   key: clientSecret
             - name: ENABLE_LOGIN_FORM
-              value: 'false'
+              value: "false"
             - name: OPENID_REDIRECT
               value: https://openwebui.olsen.cloud/oauth/oidc/callback
 
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: '{{ .Release.Name }}-data'
+            claimName: "{{ .Release.Name }}-data"

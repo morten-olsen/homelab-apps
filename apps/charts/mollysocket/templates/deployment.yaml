@@ -6,6 +6,7 @@ spec:
   strategy:
     type: Recreate
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: "{{ .Release.Name }}"
@@ -71,7 +72,7 @@ spec:
             - name: MOLLY_HOST
               value: 0.0.0.0
             - name: MOLLY_PORT
-              value: '8020'
+              value: "8020"
             - name: MOLLY_VAPID_KEY_FILE
               value: /data/vapid/private_key.txt
             - name: MOLLY_ALLOWED_ENDPOINTS

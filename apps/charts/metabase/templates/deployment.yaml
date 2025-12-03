@@ -6,6 +6,7 @@ metadata:
     app: "{{ .Release.Name }}"
 spec:
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: "{{ .Release.Name }}"
@@ -21,7 +22,6 @@ spec:
             - containerPort: 3000
               name: http
           env:
-
             - name: MB_DB_TYPE
               value: postgres
             - name: MB_DB_DBNAME

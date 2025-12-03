@@ -6,6 +6,9 @@ metadata:
     app: "{{ .Release.Name }}"
 spec:
   replicas: 1
+  revisionHistoryLimit: 0
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: "{{ .Release.Name }}"

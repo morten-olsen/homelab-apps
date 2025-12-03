@@ -6,6 +6,7 @@ spec:
   strategy:
     type: Recreate
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: "{{ .Release.Name }}"
@@ -43,15 +44,15 @@ spec:
             - name: NTFY_AUTH_DEFAULT_ACCESS
               value: deny-all
             - name: NTFY_BEHIND_PROXY
-              value: 'true'
+              value: "true"
             - name: NTFY_CACHE_FILE
               value: /var/lib/ntfy/cache.db
             - name: NTFY_ATTACHMENT_CACHE_DIR
               value: /var/lib/ntfy/attachments
             - name: NTFY_ENABLE_LOGIN
-              value: 'true'
+              value: "true"
             - name: NTFY_REQUIRE_LOGIN
-              value: 'true'
+              value: "true"
           volumeMounts:
             - mountPath: /var/lib/ntfy
               name: data

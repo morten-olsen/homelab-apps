@@ -1,23 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: '{{ .Release.Name }}'
+  name: "{{ .Release.Name }}"
 spec:
   strategy:
     type: Recreate
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
-      app: '{{ .Release.Name }}'
+      app: "{{ .Release.Name }}"
   template:
     metadata:
       labels:
-        app: '{{ .Release.Name }}'
+        app: "{{ .Release.Name }}"
     spec:
       containers:
-        - name: '{{ .Release.Name }}'
-          image: '{{ .Values.image.repository }}:{{ .Values.image.tag }}'
-          imagePullPolicy: '{{ .Values.image.pullPolicy }}'
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
           ports:
             - name: http
               containerPort: 8096
@@ -42,7 +43,7 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: '{{ .Release.Name }}-config'
+            claimName: "{{ .Release.Name }}-config"
         - name: movies
           persistentVolumeClaim:
             claimName: movies

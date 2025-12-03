@@ -6,6 +6,7 @@ spec:
   strategy:
     type: Recreate
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: "{{ .Release.Name }}-frontend"
@@ -50,6 +51,7 @@ spec:
   strategy:
     type: Recreate
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: "{{ .Release.Name }}-valkey"
@@ -76,6 +78,7 @@ spec:
   strategy:
     type: Recreate
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: "{{ .Release.Name }}-backend"
@@ -158,6 +161,7 @@ spec:
   strategy:
     type: Recreate
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: "{{ .Release.Name }}-exporter"

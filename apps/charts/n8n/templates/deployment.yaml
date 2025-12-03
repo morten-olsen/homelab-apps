@@ -4,8 +4,9 @@ metadata:
   name: "{{ .Release.Name }}"
 spec:
   strategy:
-    type: Recreate
+    type: RollingUpdate
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: "{{ .Release.Name }}"
