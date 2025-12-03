@@ -20,7 +20,7 @@ It sets up:
 Run the following command to install the chart directly:
 
 ```bash
-helm upgrade --install argocd-apps ./charts/argocd-apps \
+helm upgrade --install argocd-apps ./apps/root \
   --namespace argocd
 ```
 

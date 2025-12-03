@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: foundation
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: {{ .Values.repoURL }}
+      revision: {{ .Values.targetRevision }}
+      directories:
+      - path: {{ .Values.path }}/*
+      - path: {{ .Values.path }}/*{{ .Values.exclude }}
+        exclude: true
+  template:
+    metadata:
+      name: '{{`{{path.basename}}`}}'
+    spec:
+      project: {{ .Values.project }}
+      source:
+        repoURL: {{ .Values.repoURL }}
+        targetRevision: {{ .Values.targetRevision }}
+        path: '{{`{{path}}`}}'
+        helm:
+          valueFiles:
+          - values.yaml
+          values: |
+            globals:
+              timezone: {{ .Values.globals.timezone }}
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: foundation
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
