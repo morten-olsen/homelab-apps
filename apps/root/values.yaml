@@ -1,6 +1,6 @@
 repoURL: "https://github.com/morten-olsen/homelab-apps"
 targetRevision: "main"
-path: "charts/apps"
+path: "apps/charts"
 exclude: "*.disabled"
 project: "apps"
 globals:
