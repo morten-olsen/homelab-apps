@@ -1,5 +1,5 @@
 image:
   repository: vikunja/vikunja
-  tag: latest
+  tag: latest@sha256:e457d7c75d195935df0da68321f9dc3388db710c7543085d785ae523d415b0f2
   pullPolicy: IfNotPresent
 subdomain: vikunja
