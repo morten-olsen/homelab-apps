@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          ports:
+            - name: http
+              containerPort: 3456
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - mountPath: /app/vikunja/files
+              name: data
+          env:
+            - name: VIKUNJA_SERVICE_TIMEZONE
+              value: "{{ .Values.globals.timezone }}"
+
+            - name: VIKUNJA_SERVICE_ENABLEREGISTRATION
+              value: "false"
+
+            - name: VIKUNJA_AUTH_OPENID_ENABLED
+              value: "true"
+
+            - name: VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_NAME
+              value: Authentik
+
+            - name: VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_AUTHURL
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: configurationIssuer
+
+            - name: VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_USERNAMEFALLBACK
+              value: "true"
+
+            - name: VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_EMAILFALLBACK
+              value: "true"
+
+            - name: VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_CLIENTID
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientId
+
+            - name: VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientSecret
+
+            - name: VIKUNJA_SERVICE_PUBLICURL
+              value: https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}
+
+            - name: VIKUNJA_SERVICE_JWTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: encryptionkey
+
+            - name: VIKUNJA_DATABASE_TYPE
+              value: postgres
+
+            - name: VIKUNJA_DATABASE_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-pg-connection"
+                  key: database
+
+            - name: VIKUNJA_DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-pg-connection"
+                  key: host
+
+            - name: VIKUNJA_DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-pg-connection"
+                  key: user
+            - name: VIKUNJA_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-pg-connection"
+                  key: password
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-data"

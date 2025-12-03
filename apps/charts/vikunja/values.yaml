@@ -1,0 +1,5 @@
+image:
+  repository: vikunja/vikunja
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: vikunja
