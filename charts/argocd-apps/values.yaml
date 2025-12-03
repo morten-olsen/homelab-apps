@@ -1,0 +1,9 @@
+repoURL: "https://github.com/morten-olsen/homelab-apps"
+targetRevision: "argo"
+path: "charts/apps"
+exclude: "*.disabled"
+project: "apps"
+globals:
+  environment: prod
+  domain: olsen.cloud
+  timezone: Europe/Amsterdam
