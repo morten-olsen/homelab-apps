@@ -1,5 +1,5 @@
 repoURL: "https://github.com/morten-olsen/homelab-apps"
-targetRevision: "argo"
+targetRevision: "main"
 path: "charts/apps"
 exclude: "*.disabled"
 project: "apps"
