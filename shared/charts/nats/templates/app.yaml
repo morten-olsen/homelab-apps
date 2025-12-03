@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nats-cluster
+  namespace: argocd
+spec:
+  project: shared
+  source:
+    repoURL: https://nats-io.github.io/k8s/helm/charts/
+    targetRevision: 2.12.2
+    chart: nats
+    helm:
+      releaseName: nats
+      values: |
+        config:
+          jetstream:
+            enabled: true
+            fileStore:
+              pvc:
+                enabled: true
+                storageSize: 10Gi
+                storageClassName: prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: "{{ .Release.Namespace }}"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,103 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-path
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: rancher.io/local-path
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: local-path-config
+  namespace: kube-system
+data:
+  config.json: |-
+    {
+      "nodePathMap":[
+        {
+          "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
+          "paths":["/var/lib/rancher/k3s/storage"]
+        }
+      ]
+    }
+  # The Setup script runs when a PVC is created
+  setup: |-
+    #!/bin/sh
+    set -e
+
+    # Variables provided by the provisioner:
+    # $VOL_DIR = The volume path (e.g., .../pvc-1234-abcd_namespace_pvc-name)
+    # $PV_NAME = The PersistentVolume name (e.g., pvc-1234-abcd)
+
+    # Extract PVC namespace and name from VOL_DIR path
+    # The local-path-provisioner includes namespace and name in the path format:
+    # /path/to/storage/pvc-UUID_namespace_pvc-name
+    # Example: pvc-6f2333de-0b45-41d3-b78f-5d62e737d8bc_nats_nats-js-nats-0
+    if [ -z "${PVC_NAMESPACE:-}" ] || [ -z "${PVC_NAME:-}" ]; then
+      if [ -n "${VOL_DIR:-}" ]; then
+        # Extract the basename (e.g., pvc-6f2333de-0b45-41d3-b78f-5d62e737d8bc_nats_nats-js-nats-0)
+        VOL_BASENAME=$(basename "$VOL_DIR")
+        
+        # Split by underscore: format is pvc-UUID_namespace_pvc-name
+        # Count underscores to find where namespace starts
+        # The UUID part contains hyphens, so we split on underscore
+        # Field 1: pvc-UUID (discard)
+        # Field 2: namespace
+        # Field 3+: PVC name (may contain underscores, so join them)
+        NAMESPACE_PART=$(echo "$VOL_BASENAME" | cut -d'_' -f2)
+        NAME_PART=$(echo "$VOL_BASENAME" | cut -d'_' -f3-)
+        
+        if [ -n "$NAMESPACE_PART" ] && [ -n "$NAME_PART" ]; then
+          PVC_NAMESPACE="$NAMESPACE_PART"
+          PVC_NAME="$NAME_PART"
+        fi
+      fi
+    fi
+
+    # Final validation
+    if [ -z "${PVC_NAMESPACE:-}" ] || [ -z "${PVC_NAME:-}" ]; then
+      echo "Error: Could not determine PVC_NAMESPACE or PVC_NAME"
+      echo "VOL_DIR: ${VOL_DIR:-not set}"
+      echo "VOL_BASENAME: ${VOL_BASENAME:-not set}"
+      echo "Available environment variables:"
+      env | grep -E "(PVC_|PV_|VOL_)" || echo "  (none found)"
+      exit 1
+    fi
+
+    # 1. Define your pretty path in /data/pvc for easier management
+    PRETTY_PATH="/var/lib/rancher/k3s/storage/pvc/${PVC_NAMESPACE}/${PVC_NAME}"
+
+    # 2. Create the pretty folder
+    mkdir -p "$PRETTY_PATH"
+    chmod 777 "$PRETTY_PATH"
+
+    # 3. Create a symlink: Ugly UUID -> Pretty Path
+    # Kubernetes looks at the UUID path, but data is actually written to Pretty Path
+    ln -s "$PRETTY_PATH" "$VOL_DIR"
+  # The Teardown script runs when a PVC is deleted
+  teardown: |-
+    #!/bin/sh
+    set -eu
+
+    # Variables provided: $VOL_DIR (The UUID path)
+
+    # 1. Resolve where the symlink points to (The pretty path)
+    if [ -L "$VOL_DIR" ]; then
+      PRETTY_PATH=$(readlink "$VOL_DIR")
+      
+      # 2. Remove the Symlink (The UUID entry)
+      rm "$VOL_DIR"
+    fi
+  helperPod.yaml: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: helper-pod
+    spec:
+      containers:
+      - name: helper-pod
+        image: busybox
+        imagePullPolicy: IfNotPresent
