@@ -1,0 +1,10 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: "{{ .Release.Name }}"
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  instances: 1
+  storage:
+    storageClass: "{{ .Values.globals.storageClass }}"
+    size: 2Gi

@@ -1,0 +1,8 @@
+repoURL: "https://github.com/morten-olsen/homelab-apps"
+targetRevision: "main"
+path: "shared/charts"
+exclude: "*.disabled"
+project: "shared"
+globals:
+  timezone: Europe/Amsterdam
+  storageClass: prod

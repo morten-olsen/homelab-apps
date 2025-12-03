@@ -1,0 +1,6 @@
+apiVersion: v2
+name: shared
+description: A Helm chart for the shared resources of the homelab
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
