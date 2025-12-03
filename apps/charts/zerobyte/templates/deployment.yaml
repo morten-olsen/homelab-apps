@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          ports:
+            - name: http
+              containerPort: 4096
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - mountPath: /var/lib/zerobyte
+              name: config
+            - mountPath: /backups
+              name: backups
+            - mountPath: /data/pictures
+              name: pictures
+              readOnly: true
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-config"
+        - name: backups
+          persistentVolumeClaim:
+            claimName: backups
+        - name: pictures
+          persistentVolumeClaim:
+            claimName: pictures

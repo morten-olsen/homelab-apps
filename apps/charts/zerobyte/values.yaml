@@ -1,0 +1,5 @@
+image:
+  repository: ghcr.io/nicotsx/zerobyte
+  tag: v0.15
+  pullPolicy: IfNotPresent
+subdomain: zerobyte
