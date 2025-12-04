@@ -1,5 +1,5 @@
 image:
   repository: docker.umami.is/umami-software/umami
-  tag: postgresql-latest
+  tag: postgresql-latest@sha256:e3ef93b51045104697da9bc001f86e93386a674cd708e23d2444c6b24739bd93
   pullPolicy: IfNotPresent
 subdomain: umami
