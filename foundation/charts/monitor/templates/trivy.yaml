@@ -15,7 +15,6 @@ spec:
     repoURL: https://aquasecurity.github.io/helm-charts/
     targetRevision: 0.31.0
     chart: trivy-operator
-    helm: {}
   syncPolicy:
     automated:
       prune: true

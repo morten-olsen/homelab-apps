@@ -15,7 +15,6 @@ spec:
     repoURL: https://ot-container-kit.github.io/helm-charts/
     targetRevision: 0.22.2
     chart: redis-operator
-    helm: {}
   syncPolicy:
     automated:
       prune: true
