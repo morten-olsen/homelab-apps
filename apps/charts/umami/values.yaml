@@ -1,0 +1,5 @@
+image:
+  repository: docker.umami.is/umami-software/umami
+  tag: postgresql-latest
+  pullPolicy: IfNotPresent
+subdomain: umami
