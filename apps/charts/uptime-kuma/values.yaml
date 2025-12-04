@@ -1,0 +1,5 @@
+image:
+  repository: louislam/uptime-kuma
+  tag: 2
+  pullPolicy: IfNotPresent
+subdomain: uptime-kuma
