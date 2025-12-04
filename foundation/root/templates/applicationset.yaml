@@ -27,6 +27,7 @@ spec:
           values: |
             globals:
               timezone: {{ .Values.globals.timezone }}
+              storageClass: {{ .Values.globals.storageClass }}
       destination:
         server: https://kubernetes.default.svc
         namespace: foundation

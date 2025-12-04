@@ -5,3 +5,4 @@ exclude: "*.disabled"
 project: "foundation"
 globals:
   timezone: Europe/Amsterdam
+  storageClass: prod
