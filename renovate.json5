@@ -1,6 +1,7 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended"],
+  minimumReleaseAge: "2 days",
   packageRules: [
     {
       groupName: "Docker images",
@@ -9,19 +10,17 @@
       pinDigests: true,
     },
   ],
-  "helm-values": {
-    managerFilePatterns: ["/^charts/.*/values\\.yaml$/"],
-  },
   customManagers: [
     {
       customType: "regex",
-      managerFilePatterns: ["/^charts/.*/values\\.yaml$/"],
+      fileMatch: [".*/templates/.*\\.yaml$", ".*/templates/.*\\.yml$"],
       matchStrings: [
-        "repository:s*'(?<depName>.*?)'\ns*tag:s*'(?<currentValue>.*?)'",
-        'repository:s*"(?<depName>.*?)"\ns*tag:s*"(?<currentValue>.*?)"',
-        "repository:s*(?<depName>.*?)\ns*tag:s*(?<currentValue>.*)",
+        "repoURL:s*(?<registryUrls>https?://[^\\n\\r]+)[\\s\\S]*?targetRevision:s*(?<currentValue>[^\\n\\r\\s]+)[\\s\\S]*?chart:s*(?<depName>[^\\n\\r\\s]+)",
+        "repoURL:s*'(?<registryUrls>https?://[^']+)'[\\s\\S]*?targetRevision:s*'(?<currentValue>[^']+)'[\\s\\S]*?chart:s*'(?<depName>[^']+)'",
+        'repoURL:s*"(?<registryUrls>https?://[^"]+)"[\\s\\S]*?targetRevision:s*"(?<currentValue>[^"]+)"[\\s\\S]*?chart:s*"(?<depName>[^"]+)"',
       ],
-      datasourceTemplate: "docker",
+      datasourceTemplate: "helm",
+      versioningTemplate: "semver",
     },
   ],
 }
