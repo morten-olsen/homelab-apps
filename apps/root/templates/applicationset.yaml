@@ -29,6 +29,8 @@ spec:
               environment: {{ .Values.globals.environment }}
               domain: {{ .Values.globals.domain }}
               timezone: {{ .Values.globals.timezone }}
+              istio:
+                gateway: {{ .Values.globals.istio.gateway }}
       destination:
         server: https://kubernetes.default.svc
         namespace: prod

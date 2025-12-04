@@ -7,3 +7,5 @@ globals:
   environment: prod
   domain: olsen.cloud
   timezone: Europe/Amsterdam
+  istio:
+    gateway: homelab/prod
