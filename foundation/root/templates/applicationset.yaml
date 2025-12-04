@@ -14,7 +14,7 @@ spec:
         exclude: true
   template:
     metadata:
-      name: '{{`{{path.basename}}`}}'
+      name: '{{ .Values.project }}-{{`{{path.basename}}`}}'
     spec:
       project: {{ .Values.project }}
       source:
