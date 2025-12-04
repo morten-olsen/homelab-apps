@@ -1,5 +1,5 @@
 image:
   repository: docker.io/neosmemo/memos
-  tag: stable
+  tag: stable@sha256:40db300a188ede0c2cf1fc0c49741a03077478d6891fd3ace05c16d702b536a6
   pullPolicy: IfNotPresent
 subdomain: memos

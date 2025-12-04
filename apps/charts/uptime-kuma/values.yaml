@@ -1,5 +1,5 @@
 image:
   repository: louislam/uptime-kuma
-  tag: 2
+  tag: 2@sha256:4c364ef96aaddac7ec4c85f5e5f31c3394d35f631381ccbbf93f18fd26ac7cba
   pullPolicy: IfNotPresent
 subdomain: uptime-kuma
