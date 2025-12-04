@@ -1,0 +1,5 @@
+image:
+  repository: docker.io/neosmemo/memos
+  tag: stable
+  pullPolicy: IfNotPresent
+subdomain: memos

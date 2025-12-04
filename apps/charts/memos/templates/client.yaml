@@ -1,11 +1,10 @@
 apiVersion: homelab.mortenolsen.pro/v1
-kind: HttpService
+kind: OidcClient
 metadata:
   name: "{{ .Release.Name }}"
 spec:
   environment: "{{ .Values.globals.environment }}"
-  subdomain: "{{ .Values.subdomain }}"
-  destination:
-    host: "{{ .Release.Name }}"
-    port:
-      number: 80
+  redirectUris:
+    - path: /auth/callback
+      subdomain: "{{ .Values.subdomain }}"
+      matchingMode: strict
