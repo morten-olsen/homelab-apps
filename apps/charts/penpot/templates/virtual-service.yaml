@@ -13,6 +13,6 @@ spec:
   http:
     - route:
         - destination:
-            host: "{{ .Release.Name }}"
+            host: "{{ .Release.Name }}-frontend"
             port:
               number: 80
