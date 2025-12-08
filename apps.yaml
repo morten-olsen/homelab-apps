@@ -12,7 +12,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain # Retain the data even if the PV is deleted
   storageClassName: "manual-app-data"
   hostPath:
-    path: "/data/volumes/apps" # The specific host path for your 'apps' volume
+    path: "/data/volumes" # The specific host path for your 'apps' volume
     type: DirectoryOrCreate # Ensures the directory exists on the host
 
 ---

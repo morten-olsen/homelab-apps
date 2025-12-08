@@ -1,0 +1,5 @@
+image:
+  repository: blinkospace/blinko
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: blinko
