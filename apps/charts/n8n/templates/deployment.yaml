@@ -17,18 +17,23 @@ spec:
     spec:
       containers:
         - name: "{{ .Release.Name }}"
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          image: "{{ .Values.service.image.repository }}:{{ .Values.service.image.tag }}"
+          imagePullPolicy: "{{ .Values.service.image.pullPolicy }}"
           ports:
             - name: http
               containerPort: 5678
               protocol: TCP
+            - name: http-broker
+              containerPort: 5679
+              protocol: TCP
           livenessProbe:
-            tcpSocket:
+            httpGet:
               port: http
+              path: /healthz
           readinessProbe:
-            tcpSocket:
+            httpGet:
               port: http
+              path: /healthz
           volumeMounts:
             - mountPath: /home/node/.n8n
               name: data
@@ -39,9 +44,11 @@ spec:
               value: "{{ .Values.globals.timezone }}"
             - name: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
               value: "true"
-            - name: N8N_RUNNERS_ENABLED
+            - name: OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS
               value: "true"
             - name: N8N_EDITOR_BASE_URL
+              value: https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}
+            - name: WEBHOOK_URL
               value: https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}
             - name: VUE_APP_URL_BASE_API
               value: https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}
@@ -76,7 +83,76 @@ spec:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-pg-connection"
                   key: password
+            - name: N8N_RUNNERS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secret"
+                  key: password
+            - name: N8N_RUNNERS_ENABLED
+              value: 'true'
+            - name: N8N_RUNNERS_MODE
+              value: external
+            - name: N8N_NATIVE_PYTHON_RUNNER
+              value: 'true'
+            - name: N8N_NATIVE_PYTHON_RUNNER
+              value: 'true'
+            - name: N8N_RUNNERS_BROKER_LISTEN_ADDRESS
+              value: '0.0.0.0'
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: "{{ .Release.Name }}-data"
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-runner"
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-runner"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-runner"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-runner"
+          image: "{{ .Values.runner.image.repository }}:{{ .Values.runner.image.tag }}"
+          imagePullPolicy: "{{ .Values.runner.image.pullPolicy }}"
+          ports:
+            - name: http
+              containerPort: 5680
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              port: http
+              path: /healthz
+          readinessProbe:
+            httpGet:
+              port: http
+              path: /healthz
+          env:
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+            - name: N8N_RUNNERS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secret"
+                  key: password
+            - name: N8N_RUNNERS_TASK_BROKER_URI
+              value: 'http://{{ .Release.Name }}-broker:80'
+          volumeMounts:
+            - mountPath: /etc/n8n-task-runners.json
+              name: config
+              subPath: n8n-task-runners.json
+      volumes:
+        - name: config
+          configMap:
+            name: "{{ .Release.Name }}-runner-config"

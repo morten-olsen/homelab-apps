@@ -13,3 +13,21 @@ spec:
       name: http
   selector:
     app: '{{ .Release.Name }}'
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: '{{ .Release.Name }}-broker'
+  labels:
+    app: '{{ .Release.Name }}-broker'
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 5679
+      protocol: TCP
+      name: http
+  selector:
+    app: '{{ .Release.Name }}'

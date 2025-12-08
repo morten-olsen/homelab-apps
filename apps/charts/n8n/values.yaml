@@ -1,5 +1,11 @@
-image:
-  repository: docker.n8n.io/n8nio/n8n
-  tag: 1.123.1@sha256:cbb838c888f8d849afcb855d34390c6644ebad2c51010a0a12c3b83960a5b3f7
-  pullPolicy: IfNotPresent
+service:
+  image:
+    repository: n8nio/n8n
+    tag: 1.123.1@sha256:cbb838c888f8d849afcb855d34390c6644ebad2c51010a0a12c3b83960a5b3f7
+    pullPolicy: IfNotPresent
+runner:
+  image:
+    repository: n8nio/runners
+    tag: 1.123.1
+    pullPolicy: IfNotPresent
 subdomain: n8n
