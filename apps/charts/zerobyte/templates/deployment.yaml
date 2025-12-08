@@ -37,6 +37,9 @@ spec:
             - mountPath: /data/pictures
               name: pictures
               readOnly: true
+            - mountPath: /data/apps
+              name: apps
+              readOnly: true
       volumes:
         - name: config
           persistentVolumeClaim:
@@ -47,3 +50,6 @@ spec:
         - name: pictures
           persistentVolumeClaim:
             claimName: pictures
+        - name: apps
+          persistentVolumeClaim:
+            claimName: apps-data

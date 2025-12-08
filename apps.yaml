@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: apps-data
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 5Gi # Adjust this to your desired size
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain # Retain the data even if the PV is deleted
+  storageClassName: "manual-app-data"
+  hostPath:
+    path: "/data/volumes/apps" # The specific host path for your 'apps' volume
+    type: DirectoryOrCreate # Ensures the directory exists on the host
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: apps-data
+  namespace: prod # Specify the namespace
+spec:
+  storageClassName: "manual-app-data"
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi # Must match or be less than the PV's capacity
