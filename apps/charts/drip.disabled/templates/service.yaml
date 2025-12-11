@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.service.tcpPortMin }}
+      targetPort: tcp-tunnel-min
+      protocol: TCP
+      name: tcp-tunnel-min
+    - port: {{ .Values.service.tcpPortMax }}
+      targetPort: tcp-tunnel-max
+      protocol: TCP
+      name: tcp-tunnel-max
+  selector:
+    app: "{{ .Release.Name }}"

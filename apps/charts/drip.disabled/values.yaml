@@ -1,0 +1,27 @@
+image:
+  repository: ghcr.io/gouryella/drip
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: drip
+
+service:
+  port: 443
+  tcpPortMin: 20000
+  tcpPortMax: 20100
+
+resources:
+  limits:
+    cpu: 1
+    memory: 512Mi
+
+healthcheck:
+  test:
+    - wget
+    - --no-verbose
+    - --tries=1
+    - --spider
+    - http://localhost:443/health
+  interval: 30s
+  timeout: 3s
+  retries: 3
+  startPeriod: 10s
