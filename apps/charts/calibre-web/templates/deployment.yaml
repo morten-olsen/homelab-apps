@@ -24,6 +24,8 @@ spec:
           env:
             - name: TZ
               value: "{{ .Values.globals.timezone }}"
+            - name: NETWORK_SHARE_MODE
+              value: "true"
             - name: PUID
               value: "1000"
             - name: PGID
@@ -31,7 +33,7 @@ spec:
           volumeMounts:
             - mountPath: /config
               name: data
-            - mountPath: /books
+            - mountPath: /calibre-library
               name: books
       volumes:
         - name: data
