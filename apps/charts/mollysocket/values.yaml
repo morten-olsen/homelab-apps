@@ -1,5 +1,5 @@
 image:
   repository: ghcr.io/mollyim/mollysocket
-  tag: latest@sha256:8d0ad4d130f8ae555b612e9fef62141b631a8476ff25ceb7341edb300f90336f
+  tag: latest@sha256:2a03d57c9c197dd8336200eb9602323a6b3d2daf208ea0e5be31a4d7d5847e45
   pullPolicy: IfNotPresent
 subdomain: mollysocket
