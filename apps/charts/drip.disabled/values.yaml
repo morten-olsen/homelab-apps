@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/gouryella/drip
-  tag: latest
+  tag: latest@sha256:0d99d284818db97b041a98af5eb56a938ea5c91740336113b52e48de1295fefc
   pullPolicy: IfNotPresent
 subdomain: drip
 
