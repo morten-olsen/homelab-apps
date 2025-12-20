@@ -2,12 +2,12 @@ subdomain: penpot
 server:
   image:
     repository: ghcr.io/immich-app/immich-server
-    tag: release
+    tag: release@sha256:e6a6298e67ae077808fdb7d8d5565955f60b0708191576143fc02d30ab1389d1
     pullPolicy: IfNotPresent
 ml:
   image:
     repository: ghcr.io/immich-app/immich-machine-learning
-    tag: release
+    tag: release@sha256:b3deefd1826f113824e9d7bc30d905e7f823535887d03f869330946b6db3b44a
     pullPolicy: IfNotPresent
 valkey:
   image:
