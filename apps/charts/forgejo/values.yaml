@@ -1,0 +1,5 @@
+image:
+  repository: codeberg.org/forgejo/forgejo
+  tag: 13
+  pullPolicy: IfNotPresent
+subdomain: code
