@@ -3,3 +3,5 @@ image:
   tag: 13@sha256:88858e7f592f82d4f650713c7bed8c0cd792d7f71475a7467c5650a31cd2eda9
   pullPolicy: IfNotPresent
 subdomain: code
+globals:
+  environment: prod

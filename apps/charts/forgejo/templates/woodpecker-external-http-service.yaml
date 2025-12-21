@@ -1,0 +1,12 @@
+apiVersion: homelab.mortenolsen.pro/v1
+kind: ExternalHttpService
+metadata:
+  name: "{{ .Release.Name }}-woodpecker"
+
+spec:
+  environment: '{{ .Values.globals.environment }}'
+  subdomain: 'woodpecker'
+  destination:
+    host: 'woodpecker-server.{{ .Release.Namespace }}.svc.cluster.local'
+    port:
+      number: 80
