@@ -38,6 +38,9 @@ spec:
             - mountPath: /media/kids-music
               name: kidsmusic
               readOnly: true
+            - mountPath: /media/pictures/pixel9
+              name: pictures
+              subPath: imports/pixel9
           env:
             - name: PUID
               value: "1000"
@@ -56,3 +59,6 @@ spec:
         - name: kidsmusic
           persistentVolumeClaim:
             claimName: kidsmusic
+        - name: pictures
+          persistentVolumeClaim:
+            claimName: pictures
