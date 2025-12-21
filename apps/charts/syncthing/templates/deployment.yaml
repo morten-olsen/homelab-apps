@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          ports:
+            - name: http
+              containerPort: 8384
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - mountPath: /var/syncthing
+              name: data
+            - mountPath: /media/music
+              name: music
+              readOnly: true
+            - mountPath: /media/kids-music
+              name: kidsmusic
+              readOnly: true
+          env:
+            - name: PUID
+              value: "1000"
+            - name: GUID
+              value: "1000"
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-data"
+        - name: music
+          persistentVolumeClaim:
+            claimName: music
+        - name: kidsmusic
+          persistentVolumeClaim:
+            claimName: kidsmusic

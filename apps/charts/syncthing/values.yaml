@@ -1,0 +1,5 @@
+image:
+  repository: syncthing/syncthing
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: syncthing
