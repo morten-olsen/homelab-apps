@@ -1,3 +1,8 @@
 apiVersion: v2
 version: 1.0.0
 name: forgejo
+dependencies:
+  - name: woodpecker
+    version: 1.0.0
+    repository: https://woodpecker-ci.org/
+
