@@ -1,0 +1,21 @@
+apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
+kind: AuthentikServer
+metadata:
+  name: authentik
+spec:
+  # Reference to a secret containing the PostgreSQL connection URL
+  # The secret must have a key "url" (or specify a different key)
+  postgresSecretRef:
+    name: "{{ .Release.Name }}-authentik"
+    key: url
+  # External hostname for Authentik
+  host: test-auth.olsen.cloud
+  # Optional: Authentik container image
+  # image: ghcr.io/goauthentik/server:latest
+  # Optional: Number of replicas
+  # replicas: 1
+  # Optional: TLS configuration
+  tls:
+    enabled: true
+    secretName: auth-tls
+
