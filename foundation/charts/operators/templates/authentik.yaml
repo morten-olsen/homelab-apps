@@ -13,7 +13,7 @@ spec:
   project: foundation
   source:
     repoURL: https://mortenolsen.pro/homelab-authentik-operator/
-    targetRevision: 0.0.2
+    targetRevision: 0.0.11
     chart: authentik-operator
   syncPolicy:
     automated:

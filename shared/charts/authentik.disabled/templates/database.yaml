@@ -1,6 +1,0 @@
-apiVersion: homelab.mortenolsen.pro/v1
-kind: PostgresDatabase
-metadata:
-  name: '{{ .Release.Name }}-authentik'
-spec:
-  environment: '{{ .Values.globals.environment }}'

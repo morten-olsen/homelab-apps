@@ -5,9 +5,18 @@ metadata:
 spec:
   # Reference to a secret containing the PostgreSQL connection URL
   # The secret must have a key "url" (or specify a different key)
-  postgresSecretRef:
-    name: "{{ .Release.Name }}-authentik"
-    key: url
+  postgresHostSecretRef:
+    name: "{{ .Release.Name }}-pg-connection"
+    key: host
+  postgresUserSecretRef:
+    name: "{{ .Release.Name }}-pg-connection"
+    key: user
+  postgresPasswordSecretRef:
+    name: "{{ .Release.Name }}-pg-connection"
+    key: password
+  postgresNameSecretRef:
+    name: "{{ .Release.Name }}-pg-connection"
+    key: database
   # External hostname for Authentik
   host: test-auth.olsen.cloud
   # Optional: Authentik container image
