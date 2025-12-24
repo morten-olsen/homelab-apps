@@ -1,0 +1,6 @@
+image:
+  repository: vaultwarden/server
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: vaultwarden
+
