@@ -1,5 +1,5 @@
 image:
   repository: blinkospace/blinko
-  tag: latest@sha256:04ad2a67f617e122db98425d39c2d0d901492729b3aee5a7e8c4d351009ee9e9
+  tag: latest@sha256:6db31658e58a0af9d2e15312de995fb3bb3d04db30b2fe500ed4ff0360c57518
   pullPolicy: IfNotPresent
 subdomain: blinko
