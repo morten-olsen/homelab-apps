@@ -1,5 +1,5 @@
 image:
   repository: syncthing/syncthing
-  tag: latest
+  tag: latest@sha256:7ae77d066e9b81d3d8c312b2f9e1a874a5115680bfde90aff5fc9aece694ec93
   pullPolicy: IfNotPresent
 subdomain: syncthing
