@@ -1,0 +1,21 @@
+subdomain: immich
+server:
+  image:
+    repository: ghcr.io/immich-app/immich-server
+    tag: release
+    pullPolicy: IfNotPresent
+ml:
+  image:
+    repository: ghcr.io/immich-app/immich-machine-learning
+    tag: release
+    pullPolicy: IfNotPresent
+valkey:
+  image:
+    repository: valkey/valkey
+    tag: 9.0
+    pullPolicy: IfNotPresent
+postgres:
+  image:
+    repository: pgvector/pgvector
+    tag: pg16
+    pullPolicy: IfNotPresent

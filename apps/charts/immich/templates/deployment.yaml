@@ -1,0 +1,194 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-server"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-server"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-server"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-server"
+          image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
+          imagePullPolicy: "{{ .Values.server.image.pullPolicy }}"
+          env:
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ .Release.Name }}-db-config"
+                  key: url
+            - name: DB_VECTOR_EXTENSION
+              value: pgvector
+            - name: REDIS_HOSTNAME
+              value: "{{ .Release.Name }}-valkey.{{ .Release.Namespace }}.svc.cluster.local"
+            - name: REDIS_HOST
+              value: "{{ .Release.Name }}-valkey.{{ .Release.Namespace }}.svc.cluster.local"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_URL
+              value: "redis://{{ .Release.Name }}-valkey.{{ .Release.Namespace }}.svc.cluster.local:6379"
+            - name: IMMICH_REDIS_HOSTNAME
+              value: "{{ .Release.Name }}-valkey.{{ .Release.Namespace }}.svc.cluster.local"
+            - name: IMMICH_PORT
+              value: "3003"
+            - name: IMMICH_UPLOAD_LOCATION
+              value: /usr/src/app/upload
+            - name: IMMICH_MACHINE_LEARNING_URL
+              value: http://{{ .Release.Name }}-ml.{{ .Release.Namespace }}.svc.cluster.local:3003
+            - name: OAUTH_AUTO_REGISTER
+              value: "true"
+            - name: OAUTH_AUTO_LAUNCH
+              value: "true"
+            - name: OAUTH_BUTTON_TEXT
+              value: "Login with OAuth"
+            - name: OAUTH_ENABLED
+              value: "true"
+            - name: OAUTH_ISSUER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: configuration
+            - name: OAUTH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientId
+            - name: OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-client"
+                  key: clientSecret
+            - name: OAUTH_SCOPE
+              value: "openid profile email"
+            - name: OAUTH_STORAGE_LABEL_CLAIM
+              value: "preferred_username"
+          ports:
+            - name: http
+              containerPort: 3003
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /usr/src/app/upload
+              name: upload
+            - mountPath: /usr/src/app/library
+              name: library
+            - mountPath: /mnt/media/nas
+              name: nas
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+      volumes:
+        - name: upload
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-upload"
+        - name: library
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-library"
+        - name: nas
+          persistentVolumeClaim:
+            claimName: pictures
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-ml"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-ml"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-ml"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-ml"
+          image: "{{ .Values.ml.image.repository }}:{{ .Values.ml.image.tag }}"
+          imagePullPolicy: "{{ .Values.ml.image.pullPolicy }}"
+          env:
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ .Release.Name }}-db-config"
+                  key: url
+            - name: DB_VECTOR_EXTENSION
+              value: pgvector
+            - name: REDIS_HOSTNAME
+              value: "{{ .Release.Name }}-valkey.{{ .Release.Namespace }}.svc.cluster.local"
+            - name: REDIS_HOST
+              value: "{{ .Release.Name }}-valkey.{{ .Release.Namespace }}.svc.cluster.local"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_URL
+              value: "redis://{{ .Release.Name }}-valkey.{{ .Release.Namespace }}.svc.cluster.local:6379"
+            - name: IMMICH_REDIS_HOSTNAME
+              value: "{{ .Release.Name }}-valkey.{{ .Release.Namespace }}.svc.cluster.local"
+            - name: IMMICH_PORT
+              value: "3003"
+            - name: IMMICH_MACHINE_LEARNING_MODEL_PATH
+              value: /cache
+          ports:
+            - name: http
+              containerPort: 3003
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /cache
+              name: model-cache
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+      volumes:
+        - name: model-cache
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-model-cache"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-valkey"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-valkey"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-valkey"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-valkey"
+          image: "{{ .Values.valkey.image.repository }}:{{ .Values.valkey.image.tag }}"
+          imagePullPolicy: "{{ .Values.valkey.image.pullPolicy }}"
+          ports:
+            - name: tcp
+              containerPort: 6379
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: tcp
+          readinessProbe:
+            tcpSocket:
+              port: tcp

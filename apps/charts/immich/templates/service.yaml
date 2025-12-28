@@ -18,9 +18,26 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: "{{ .Release.Name }}-ml"
+  labels:
+    app: "{{ .Release.Name }}-ml"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3003
+      targetPort: 3003
+      protocol: TCP
+      name: http
+  selector:
+    app: "{{ .Release.Name }}-ml"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: "{{ .Release.Name }}"
   labels:
-    app: "{{ .Release.Name }}"
+    app: "{{ .Release.Name }}-server"
 spec:
   type: ClusterIP
   ports:
@@ -29,5 +46,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: "{{ .Release.Name }}"
-
+    app: "{{ .Release.Name }}-server"
