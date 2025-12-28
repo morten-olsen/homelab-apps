@@ -74,6 +74,9 @@ spec:
             - name: http
               containerPort: 3003
               protocol: TCP
+          resources:
+            limits:
+              cpu: "1500m"
           volumeMounts:
             - mountPath: /usr/src/app/upload
               name: upload
@@ -146,6 +149,9 @@ spec:
             - name: http
               containerPort: 3003
               protocol: TCP
+          resources:
+            limits:
+              cpu: "4000m"
           volumeMounts:
             - mountPath: /cache
               name: model-cache
@@ -186,6 +192,9 @@ spec:
             - name: tcp
               containerPort: 6379
               protocol: TCP
+          resources:
+            limits:
+              cpu: "500m"
           livenessProbe:
             tcpSocket:
               port: tcp

@@ -8,4 +8,5 @@ globals:
   domain: olsen.cloud
   timezone: Europe/Amsterdam
   istio:
-    gateway: homelab/prod
+    gateway: istio-system/private
+
