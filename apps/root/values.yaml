@@ -8,5 +8,8 @@ globals:
   domain: olsen.cloud
   timezone: Europe/Amsterdam
   istio:
-    gateway: istio-system/private
+    gateway: shared/private
+    gateways:
+      private: shared/private
+      public: shared/public
 
