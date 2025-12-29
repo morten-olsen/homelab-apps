@@ -8,6 +8,7 @@ spec:
   serverRef:
     name: authentik
     namespace: shared
+  clientId: bytestash
   name: Bytestash
   redirectUris:
     - https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}/api/auth/oidc/callback
