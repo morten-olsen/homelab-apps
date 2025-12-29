@@ -99,7 +99,7 @@ spec:
             claimName: "{{ .Release.Name }}-library"
         - name: nas
           persistentVolumeClaim:
-            claimName: pictures
+            claimName: images
 
 ---
 apiVersion: apps/v1
