@@ -297,6 +297,12 @@ spec:
       labels:
         {{- include "common.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.deployment.serviceAccountName }}
+      serviceAccountName: {{ .Values.deployment.serviceAccountName | replace "{release}" .Release.Name | replace "{fullname}" (include "common.fullname" .) }}
+      {{- end }}
+      {{- if .Values.deployment.hostNetwork }}
+      hostNetwork: {{ .Values.deployment.hostNetwork }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -321,6 +327,25 @@ spec:
       volumes:
         {{- include "common.volumes" . | nindent 8 }}
       {{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Full ServiceAccount resource
+*/}}
+{{- define "common.serviceAccount" -}}
+{{- if .Values.serviceAccount }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ if .Values.serviceAccount.name }}{{ .Values.serviceAccount.name }}{{ else }}{{ include "common.fullname" . }}{{ end }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+{{- if .Values.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml .Values.serviceAccount.annotations | nindent 4 }}
+{{- end }}
 {{- end }}
 {{- end }}
 

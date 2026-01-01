@@ -1,11 +1,1 @@
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: '{{ .Release.Name }}-data'
-spec:
-  accessModes:
-    - 'ReadWriteOnce'
-  resources:
-    requests:
-      storage: '1Gi'
-  storageClassName: '{{ .Values.globals.environment }}'
+{{ include "common.pvc" . }}

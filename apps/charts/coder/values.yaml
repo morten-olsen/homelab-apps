@@ -2,4 +2,70 @@ image:
   repository: ghcr.io/coder/coder
   tag: v2.29.1@sha256:19b3ecd02510b4ee91ba488c61a3f40a6c164c9aeef38999c855e55fd653097c
   pullPolicy: IfNotPresent
+
 subdomain: coder
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  serviceAccountName: "{release}-serviceaccount"  # Will be templated
+
+# Container configuration
+container:
+  port: 7080
+  healthProbe:
+    type: tcpSocket
+    port: http  # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /home/coder/.config
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+# Environment variables
+env:
+  CODER_HTTP_ADDRESS: "0.0.0.0:7080"
+  CODER_OIDC_ALLOWED_GROUPS: admin
+  CODER_OIDC_GROUP_FIELD: groups
+  CODER_ACCESS_URL:
+    value: "https://{subdomain}.{domain}"
+  CODER_OIDC_ICON_URL: "https://authentik.olsen.cloud/static/dist/assets/icons/icon.png"
+  CODER_DISABLE_PASSWORD_AUTH: "true"
+  CODER_OAUTH2_GITHUB_ALLOW_SIGNUPS: "false"
+  CODER_OIDC_SIGN_IN_TEXT: "Sign in with OIDC"
+  CODER_OIDC_SCOPES: "openid,profile,email,offline_access"
+  CODER_OIDC_ISSUER_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-client"
+        key: configurationIssuer
+  CODER_OIDC_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-client"
+        key: clientId
+  CODER_OIDC_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-client"
+        key: clientSecret
