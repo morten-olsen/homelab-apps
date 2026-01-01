@@ -2,4 +2,49 @@ image:
   repository: crocodilestick/calibre-web-automated
   tag: latest@sha256:577e846f104fd21453ef306eefb4a95dd95b3b9ddd2463a150944494284da0fd
   pullPolicy: IfNotPresent
+
 subdomain: calibre-web
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 8083
+  healthProbe:
+    type: tcpSocket
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /config
+    persistentVolumeClaim: data  # Will be prefixed with release name
+  - name: books
+    mountPath: /calibre-library
+    persistentVolumeClaim: books  # External PVC, used as-is
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# Environment variables
+env:
+  NETWORK_SHARE_MODE: "true"
+  PUID: "1000"
+  PGID: "1000"
