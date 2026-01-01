@@ -2,4 +2,60 @@ image:
   repository: docker.io/jellyfin/jellyfin
   tag: latest@sha256:6d819e9ab067efcf712993b23455cc100ee5585919bb297ea5a109ac00cb626e
   pullPolicy: IfNotPresent
+
 subdomain: jellyfin
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 8096
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  targetPort: 8096
+  type: ClusterIP
+
+# OIDC client
+oidc:
+  enabled: true
+  redirectUris:
+    - "/sso/OID/redirect/Authentik"
+
+# Volume configuration
+volumes:
+  - name: config
+    mountPath: /config
+    persistentVolumeClaim: config
+  - name: movies
+    mountPath: /media/movies
+    persistentVolumeClaim: movies # External PVC (not prefixed)
+  - name: tvshows
+    mountPath: /media/tv-shows
+    persistentVolumeClaim: tvshows # External PVC (not prefixed)
+  - name: music
+    mountPath: /media/music
+    persistentVolumeClaim: music # External PVC (not prefixed)
+  - name: kidsmusic
+    mountPath: /media/kids-music
+    persistentVolumeClaim: kidsmusic # External PVC (not prefixed)
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: config
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
