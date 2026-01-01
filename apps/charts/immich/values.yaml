@@ -12,7 +12,7 @@ ml:
 valkey:
   image:
     repository: valkey/valkey
-    tag: 9.0
+    tag: 9-alpine@sha256:c106a0c03bcb23cbdf9febe693114cb7800646b11ca8b303aee7409de005faa8
     pullPolicy: IfNotPresent
 postgres:
   image:
