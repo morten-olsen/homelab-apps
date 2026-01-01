@@ -1,0 +1,15 @@
+
+apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
+kind: AuthentikClient
+metadata:
+  name: "{{ .Release.Name }}"
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  serverRef:
+    name: authentik
+    namespace: shared
+  name: "{{ .Release.Name }}"
+  redirectUris:
+    - "https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}/audiobookshelf/auth/openid/callback"
+    - "https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}/audiobookshelf/auth/openid/mobile-redirect"
+
