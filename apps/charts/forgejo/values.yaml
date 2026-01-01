@@ -2,6 +2,102 @@ image:
   repository: codeberg.org/forgejo/forgejo
   tag: 13@sha256:88858e7f592f82d4f650713c7bed8c0cd792d7f71475a7467c5650a31cd2eda9
   pullPolicy: IfNotPresent
+
 subdomain: code
-globals:
-  environment: prod
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration - multiple ports
+container:
+  ports:
+    - name: http
+      port: 3000
+      protocol: TCP
+    - name: ssh
+      port: 22
+      protocol: TCP
+  healthProbe:
+    type: tcpSocket
+    port: http  # Use named port
+
+# Service configuration - multiple services
+service:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+      type: ClusterIP
+    - name: ssh
+      port: 2206
+      targetPort: 22
+      protocol: TCP
+      type: LoadBalancer
+      serviceName: ssh  # Will be prefixed with release name: {release}-ssh
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+  servicePort: 80  # Route to the http service port
+
+# Environment variables
+env:
+  USER_UID: "1000"
+  USER_GID: "1000"
+  FORGEJO__server__SSH_DOMAIN:
+    value: "ssh-{subdomain}.{domain}"  # Will be templated: ssh-{subdomain}.{domain}
+  FORGEJO__server__SSH_PORT: "2206"
+  FORGEJO__service__REQUIRE_EXTERNAL_REGISTRATION_PASSWORD: "true"
+  FORGEJO__service__ENABLE_PASSWORD_SIGNIN_FORM: "false"
+  FORGEJO__service__DEFAULT_KEEP_EMAIL_PRIVATE: "true"
+  FORGEJO__service__DEFAULT_USER_IS_RESTRICTED: "true"
+  FORGEJO__service__DEFAULT_USER_VISIBILITY: "private"
+  FORGEJO__service__DEFAULT_ORG_VISIBILITY: "private"
+  FORGEJO__service__ALLOW_ONLY_EXTERNAL_REGISTRATION: "true"
+  FORGEJO__other__SHOW_FOOTER_POWERED_BY: "false"
+  FORGEJO__other__SHOW_FOOTER_TEMPLATE_LOAD_TIME: "false"
+  FORGEJO__other__SHOW_FOOTER_VERSION: "false"
+  FORGEJO__repository__ENABLE_PUSH_CREATE_USER: "true"
+  FORGEJO__repository__ENABLE_PUSH_CREATE_ORG: "true"
+  FORGEJO__openid__ENABLE_OPENID_SIGNIN: "false"
+  FORGEJO__openid__ENABLE_OPENID_SIGNUP: "false"
+  FORGEJO__database__DB_TYPE: postgres
+  FORGEJO__database__DB_PORT: "5432"
+  FORGEJO__database__NAME:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-pg-connection"
+        key: database
+  FORGEJO__database__HOST:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-pg-connection"
+        key: host
+  FORGEJO__database__USER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-pg-connection"
+        key: user
+  FORGEJO__database__PASSWD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-pg-connection"
+        key: password

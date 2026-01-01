@@ -60,10 +60,13 @@ Recreate
 {{- end }}
 
 {{/*
-Standard container port
+Standard container port (for backward compatibility)
 */}}
 {{- define "common.containerPort" -}}
-{{- if .Values.container.port }}
+{{- if .Values.container.ports }}
+{{- $primaryPort := first .Values.container.ports }}
+{{- $primaryPort.port }}
+{{- else if .Values.container.port }}
 {{- .Values.container.port }}
 {{- else }}
 80
@@ -71,13 +74,61 @@ Standard container port
 {{- end }}
 
 {{/*
-Standard service port
+Container ports list
+*/}}
+{{- define "common.containerPorts" -}}
+{{- if .Values.container.ports }}
+{{- range .Values.container.ports }}
+- name: {{ .name }}
+  containerPort: {{ .port }}
+  protocol: {{ .protocol | default "TCP" }}
+{{- end }}
+{{- else if .Values.container.port }}
+- name: http
+  containerPort: {{ .Values.container.port }}
+  protocol: TCP
+{{- else }}
+- name: http
+  containerPort: 80
+  protocol: TCP
+{{- end }}
+{{- end }}
+
+{{/*
+Standard service port (for backward compatibility)
 */}}
 {{- define "common.servicePort" -}}
-{{- if .Values.service.port }}
+{{- if .Values.service.ports }}
+{{- $primaryService := first .Values.service.ports }}
+{{- $primaryService.port }}
+{{- else if .Values.service.port }}
 {{- .Values.service.port }}
 {{- else }}
 80
+{{- end }}
+{{- end }}
+
+{{/*
+Service ports list
+*/}}
+{{- define "common.servicePorts" -}}
+{{- if .Values.service.ports }}
+{{- range .Values.service.ports }}
+- port: {{ .port }}
+  targetPort: {{ .targetPort | default .port }}
+  protocol: {{ .protocol | default "TCP" }}
+  name: {{ .name }}
+{{- end }}
+{{- else if .Values.service.port }}
+- port: {{ .Values.service.port }}
+  targetPort: {{ include "common.containerPort" . }}
+  protocol: TCP
+  name: http
+{{- else }}
+- port: 80
+  targetPort: {{ include "common.containerPort" . }}
+  protocol: TCP
+  name: http
 {{- end }}
 {{- end }}
 
@@ -86,13 +137,22 @@ Standard health probe
 */}}
 {{- define "common.healthProbe" -}}
 {{- if .Values.container.healthProbe }}
+{{- $probePort := .Values.container.healthProbe.port | default (include "common.containerPort" .) }}
 {{- if eq .Values.container.healthProbe.type "httpGet" }}
 httpGet:
   path: {{ .Values.container.healthProbe.path | default "/" }}
-  port: {{ include "common.containerPort" . }}
+  {{- if regexMatch "^[0-9]+$" $probePort }}
+  port: {{ $probePort }}
+  {{- else }}
+  port: {{ $probePort }}
+  {{- end }}
 {{- else if eq .Values.container.healthProbe.type "tcpSocket" }}
 tcpSocket:
-  port: {{ include "common.containerPort" . }}
+  {{- if regexMatch "^[0-9]+$" $probePort }}
+  port: {{ $probePort }}
+  {{- else }}
+  port: {{ $probePort }}
+  {{- end }}
 {{- end }}
 {{- if .Values.container.healthProbe.initialDelaySeconds }}
 initialDelaySeconds: {{ .Values.container.healthProbe.initialDelaySeconds }}
@@ -174,16 +234,18 @@ Standard environment variables
   valueFrom:
     {{- if $value.valueFrom.secretKeyRef }}
     secretKeyRef:
-      name: {{ $value.valueFrom.secretKeyRef.name }}
+      name: {{ $value.valueFrom.secretKeyRef.name | replace "{release}" $.Release.Name | replace "{namespace}" $.Release.Namespace | replace "{fullname}" (include "common.fullname" $) }}
       key: {{ $value.valueFrom.secretKeyRef.key }}
     {{- else if $value.valueFrom.configMapKeyRef }}
     configMapKeyRef:
-      name: {{ $value.valueFrom.configMapKeyRef.name }}
+      name: {{ $value.valueFrom.configMapKeyRef.name | replace "{release}" $.Release.Name | replace "{namespace}" $.Release.Namespace | replace "{fullname}" (include "common.fullname" $) }}
       key: {{ $value.valueFrom.configMapKeyRef.key }}
     {{- end }}
+  {{- else if $value.value }}
+  value: {{ $value.value | replace "{release}" $.Release.Name | replace "{namespace}" $.Release.Namespace | replace "{fullname}" (include "common.fullname" $) | replace "{subdomain}" $.Values.subdomain | replace "{domain}" $.Values.globals.domain | replace "{timezone}" $.Values.globals.timezone | quote }}
   {{- end }}
   {{- else }}
-  value: {{ $value | quote }}
+  value: {{ $value | replace "{release}" $.Release.Name | replace "{namespace}" $.Release.Namespace | replace "{fullname}" (include "common.fullname" $) | replace "{subdomain}" $.Values.subdomain | replace "{domain}" $.Values.globals.domain | replace "{timezone}" $.Values.globals.timezone | quote }}
   {{- end }}
 {{- end }}
 {{- end }}
@@ -240,9 +302,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           ports:
-            - name: http
-              containerPort: {{ include "common.containerPort" . }}
-              protocol: TCP
+{{ include "common.containerPorts" . | indent 12 }}
           {{- if .Values.container.healthProbe }}
           livenessProbe:
 {{ include "common.healthProbe" . | indent 12 }}
@@ -265,10 +325,31 @@ spec:
 {{- end }}
 
 {{/*
-Full Service resource
+Full Service resource(s) - supports multiple services
 */}}
 {{- define "common.service" -}}
 {{- if .Values.service }}
+{{- if .Values.service.ports }}
+{{- $firstPort := index .Values.service.ports 0 }}
+{{- range $index, $port := .Values.service.ports }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ if $port.serviceName }}{{ include "common.fullname" $ }}-{{ $port.serviceName }}{{ else }}{{ include "common.fullname" $ }}{{ if and (gt $index 0) }}-{{ $port.name }}{{ end }}{{ end }}
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+spec:
+  type: {{ $port.type | default $.Values.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ $port.port }}
+      targetPort: {{ $port.targetPort | default $port.port }}
+      protocol: {{ $port.protocol | default "TCP" }}
+      name: {{ $port.name }}
+  selector:
+    {{- include "common.selectorLabels" $ | nindent 4 }}
+{{- end }}
+{{- else }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -278,12 +359,10 @@ metadata:
 spec:
   type: {{ .Values.service.type | default "ClusterIP" }}
   ports:
-    - port: {{ include "common.servicePort" . }}
-      targetPort: {{ include "common.containerPort" . }}
-      protocol: TCP
-      name: http
+{{ include "common.servicePorts" . | indent 4 }}
   selector:
     {{- include "common.selectorLabels" . | nindent 4 }}
+{{- end }}
 {{- end }}
 {{- end }}
 
@@ -337,7 +416,11 @@ spec:
         - destination:
             host: {{ include "common.fullname" . }}
             port:
+              {{- if .Values.virtualService.servicePort }}
+              number: {{ .Values.virtualService.servicePort }}
+              {{- else }}
               number: {{ include "common.servicePort" . }}
+              {{- end }}
 
 ---
 {{- end }}
@@ -360,7 +443,11 @@ spec:
         - destination:
             host: {{ include "common.fullname" . }}
             port:
+              {{- if .Values.virtualService.servicePort }}
+              number: {{ .Values.virtualService.servicePort }}
+              {{- else }}
               number: {{ include "common.servicePort" . }}
+              {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
