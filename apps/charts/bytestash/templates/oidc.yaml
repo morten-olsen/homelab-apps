@@ -1,15 +1,1 @@
-
-apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
-kind: AuthentikClient
-metadata:
-  name: "{{ .Release.Name }}"
-  namespace: "{{ .Release.Namespace }}"
-spec:
-  serverRef:
-    name: authentik
-    namespace: shared
-  clientId: bytestash
-  name: Bytestash
-  redirectUris:
-    - https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}/api/auth/oidc/callback
-
+{{ include "common.oidc" . }}

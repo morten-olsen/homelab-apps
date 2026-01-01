@@ -1,4 +1,69 @@
-subdomain: bytestash
 image:
   repository: ghcr.io/jordan-dalby/bytestash
   tag: 1.5.9@sha256:9c17b5510ca45c976fe23b0d4705ad416aa58d4bf756a70e03ef1f08cf7801fd
+  pullPolicy: IfNotPresent
+
+subdomain: bytestash
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 5000
+  healthProbe:
+    type: tcpSocket
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /data/snippets
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# OIDC/Authentik configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/api/auth/oidc/callback"
+
+# Environment variables
+env:
+  ALLOW_NEW_ACCOUNTS: "true"
+  DISABLE_INTERNAL_ACCOUNTS: "true"
+  OIDC_ENABLED: "true"
+  OIDC_DISPLAY_NAME: OIDC
+  OIDC_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-client"
+        key: clientId
+  OIDC_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-client"
+        key: clientSecret
+  OIDC_ISSUER_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-client"
+        key: configurationIssuer
