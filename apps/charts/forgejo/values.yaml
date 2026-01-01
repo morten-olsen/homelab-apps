@@ -141,6 +141,8 @@ actions:
     storage:
       size: 10Gi
     labels:
-      - "ubuntu-latest:docker://gitea/runner-images:ubuntu-latest-full"
+      - "ubuntu-latest:docker://gitea/runner-images:ubuntu-latest-slim"
+      - "ubuntu-slim-latest:docker://gitea/runner-images:ubuntu-latest-slim"
+      - "ubuntu-full-latest:docker://gitea/runner-images:ubuntu-latest-full"
       - "docker-cli:docker://code.forgejo.org/oci/docker:cli"
       - "node-bookworm:docker://code.forgejo.org/oci/node:20-bookworm"
