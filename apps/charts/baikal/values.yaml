@@ -2,4 +2,46 @@ image:
   repository: docker.io/ckulka/baikal
   tag: 0.10.1-nginx@sha256:434bdd162247cc6aa6f878c9b4dce6216e39e79526b980453b13812d5f8ebf4b
   pullPolicy: IfNotPresent
+
 subdomain: baikal
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 80
+  healthProbe:
+    type: tcpSocket
+    port: http  # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /var/www/baikal/Specific
+    persistentVolumeClaim: data
+  - name: config
+    mountPath: /var/www/baikal/config
+    persistentVolumeClaim: config
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+  - name: config
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
