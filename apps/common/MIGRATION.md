@@ -30,7 +30,7 @@ name: your-app
 dependencies:
   - name: common
     version: 1.0.0
-    repository: file://../common
+    repository: file://../../common
 ```
 
 ### Step 2: Restructure values.yaml
@@ -196,6 +196,8 @@ Build the chart dependencies:
 cd apps/charts/your-app
 helm dependency build
 ```
+
+**Note:** The common library is located at `apps/common/`, so charts in `apps/charts/` use `repository: file://../../common`.
 
 ### Step 5: Test the Migration
 
@@ -653,9 +655,11 @@ externalSecrets:
 **Solution:**
 ```bash
 cd apps/charts/your-app
-rm -rf charts
+rm -rf charts Chart.lock
 helm dependency build
 ```
+
+**Note:** After changing the repository path in `Chart.yaml` (e.g., from `file://../common` to `file://../../common`), you must delete `Chart.lock` and rebuild dependencies.
 
 ### Issue: Template Syntax Errors
 

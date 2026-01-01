@@ -13,7 +13,7 @@ name: your-app
 dependencies:
   - name: common
     version: 1.0.0
-    repository: file://../common
+    repository: file://../../common
 ```
 
 Then run `helm dependency build` to download the dependency.

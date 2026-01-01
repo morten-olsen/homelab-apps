@@ -73,7 +73,7 @@ env:
 
 ## Extending Placeholders
 
-To add more placeholders, edit `apps/charts/common/templates/_helpers.tpl` in the `common.env` helper:
+To add more placeholders, edit `apps/common/templates/_helpers.tpl` in the `common.env` helper:
 
 ### Current Implementation
 
