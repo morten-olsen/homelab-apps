@@ -2,4 +2,66 @@ image:
   repository: ghcr.io/advplyr/audiobookshelf
   tag: 2.32.1@sha256:a52dc5db694a5bf041ce38f285dd6c6a660a4b1b21e37ad6b6746433263b2ae5
   pullPolicy: IfNotPresent
+
 subdomain: audiobookshelf
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 80
+  healthProbe:
+    type: httpGet
+    path: /ping
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: config
+    mountPath: /config
+    persistentVolumeClaim: config  # Will be prefixed with release name in template
+  - name: metadata
+    mountPath: /metadata
+    persistentVolumeClaim: metadata  # Will be prefixed with release name in template
+  - name: audiobooks
+    mountPath: /audiobooks
+    persistentVolumeClaim: books
+  - name: podcasts
+    mountPath: /podcasts
+    persistentVolumeClaim: podcasts
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: config
+    size: 1Gi
+  - name: metadata
+    size: 1Gi
+
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+# OIDC/Authentik configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/audiobookshelf/auth/openid/callback"
+    - "/audiobookshelf/auth/openid/mobile-redirect"
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
