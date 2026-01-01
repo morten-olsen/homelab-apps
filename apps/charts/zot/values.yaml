@@ -1,4 +1,4 @@
 subdomain: zot
 image:
   repository: ghcr.io/project-zot/zot
-  tag: v2.1.11@sha256:3173a595c5bbb62dcce0bc13c6d86d4dbfbaae3167fb0dacc79d0b50eb494783
+  tag: v2.1.13@sha256:d3cde44fa759bf7f3d25b479e2b33ed5d4d3f1d6fdad01b204d15a9c3af2db3c
