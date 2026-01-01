@@ -203,20 +203,27 @@ env:
 
 The `PostgresDatabase` resource automatically provisions PostgreSQL databases.
 
+**New Version (Recommended):**
+
 Create `templates/database.yaml`:
 ```yaml
-apiVersion: homelab.mortenolsen.pro/v1
-kind: PostgresDatabase
-metadata:
-  name: '{{ .Release.Name }}'
-spec:
-  environment: '{{ .Values.globals.environment }}'
+{{ include "common.database" . }}
 ```
+
+Add to `values.yaml`:
+```yaml
+database:
+  enabled: true
+```
+
+**Legacy Version (Deprecated):**
+
+The legacy `homelab.mortenolsen.pro/v1` API version is deprecated. For new charts, use the common library template which uses the new `postgres.homelab.mortenolsen.pro/v1` API version.
 
 **What it does:**
 - Creates a PostgreSQL database with the same name as your release
 - Creates a user with appropriate permissions
-- Generates a Kubernetes secret named `{{ .Release.Name }}-database` containing:
+- Generates a Kubernetes secret named `{{ .Release.Name }}-connection` containing:
   - `url`: Complete PostgreSQL connection URL
   - `host`: Database hostname
   - `port`: Database port
@@ -230,9 +237,11 @@ env:
   - name: DATABASE_URL
     valueFrom:
       secretKeyRef:
-        name: "{{ .Release.Name }}-database"
+        name: "{{ .Release.Name }}-connection"
         key: url
 ```
+
+**Note:** The secret name changed from `{release}-pg-connection` (legacy) to `{release}-connection` (new version). The common library template handles this automatically.
 
 ### 3. Secret Generation
 

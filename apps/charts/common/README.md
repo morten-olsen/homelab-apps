@@ -33,6 +33,8 @@ The library provides full resource templates that can be included directly:
 - `common.virtualService` - Full VirtualService resources (public + private)
 - `common.dns` - Full DNSRecord resource
 - `common.oidc` - Full AuthentikClient resource
+- `common.database` - Full PostgresDatabase resource
+- `common.externalSecrets` - Full ExternalSecret resources with Password generators
 
 ## Usage Example
 

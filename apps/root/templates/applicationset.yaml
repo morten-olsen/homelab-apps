@@ -26,11 +26,7 @@ spec:
           - values.yaml
           values: |
             globals:
-              environment: {{ .Values.globals.environment }}
-              domain: {{ .Values.globals.domain }}
-              timezone: {{ .Values.globals.timezone }}
-              istio:
-                gateway: {{ .Values.globals.istio.gateway }}
+{{ .Values.globals | toYaml | indent 14 }}
       destination:
         server: https://kubernetes.default.svc
         namespace: prod

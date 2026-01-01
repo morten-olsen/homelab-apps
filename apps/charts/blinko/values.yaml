@@ -16,7 +16,7 @@ container:
   port: 1111
   healthProbe:
     type: tcpSocket
-    port: http  # Use named port
+    port: http # Use named port
 
 # Service configuration
 service:
@@ -33,6 +33,28 @@ volumes:
 persistentVolumeClaims:
   - name: data
     size: 1Gi
+
+# OIDC client
+oidc:
+  enabled: true
+  redirectUris:
+    - "/api/auth/callback/authentik"
+
+# Database configuration
+database:
+  enabled: true
+
+# External Secrets configuration
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: betterauth
+        length: 64
+        allowRepeat: true  # Required for longer passwords
+        noUpper: false
+        encoding: hex  # hex encoding for the secret
+        secretKeys:
+          - betterauth  # Use this key name in the secret instead of default "password"
 
 # VirtualService configuration
 virtualService:
@@ -56,5 +78,5 @@ env:
   DATABASE_URL:
     valueFrom:
       secretKeyRef:
-        name: "{release}-pg-connection"
+        name: "{release}-connection"
         key: url

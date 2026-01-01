@@ -7,6 +7,10 @@ globals:
   environment: prod
   domain: olsen.cloud
   timezone: Europe/Amsterdam
+  database:
+    ref:
+      name: postgres
+      namespace: shared
   istio:
     gateway: shared/private
     gateways:

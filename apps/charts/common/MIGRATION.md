@@ -90,6 +90,16 @@ virtualService:
     public: true
     private: true
 
+# OIDC client configuration (if applicable)
+oidc:
+  enabled: true
+  redirectUris:
+    - "/api/auth/callback/authentik"
+
+# Database configuration (if applicable)
+database:
+  enabled: true
+
 # Environment variables
 env:
   MY_VAR: "value"
@@ -147,6 +157,36 @@ Replace your template files with simple includes:
 ```yaml
 {{ include "common.oidc" . }}
 ```
+
+#### database.yaml (if applicable)
+**Before:** ~10 lines  
+**After:**
+```yaml
+{{ include "common.database" . }}
+```
+
+#### secret.yaml (if using External Secrets)
+**Before:** ~10 lines (GenerateSecret)  
+**After (recommended - split files for correct ordering):**
+
+Create two files:
+
+`templates/secret-password-generators.yaml`:
+```yaml
+{{ include "common.externalSecrets.passwordGenerators" . }}
+```
+
+`templates/secret-external-secrets.yaml`:
+```yaml
+{{ include "common.externalSecrets.externalSecrets" . }}
+```
+
+**Alternative (single file):**
+```yaml
+{{ include "common.externalSecrets" . }}
+```
+
+**Note:** Splitting into separate files ensures Password generators are created before ExternalSecrets, which prevents sync errors.
 
 ### Step 4: Update Dependencies
 
@@ -274,6 +314,44 @@ volumes:
     persistentVolumeClaim: books  # Uses PVC name as-is (not prefixed)
 ```
 
+### External Secrets (Password Generation)
+
+```yaml
+# External Secrets configuration
+externalSecrets:
+  - name: "{release}-secrets"  # Secret name (supports placeholders)
+    passwords:
+      - name: betterauth        # Generator name (used in generator resource name)
+        length: 64               # Password length (default: 32)
+        allowRepeat: true        # Allow repeated characters (default: false)
+                                 # Required for passwords longer than ~50 characters
+        noUpper: false           # Disable uppercase (default: false)
+        encoding: hex            # Encoding format: raw (default), hex, base64, base64url, base32
+        secretKeys:              # Required: sets the key name in the secret
+          - betterauth           # Without this, the key defaults to "password"
+      - name: apitoken           # Generator name
+        length: 32
+        allowRepeat: false       # Can be false for shorter passwords
+        secretKeys:              # Required: sets the key name in the secret
+          - apitoken             # Without this, the key defaults to "password"
+```
+
+**Important:** For passwords longer than approximately 50 characters, you must set `allowRepeat: true`. The default character set (uppercase, lowercase, digits) doesn't have enough unique characters to generate very long passwords without repeats.
+
+**Multiple secrets:**
+
+```yaml
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: password
+        length: 32
+  - name: "{release}-api-keys"
+    passwords:
+      - name: apikey
+        length: 64
+```
+
 ## Available Placeholders
 
 See [TEMPLATING.md](./TEMPLATING.md) for complete placeholder documentation.
@@ -325,15 +403,246 @@ See [TEMPLATING.md](./TEMPLATING.md) for complete placeholder documentation.
 - Secret references use `{release}` placeholder
 - Cleaner, more maintainable values.yaml
 
+## Database Configuration
+
+The common library supports the new PostgreSQL database resource (API version `postgres.homelab.mortenolsen.pro/v1`).
+
+### Enabling Database Support
+
+Add to your `values.yaml`:
+
+```yaml
+# Database configuration
+database:
+  enabled: true
+```
+
+### Database Template
+
+Create `templates/database.yaml`:
+
+```yaml
+{{ include "common.database" . }}
+```
+
+### Generated Secret
+
+The PostgresDatabase resource creates a secret named `{release}-connection` containing:
+- `url` - Complete PostgreSQL connection URL
+- `host` - Database hostname
+- `port` - Database port
+- `database` - Database name
+- `username` - Database username
+- `password` - Database password
+
+### Using Database Secrets
+
+Reference the database secret in your environment variables:
+
+```yaml
+env:
+  DATABASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url
+  DB_HOST:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: host
+```
+
+### Global Configuration
+
+The database resource requires global configuration in `apps/root/values.yaml`:
+
+```yaml
+globals:
+  database:
+    ref:
+      name: postgres
+      namespace: shared
+```
+
+### Migration from Legacy PostgresDatabase
+
+If migrating from the legacy `homelab.mortenolsen.pro/v1` PostgresDatabase:
+
+1. **Update API version**: Changed from `homelab.mortenolsen.pro/v1` to `postgres.homelab.mortenolsen.pro/v1`
+2. **Update spec**: Changed from `environment` to `clusterRef` with `name` and `namespace`
+3. **Update secret name**: Changed from `{release}-pg-connection` to `{release}-connection`
+4. **Add namespace**: Metadata now includes `namespace: {{ .Release.Namespace }}`
+
+The common library template handles all of this automatically.
+
+### Migrating Database from Old Server to New Server
+
+When migrating databases from the old PostgreSQL server (`prod-postgres-cluster-0` in `homelab` namespace) to the new server (`postgres-statefulset-0` in `shared` namespace), use the migration script.
+
+#### Database Naming Convention
+
+Database names follow the pattern `{namespace}_{name}` where:
+- `{namespace}` is the Kubernetes namespace (default: `prod`)
+- `{name}` is the application name (release name)
+
+**Examples:**
+- `prod_blinko` - blinko app in prod namespace
+- `prod_gitea` - gitea app in prod namespace
+- `shared_authentik-db` - authentik app in shared namespace
+
+#### Using the Migration Script
+
+The migration script is located at `scripts/migrate_database.py` and handles:
+- Dumping the database from the old server
+- Restoring to the new server
+- Fixing permissions and ownership automatically
+
+**Basic Usage:**
+```bash
+./scripts/migrate_database.py <source_db_name> <dest_db_name>
+```
+
+**Example:**
+```bash
+# Migrate prod_blinko database (same name on both servers)
+./scripts/migrate_database.py prod_blinko prod_blinko
+```
+
+**With Different Database Names:**
+```bash
+# Migrate from old_name to new_name
+./scripts/migrate_database.py old_name new_name
+```
+
+**With Custom PostgreSQL Users:**
+```bash
+# If the PostgreSQL users differ from defaults
+./scripts/migrate_database.py prod_blinko prod_blinko \
+  --source-user homelab \
+  --dest-user postgres
+```
+
+**Overwriting Existing Data:**
+```bash
+# Use --clean flag to drop existing objects before restoring
+# WARNING: This will DELETE all existing data in the destination database!
+./scripts/migrate_database.py prod_blinko prod_blinko --clean
+```
+
+#### Behavior with Existing Databases
+
+**Without `--clean` flag:**
+- The script will attempt to restore objects to the destination database
+- If tables/objects already exist, `pg_restore` may:
+  - Fail with errors (e.g., "relation already exists")
+  - Cause data conflicts (duplicate key violations)
+  - Partially restore data
+- **This will NOT automatically overwrite existing data**
+
+**With `--clean` flag:**
+- Drops all existing objects (tables, sequences, functions, etc.) before restoring
+- **WARNING: This will DELETE all existing data in the destination database**
+- Use this when you want to completely replace the destination database with source data
+- Recommended for initial migrations or when you're sure you want to overwrite
+
+**Best Practice:**
+- For initial migrations: Use `--clean` to ensure a clean restore
+- For updates/re-syncs: Use `--clean` only if you're certain you want to replace all data
+- For incremental updates: Consider using application-specific sync mechanisms instead
+
+#### Prerequisites
+
+1. **Destination database must exist** - The script will verify but not create the database
+2. **Both pods must be running** - The script checks this automatically
+3. **Source database must exist** - The script verifies this before starting
+
+#### What the Script Does
+
+1. Verifies both PostgreSQL pods are running
+2. Checks that source and destination databases exist
+3. Dumps the source database using `pg_dump` (custom format)
+4. Restores to the destination database using `pg_restore`
+5. Automatically fixes permissions:
+   - Grants USAGE and CREATE on all schemas to the database user
+   - Changes schema ownership to the database user
+   - Grants ALL privileges on all tables and sequences
+   - Sets default privileges for future objects
+
+#### Default Configuration
+
+The script uses these defaults:
+- **Source server**: `prod-postgres-cluster-0` in `homelab` namespace
+- **Source user**: `homelab`
+- **Destination server**: `postgres-statefulset-0` in `shared` namespace
+- **Destination user**: `postgres`
+
+#### Troubleshooting
+
+**Error: "role does not exist"**
+- Check the PostgreSQL user name with: `kubectl exec -n <namespace> <pod> -c <container> -- env | grep POSTGRES_USER`
+- Use `--source-user` or `--dest-user` flags to specify correct users
+
+**Error: "database does not exist"**
+- Create the destination database manually before running the script
+- Verify database names match the `{namespace}_{name}` convention
+
+**Error: "permission denied for schema"**
+- The script should fix this automatically
+- If issues persist, manually grant permissions:
+  ```sql
+  GRANT USAGE ON SCHEMA <schema_name> TO <db_user>;
+  GRANT CREATE ON SCHEMA <schema_name> TO <db_user>;
+  ALTER SCHEMA <schema_name> OWNER TO <db_user>;
+  ```
+
 ## Handling Legacy Resources
 
-Some charts have legacy resources that should be kept as-is:
+Some charts may still have legacy resources that should be kept as-is:
 
-- **OidcClient** (legacy) - Keep existing `client.yaml` template
-- **PostgresDatabase** (legacy) - Keep existing `database.yaml` template
-- **GenerateSecret** - Keep existing `secret.yaml` template
+- **OidcClient** (legacy `homelab.mortenolsen.pro/v1`) - Use `common.oidc` for new AuthentikClient instead
+- **PostgresDatabase** (legacy `homelab.mortenolsen.pro/v1`) - Use `common.database` for new PostgresDatabase instead
+- **GenerateSecret** (legacy `homelab.mortenolsen.pro/v1`) - Use `common.externalSecrets` for External Secrets instead
 
-These will be migrated separately when the common library adds support for them.
+### Migrating from GenerateSecret to External Secrets
+
+**Before (GenerateSecret):**
+```yaml
+# templates/secret.yaml
+apiVersion: homelab.mortenolsen.pro/v1
+kind: GenerateSecret
+metadata:
+  name: '{{ .Release.Name }}-secrets'
+spec:
+  fields:
+    - name: betterauth
+      encoding: base64
+      length: 64
+```
+
+**After (External Secrets):**
+```yaml
+# values.yaml
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: betterauth
+        length: 64
+        allowRepeat: true  # Required for passwords >50 chars
+        noUpper: false
+        encoding: hex      # hex, base64, base64url, base32, or raw (default)
+        secretKeys:
+          - betterauth  # Required: sets the key name in the secret
+
+# templates/secret.yaml
+{{ include "common.externalSecrets" . }}
+```
+
+**Note:** 
+- External Secrets generates passwords directly (no encoding option)
+- The `secretKeys` field is **required** to set the key name in the secret
+- Without `secretKeys`, the Password generator defaults to using `password` as the key name
+- The `name` field in the password config is used for the generator name, not the secret key name
 
 ## Troubleshooting
 
@@ -398,6 +707,10 @@ After migration, verify:
 - [ ] VirtualServices route to correct service
 - [ ] DNS record created (if applicable)
 - [ ] OIDC client created (if applicable)
+- [ ] Database resource created (if applicable)
+- [ ] Database secret references use correct name (`{release}-connection`)
+- [ ] External Secrets created (if applicable)
+- [ ] Password generators created for each secret field
 
 ## Post-Migration
 

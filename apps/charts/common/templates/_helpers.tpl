@@ -525,3 +525,99 @@ spec:
     {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+Full PostgreSQL Database resource
+*/}}
+{{- define "common.database" -}}
+{{- if and .Values.database.enabled (hasKey .Values.globals "database") (hasKey .Values.globals.database "ref") (hasKey .Values.globals.database.ref "name") (hasKey .Values.globals.database.ref "namespace") (ne .Values.globals.database.ref.name "") (ne .Values.globals.database.ref.namespace "") }}
+apiVersion: postgres.homelab.mortenolsen.pro/v1
+kind: PostgresDatabase
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  clusterRef:
+    name: {{ .Values.globals.database.ref.name | quote }}
+    namespace: {{ .Values.globals.database.ref.namespace | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
+Password generators for External Secrets (create these first)
+*/}}
+{{- define "common.externalSecrets.passwordGenerators" -}}
+{{- if .Values.externalSecrets }}
+{{- range .Values.externalSecrets }}
+{{- $secretName := .name | default (printf "%s-%s" $.Release.Name "secrets") }}
+{{- $secretName = $secretName | replace "{release}" $.Release.Name | replace "{fullname}" (include "common.fullname" $) }}
+{{- range .passwords }}
+---
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: {{ $secretName }}-{{ .name }}-generator
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+spec:
+  length: {{ .length | default 32 }}
+  allowRepeat: {{ .allowRepeat | default false }}
+  noUpper: {{ .noUpper | default false }}
+  {{- if .encoding }}
+  encoding: {{ .encoding }}
+  {{- end }}
+  {{- if .secretKeys }}
+  secretKeys:
+    {{- range .secretKeys }}
+    - {{ . }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+External Secrets (create these after password generators)
+*/}}
+{{- define "common.externalSecrets.externalSecrets" -}}
+{{- if .Values.externalSecrets }}
+{{- range .Values.externalSecrets }}
+{{- $secretName := .name | default (printf "%s-%s" $.Release.Name "secrets") }}
+{{- $secretName = $secretName | replace "{release}" $.Release.Name | replace "{fullname}" (include "common.fullname" $) }}
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ $secretName }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+spec:
+  refreshInterval: 1h
+  target:
+    name: {{ $secretName }}
+    creationPolicy: Owner
+  dataFrom:
+    {{- range .passwords }}
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: {{ $secretName }}-{{ .name }}-generator
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Full External Secrets resources (ExternalSecret + Password generators)
+Combined helper that outputs generators first, then ExternalSecrets
+*/}}
+{{- define "common.externalSecrets" -}}
+{{- include "common.externalSecrets.passwordGenerators" . }}
+{{- include "common.externalSecrets.externalSecrets" . }}
+{{- end }}
