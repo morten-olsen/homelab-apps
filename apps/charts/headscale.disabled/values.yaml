@@ -1,5 +1,0 @@
-image:
-  repository: headscale/headscale
-  tag: latest@sha256:cd37b30018575fd62f18419138d4e526bcf894e1d4e1aa1b08699cec1891ac23
-  pullPolicy: IfNotPresent
-subdomain: headscale
