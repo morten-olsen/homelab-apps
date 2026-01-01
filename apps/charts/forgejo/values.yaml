@@ -22,7 +22,7 @@ container:
       protocol: TCP
   healthProbe:
     type: tcpSocket
-    port: http  # Use named port
+    port: http # Use named port
 
 # Service configuration - multiple services
 service:
@@ -37,7 +37,7 @@ service:
       targetPort: 22
       protocol: TCP
       type: LoadBalancer
-      serviceName: ssh  # Will be prefixed with release name: {release}-ssh
+      serviceName: ssh # Will be prefixed with release name: {release}-ssh
 
 # Volume configuration
 volumes:
@@ -56,14 +56,14 @@ virtualService:
   gateways:
     public: true
     private: true
-  servicePort: 80  # Route to the http service port
+  servicePort: 80 # Route to the http service port
 
 # Environment variables
 env:
   USER_UID: "1000"
   USER_GID: "1000"
   FORGEJO__server__SSH_DOMAIN:
-    value: "ssh-{subdomain}.{domain}"  # Will be templated: ssh-{subdomain}.{domain}
+    value: "ssh-{subdomain}.{domain}" # Will be templated: ssh-{subdomain}.{domain}
   FORGEJO__server__SSH_PORT: "2206"
   FORGEJO__service__REQUIRE_EXTERNAL_REGISTRATION_PASSWORD: "true"
   FORGEJO__service__ENABLE_PASSWORD_SIGNIN_FORM: "false"
@@ -101,3 +101,46 @@ env:
       secretKeyRef:
         name: "{release}-pg-connection"
         key: password
+  # Actions configuration
+  FORGEJO__actions__ENABLED: "true"
+  FORGEJO__actions__ENABLED_FOR_REPOSITORIES: "true"
+  FORGEJO__actions__ENABLED_FOR_DEFAULT_BRANCH: "true"
+  FORGEJO__actions__SHARED_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-runner-secrets"
+        key: shared-secret
+
+# External Secrets configuration for Actions runner
+externalSecrets:
+  - name: "{release}-runner-secrets"
+    passwords:
+      - name: shared-secret
+        length: 20
+        allowRepeat: true
+        noUpper: false
+        encoding: hex
+        secretKeys:
+          - shared-secret
+
+# Actions runner configuration
+actions:
+  enabled: true
+  runner:
+    image:
+      repository: code.forgejo.org/forgejo/runner
+      tag: "12.3.1"
+      pullPolicy: IfNotPresent
+    dind:
+      image:
+        repository: code.forgejo.org/oci/docker
+        tag: dind
+        pullPolicy: IfNotPresent
+    name: default
+    replicas: 1
+    storage:
+      size: 10Gi
+    labels:
+      - "ubuntu-latest:docker://gitea/runner-images:ubuntu-latest-full"
+      - "docker-cli:docker://code.forgejo.org/oci/docker:cli"
+      - "node-bookworm:docker://code.forgejo.org/oci/node:20-bookworm"

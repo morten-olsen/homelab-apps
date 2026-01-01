@@ -1,0 +1,169 @@
+{{- if .Values.actions.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-runner"
+  labels:
+    app: "{{ .Release.Name }}-runner"
+spec:
+  replicas: {{ .Values.actions.runner.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-runner"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-runner"
+    spec:
+      hostname: docker
+      containers:
+        - name: docker-in-docker
+          image: "{{ .Values.actions.runner.dind.image.repository }}:{{ .Values.actions.runner.dind.image.tag }}"
+          imagePullPolicy: "{{ .Values.actions.runner.dind.image.pullPolicy }}"
+          env:
+            - name: DOCKER_TLS_CERTDIR
+              value: /certs
+            - name: DOCKER_HOST
+              value: docker-in-docker
+          securityContext:
+            privileged: true
+          ports:
+            - name: docker
+              containerPort: 2376
+              protocol: TCP
+          volumeMounts:
+            - name: docker-certs
+              mountPath: /certs
+        - name: "{{ .Release.Name }}-runner"
+          image: "{{ .Values.actions.runner.image.repository }}:{{ .Values.actions.runner.image.tag }}"
+          imagePullPolicy: "{{ .Values.actions.runner.image.pullPolicy }}"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cd /data
+              # Wait for shared secret to be available
+              while [ -z "${FORGEJO_RUNNER_SHARED_SECRET}" ]; do
+                echo "Waiting for shared secret..."
+                sleep 1
+              done
+              # Create runner file if it doesn't exist
+              if [ ! -f .runner ]; then
+                echo "Creating runner file..."
+                forgejo-runner create-runner-file \
+                  --connect \
+                  --instance "https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}" \
+                  --name "{{ .Values.actions.runner.name | default "default" }}" \
+                  --secret "${FORGEJO_RUNNER_SHARED_SECRET}" || {
+                    echo "Failed to create runner file, will retry..."
+                    sleep 5
+                    exit 1
+                  }
+                # Set labels in runner file (matching docker-compose example)
+                {{- if .Values.actions.runner.labels }}
+                echo "Setting runner labels..."
+                LABELS_JSON='[{{- range $index, $label := .Values.actions.runner.labels }}{{- if $index }},{{- end }}"{{ $label }}"{{- end }}]'
+                sed -i "s|\"labels\": null|\"labels\": ${LABELS_JSON}|" .runner || \
+                sed -i "s|\"labels\": \[\]|\"labels\": ${LABELS_JSON}|" .runner || true
+                {{- end }}
+              else
+                # Always update labels to match configuration
+                {{- if .Values.actions.runner.labels }}
+                LABELS_JSON='[{{- range $index, $label := .Values.actions.runner.labels }}{{- if $index }},{{- end }}"{{ $label }}"{{- end }}]'
+                echo "Updating runner labels to match configuration..."
+                # Use awk to replace the labels array (handles both single-line and multi-line JSON)
+                awk -v new_labels="${LABELS_JSON}" '
+                  BEGIN { in_labels = 0 }
+                  /"labels":/ {
+                    in_labels = 1
+                    print "  \"labels\": " new_labels
+                    next
+                  }
+                  in_labels && /^  \]/ {
+                    in_labels = 0
+                    next
+                  }
+                  in_labels && /^  / {
+                    next
+                  }
+                  { print }
+                ' .runner > .runner.tmp && mv .runner.tmp .runner || {
+                  # Fallback to sed for single-line labels if awk fails
+                  echo "Awk failed, trying sed fallback..."
+                  sed -i "s|\"labels\": null|\"labels\": ${LABELS_JSON}|" .runner 2>/dev/null || true
+                  sed -i "s|\"labels\": \[\]|\"labels\": ${LABELS_JSON}|" .runner 2>/dev/null || true
+                  sed -i "s|\"labels\": \[[^]]*\]|\"labels\": ${LABELS_JSON}|" .runner 2>/dev/null || true
+                }
+                echo "Labels updated successfully"
+                {{- end }}
+              fi
+              # Generate config if it doesn't exist
+              if [ ! -f config.yml ]; then
+                echo "Generating config file..."
+                forgejo-runner generate-config > config.yml
+                # Update config for docker-in-docker
+                sed -i 's|network: .*|network: host|' config.yml || true
+                if ! grep -q "DOCKER_HOST" config.yml; then
+                  awk '/^  envs:$/ { print; print "    DOCKER_HOST: tcp://localhost:2376"; print "    DOCKER_TLS_VERIFY: 1"; print "    DOCKER_CERT_PATH: /certs/client"; next }1' config.yml > config.yml.tmp && mv config.yml.tmp config.yml || true
+                fi
+                sed -i 's|^  options:.*|  options: -v /certs/client:/certs/client|' config.yml || true
+                if grep -q "valid_volumes: \[\]" config.yml; then
+                  awk '/^  valid_volumes: \[\]$/ { print "  valid_volumes:"; print "    - /certs/client"; next }1' config.yml > config.yml.tmp && mv config.yml.tmp config.yml || true
+                fi
+              fi
+              # Wait for docker-in-docker to be ready
+              echo "Waiting for docker-in-docker to be ready..."
+              while ! nc -z localhost 2376 2>/dev/null; do
+                echo "Docker daemon not ready, waiting..."
+                sleep 2
+              done
+              # Wait for TLS certificates to be available
+              while [ ! -f /certs/client/ca.pem ]; do
+                echo "Waiting for TLS certificates..."
+                sleep 1
+              done
+              echo "Docker daemon and certificates ready"
+              # Run daemon
+              echo "Starting runner daemon..."
+              while : ; do
+                if [ -f .runner ] && [ -w .runner ]; then
+                  forgejo-runner --config config.yml daemon || {
+                    echo "Daemon exited, restarting in 5 seconds..."
+                    sleep 5
+                  }
+                else
+                  echo "Waiting for runner file..."
+                  sleep 1
+                fi
+              done
+          env:
+            - name: FORGEJO_INSTANCE_URL
+              value: "https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}"
+            - name: FORGEJO_RUNNER_NAME
+              value: {{ .Values.actions.runner.name | default "default" | quote }}
+            - name: FORGEJO_RUNNER_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-runner-secrets"
+                  key: shared-secret
+            - name: DOCKER_HOST
+              value: tcp://localhost:2376
+            - name: DOCKER_TLS_VERIFY
+              value: "1"
+            - name: DOCKER_CERT_PATH
+              value: /certs/client
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          volumeMounts:
+            - name: runner-data
+              mountPath: /data
+            - name: docker-certs
+              mountPath: /certs
+      volumes:
+        - name: runner-data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-runner-data"
+        - name: docker-certs
+          emptyDir: {}
+{{- end }}

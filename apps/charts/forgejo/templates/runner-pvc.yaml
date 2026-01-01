@@ -1,0 +1,12 @@
+{{- if .Values.actions.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "{{ .Release.Name }}-runner-data"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.actions.runner.storage.size | default "10Gi" }}
+{{- end }}

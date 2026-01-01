@@ -1,1 +1,76 @@
+{{- if .Values.actions.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: {{ include "common.deploymentStrategy" . }}
+  replicas: {{ .Values.deployment.replicas | default 1 }}
+  {{- if .Values.deployment.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if .Values.deployment.serviceAccountName }}
+      serviceAccountName: {{ .Values.deployment.serviceAccountName | replace "{release}" .Release.Name | replace "{fullname}" (include "common.fullname" .) }}
+      {{- end }}
+      {{- if .Values.deployment.hostNetwork }}
+      hostNetwork: {{ .Values.deployment.hostNetwork }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+{{ include "common.containerPorts" . | indent 12 }}
+          {{- if .Values.container.healthProbe }}
+          livenessProbe:
+{{ include "common.healthProbe" . | indent 12 }}
+          readinessProbe:
+{{ include "common.healthProbe" . | indent 12 }}
+          {{- end }}
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    sleep 10
+                    su -c "forgejo forgejo-cli actions register --keep-labels --secret ${FORGEJO_RUNNER_SHARED_SECRET}" git || true
+          {{- if .Values.volumes }}
+          volumeMounts:
+{{ include "common.volumeMounts" . | indent 12 }}
+          {{- end }}
+          {{- if or .Values.env .Values.globals.timezone }}
+          env:
+{{ include "common.env" . | indent 12 }}
+            - name: FORGEJO_RUNNER_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-runner-secrets"
+                  key: shared-secret
+          {{- else }}
+          env:
+            - name: FORGEJO_RUNNER_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-runner-secrets"
+                  key: shared-secret
+          {{- end }}
+      {{- if .Values.volumes }}
+      volumes:
+        {{- include "common.volumes" . | nindent 8 }}
+      {{- end }}
+{{- else }}
 {{ include "common.deployment" . }}
+{{- end }}
