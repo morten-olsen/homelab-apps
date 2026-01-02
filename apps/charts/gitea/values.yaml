@@ -9,7 +9,6 @@ subdomain: gitea
 deployment:
   strategy: RollingUpdate
   replicas: 1
-  revisionHistoryLimit: 0
 
 # Container configuration - multiple ports
 container:

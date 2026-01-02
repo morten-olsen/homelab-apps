@@ -9,7 +9,7 @@ subdomain: code
 deployment:
   strategy: Recreate
   replicas: 1
-  revisionHistoryLimit: 0
+  revisionHistoryLimit: 2
 
 # Container configuration - multiple ports
 container:

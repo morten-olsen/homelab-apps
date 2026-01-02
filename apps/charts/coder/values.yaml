@@ -9,7 +9,6 @@ subdomain: coder
 deployment:
   strategy: Recreate
   replicas: 1
-  revisionHistoryLimit: 0
   serviceAccountName: "{release}-serviceaccount" # Will be templated
 
 # Container configuration

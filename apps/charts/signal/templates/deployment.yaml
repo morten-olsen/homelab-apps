@@ -6,7 +6,6 @@ spec:
   strategy:
     type: Recreate
   replicas: 1
-  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: "{{ .Release.Name }}"

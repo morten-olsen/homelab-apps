@@ -9,7 +9,6 @@ subdomain: esphome
 deployment:
   strategy: Recreate
   replicas: 1
-  revisionHistoryLimit: 0
   hostNetwork: true  # ESPHome needs hostNetwork for device discovery
 
 # Container configuration

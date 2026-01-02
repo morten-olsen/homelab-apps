@@ -9,7 +9,6 @@ subdomain: jellyfin
 deployment:
   strategy: Recreate
   replicas: 1
-  revisionHistoryLimit: 0
 
 # Container configuration
 container:
