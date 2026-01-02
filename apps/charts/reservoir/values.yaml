@@ -2,4 +2,44 @@ image:
   repository: ghcr.io/morten-olsen/reservoir
   tag: main@sha256:8b5b91771ec4b66d725fcd29adc8cf40e280a0533dbb757db27c429afc272d39
   pullPolicy: IfNotPresent
+
 subdomain: reservoir
+
+# Deployment configuration
+deployment:
+  strategy: RollingUpdate
+  replicas: 1
+
+# Container configuration
+container:
+  port: 9111
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+# Database configuration
+database:
+  enabled: true
+
+# Environment variables
+env:
+  TZ:
+    value: "{timezone}"
+  DB_CLIENT: pg
+  DB_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url
