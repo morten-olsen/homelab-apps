@@ -2,4 +2,77 @@ image:
   repository: ghcr.io/sysadminsmedia/homebox
   tag: latest@sha256:b6c1362ab0450ca8fc1a347c13614a0b4f5674e1ecfa9a57a8c456612921842b
   pullPolicy: IfNotPresent
+
 subdomain: homebox
+
+# Deployment configuration
+deployment:
+  strategy: RollingUpdate
+  replicas: 1
+
+# Container configuration
+container:
+  port: 7745
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# Database configuration
+database:
+  enabled: true
+
+# Environment variables
+env:
+  TZ:
+    value: "{timezone}"
+  HBOX_OPTIONS_ALLOW_REGISTRATION: "false"
+  HBOX_DATABASE_DRIVER: postgres
+  HBOX_DATABASE_DATABASE:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: database
+  HBOX_DATABASE_HOST:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: host
+  HBOX_DATABASE_PORT:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: port
+  HBOX_DATABASE_SSL_MODE: "disable"
+  HBOX_DATABASE_USERNAME:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: user
+  HBOX_DATABASE_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: password

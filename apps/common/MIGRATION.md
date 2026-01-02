@@ -464,7 +464,7 @@ The PostgresDatabase resource creates a secret named `{release}-connection` cont
 - `host` - Database hostname
 - `port` - Database port
 - `database` - Database name
-- `username` - Database username
+- `user` - Database username
 - `password` - Database password
 
 ### Using Database Secrets
@@ -483,6 +483,11 @@ env:
       secretKeyRef:
         name: "{release}-connection"
         key: host
+  DB_USER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: user
 ```
 
 ### Global Configuration
@@ -504,9 +509,12 @@ If migrating from the legacy `homelab.mortenolsen.pro/v1` PostgresDatabase:
 1. **Update API version**: Changed from `homelab.mortenolsen.pro/v1` to `postgres.homelab.mortenolsen.pro/v1`
 2. **Update spec**: Changed from `environment` to `clusterRef` with `name` and `namespace`
 3. **Update secret name**: Changed from `{release}-pg-connection` to `{release}-connection`
-4. **Add namespace**: Metadata now includes `namespace: {{ .Release.Namespace }}`
+4. **Update secret key**: The username key remains `user` (no change needed)
+5. **Add namespace**: Metadata now includes `namespace: {{ .Release.Namespace }}`
 
 The common library template handles all of this automatically.
+
+**Note:** The new PostgresDatabase secret uses the key `user` (not `username`) for the database username. When migrating environment variables, ensure you reference `key: user` in your secret references.
 
 ### Migrating Database from Old Server to New Server
 
