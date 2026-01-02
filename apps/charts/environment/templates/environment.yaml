@@ -1,9 +1,0 @@
-apiVersion: homelab.mortenolsen.pro/v1
-kind: Environment
-metadata:
-  name: "{{ .Values.globals.environment }}"
-spec:
-  domain: "{{ .Values.globals.domain }}"
-  networkIp: 192.168.20.180
-  tls:
-    issuer: lets-encrypt-prod
