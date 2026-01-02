@@ -1,4 +1,74 @@
-subdomain: zot
 image:
   repository: ghcr.io/project-zot/zot
   tag: v2.1.13@sha256:d3cde44fa759bf7f3d25b479e2b33ed5d4d3f1d6fdad01b204d15a9c3af2db3c
+  pullPolicy: IfNotPresent
+
+subdomain: zot
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  ports:
+    - name: http
+      port: 5000
+      protocol: TCP
+  # Health probes commented out in original - can be enabled later
+  # healthProbe:
+  #   type: httpGet
+  #   path: /v2/
+  #   port: http
+
+# Service configuration
+service:
+  port: 80
+  targetPort: 5000
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /var/lib/registry
+    persistentVolumeClaim: data
+  - name: config
+    mountPath: /etc/zot
+    emptyDir: {}
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# OIDC client configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/zot/auth/callback/oidc"
+  subjectMode: user_username
+
+# External secrets configuration
+externalSecrets:
+  - name: "{release}-secret"
+    passwords:
+      - name: password
+        length: 64
+        encoding: hex
+        allowRepeat: true
+
+# Environment variables
+env:
+  TZ:
+    value: "{timezone}"
+  BASE_URL:
+    value: "https://{subdomain}.{domain}"
