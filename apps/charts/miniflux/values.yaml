@@ -2,4 +2,85 @@ image:
   repository: ghcr.io/miniflux/miniflux
   tag: latest@sha256:9a1f95a7a05b77040d19bb7be96194af4c222de02fb84165fb808f65700c064f
   pullPolicy: IfNotPresent
+
 subdomain: miniflux
+
+# Deployment configuration
+deployment:
+  strategy: RollingUpdate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 8080
+  healthProbe:
+    type: tcpSocket
+    port: http  # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# OIDC client
+oidc:
+  enabled: true
+  redirectUris:
+    - "/oauth2/oidc/callback"
+
+# Database configuration
+database:
+  enabled: true
+
+# Environment variables
+env:
+  TZ:
+    value: "{timezone}"
+  BASE_URL:
+    value: "https://{subdomain}.{domain}"
+  RUN_MIGRATIONS: "1"
+  DISABLE_LOCAL_AUTH: "1"
+  OAUTH2_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientId
+  OAUTH2_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientSecret
+  OAUTH2_OIDC_DISCOVERY_ENDPOINT:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: issuer 
+  OAUTH2_OIDC_PROVIDER_NAME: Authentik
+  OAUTH2_PROVIDER: oidc
+  OAUTH2_REDIRECT_URL:
+    value: "https://{subdomain}.{domain}/oauth2/oidc/callback"
+  OAUTH2_USER_CREATION: "1"
+  DATABASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url

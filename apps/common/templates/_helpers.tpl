@@ -521,6 +521,7 @@ spec:
     {{- range .Values.oidc.redirectUris }}
     - {{ printf "https://%s%s" (include "common.domain" $) . | quote }}
     {{- end }}
+  subjectMode: {{ .Values.oidc.subjectMode | default "user_username" }}
 {{- end }}
 {{- end }}
 

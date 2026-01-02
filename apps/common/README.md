@@ -75,6 +75,39 @@ Helper functions for custom templates:
 
 The library expects a standardized values structure. See migrated charts (`audiobookshelf`, `forgejo`, `baikal`, `blinko`) for examples.
 
+### OIDC Configuration
+
+To enable OIDC authentication, configure the `oidc` section in your `values.yaml`:
+
+```yaml
+oidc:
+  enabled: true
+  redirectUris:
+    - "/api/auth/callback/authentik"
+  subjectMode: user_username  # Optional, defaults to "user_username"
+```
+
+**Subject Mode Options:**
+- `user_username` (default) - Uses the username as the subject identifier
+- `user_email` - Uses the email address as the subject identifier
+- `user_id` - Uses the user ID as the subject identifier
+
+The AuthentikClient resource creates a secret named `{release}-oidc-credentials` containing:
+- `clientId` - OAuth client ID
+- `clientSecret` - OAuth client secret
+- `issuer` - OIDC provider issuer URL
+
+Reference these in your environment variables using placeholders:
+
+```yaml
+env:
+  OAUTH2_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientId
+```
+
 ## Placeholders
 
 Use placeholders in `values.yaml` for dynamic values:

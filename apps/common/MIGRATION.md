@@ -5,6 +5,7 @@ This guide explains how to migrate existing Helm charts to use the common librar
 ## Overview
 
 Migrating a chart to use the common library involves:
+
 1. Adding the common library as a dependency
 2. Restructuring `values.yaml` to match the standardized format
 3. Replacing template files with simple includes
@@ -37,7 +38,8 @@ dependencies:
 
 Convert your existing `values.yaml` to the standardized format:
 
-#### Before (Old Format):
+#### Before (Old Format)
+
 ```yaml
 image:
   repository: docker.io/org/app
@@ -45,7 +47,8 @@ image:
 subdomain: myapp
 ```
 
-#### After (Standardized Format):
+#### After (Standardized Format)
+
 ```yaml
 image:
   repository: docker.io/org/app
@@ -95,6 +98,7 @@ oidc:
   enabled: true
   redirectUris:
     - "/api/auth/callback/authentik"
+  subjectMode: user_username  # Optional, defaults to "user_username"
 
 # Database configuration (if applicable)
 database:
@@ -117,71 +121,89 @@ env:
 Replace your template files with simple includes:
 
 #### deployment.yaml
+
 **Before:** ~50-100 lines of template code  
 **After:**
+
 ```yaml
 {{ include "common.deployment" . }}
 ```
 
 #### service.yaml
+
 **Before:** ~15-20 lines  
 **After:**
+
 ```yaml
 {{ include "common.service" . }}
 ```
 
 #### pvc.yaml
+
 **Before:** ~20-30 lines per PVC  
 **After:**
+
 ```yaml
 {{ include "common.pvc" . }}
 ```
 
 #### virtual-service.yaml
+
 **Before:** ~40-50 lines  
 **After:**
+
 ```yaml
 {{ include "common.virtualService" . }}
 ```
 
 #### dns.yaml (if applicable)
+
 **Before:** ~20 lines  
 **After:**
+
 ```yaml
 {{ include "common.dns" . }}
 ```
 
 #### oidc.yaml (if applicable)
+
 **Before:** ~20 lines  
 **After:**
+
 ```yaml
 {{ include "common.oidc" . }}
 ```
 
 #### database.yaml (if applicable)
+
 **Before:** ~10 lines  
 **After:**
+
 ```yaml
 {{ include "common.database" . }}
 ```
 
 #### secret.yaml (if using External Secrets)
+
 **Before:** ~10 lines (GenerateSecret)  
 **After (recommended - split files for correct ordering):**
 
 Create two files:
 
 `templates/secret-password-generators.yaml`:
+
 ```yaml
 {{ include "common.externalSecrets.passwordGenerators" . }}
 ```
 
 `templates/secret-external-secrets.yaml`:
+
 ```yaml
 {{ include "common.externalSecrets.externalSecrets" . }}
 ```
 
 **Alternative (single file):**
+
 ```yaml
 {{ include "common.externalSecrets" . }}
 ```
@@ -216,6 +238,7 @@ helm template your-app apps/charts/your-app \
 ```
 
 Verify:
+
 - All resources render correctly
 - Environment variables use placeholders correctly
 - Ports and volumes are configured properly
@@ -372,11 +395,13 @@ See [TEMPLATING.md](./TEMPLATING.md) for complete placeholder documentation.
 ### Example 1: Simple Application (audiobookshelf)
 
 **Before:**
+
 - 6 template files with ~169 total lines
 - Custom health probe configuration
 - Multiple PVCs
 
 **After:**
+
 - 6 template files with 6 total lines (one include each)
 - Standardized health probe using `/ping` endpoint
 - Same functionality, 96% less code
@@ -384,11 +409,13 @@ See [TEMPLATING.md](./TEMPLATING.md) for complete placeholder documentation.
 ### Example 2: Multi-Port Application (forgejo)
 
 **Before:**
+
 - Multiple services (HTTP + SSH)
 - Complex port configuration
 - Multiple container ports
 
 **After:**
+
 - Uses `container.ports` array
 - Uses `service.ports` array
 - Each service can have different type (ClusterIP vs LoadBalancer)
@@ -396,11 +423,13 @@ See [TEMPLATING.md](./TEMPLATING.md) for complete placeholder documentation.
 ### Example 3: Application with Database (blinko)
 
 **Before:**
+
 - Environment variables with template syntax
 - Secret references
 - Database connection strings
 
 **After:**
+
 - Environment variables use placeholders
 - Secret references use `{release}` placeholder
 - Cleaner, more maintainable values.yaml
@@ -430,6 +459,7 @@ Create `templates/database.yaml`:
 ### Generated Secret
 
 The PostgresDatabase resource creates a secret named `{release}-connection` containing:
+
 - `url` - Complete PostgreSQL connection URL
 - `host` - Database hostname
 - `port` - Database port
@@ -485,10 +515,12 @@ When migrating databases from the old PostgreSQL server (`prod-postgres-cluster-
 #### Database Naming Convention
 
 Database names follow the pattern `{namespace}_{name}` where:
+
 - `{namespace}` is the Kubernetes namespace (default: `prod`)
 - `{name}` is the application name (release name)
 
 **Examples:**
+
 - `prod_blinko` - blinko app in prod namespace
 - `prod_gitea` - gitea app in prod namespace
 - `shared_authentik-db` - authentik app in shared namespace
@@ -496,28 +528,35 @@ Database names follow the pattern `{namespace}_{name}` where:
 #### Using the Migration Script
 
 The migration script is located at `scripts/migrate_database.py` and handles:
+
 - Dumping the database from the old server
 - Restoring to the new server
 - Fixing permissions and ownership automatically
 
+The script can not be used until the new database is deployed, so it shouldn't be used as part of the migration
+
 **Basic Usage:**
+
 ```bash
 ./scripts/migrate_database.py <source_db_name> <dest_db_name>
 ```
 
 **Example:**
+
 ```bash
 # Migrate prod_blinko database (same name on both servers)
 ./scripts/migrate_database.py prod_blinko prod_blinko
 ```
 
 **With Different Database Names:**
+
 ```bash
 # Migrate from old_name to new_name
 ./scripts/migrate_database.py old_name new_name
 ```
 
 **With Custom PostgreSQL Users:**
+
 ```bash
 # If the PostgreSQL users differ from defaults
 ./scripts/migrate_database.py prod_blinko prod_blinko \
@@ -526,6 +565,7 @@ The migration script is located at `scripts/migrate_database.py` and handles:
 ```
 
 **Overwriting Existing Data:**
+
 ```bash
 # Use --clean flag to drop existing objects before restoring
 # WARNING: This will DELETE all existing data in the destination database!
@@ -535,6 +575,7 @@ The migration script is located at `scripts/migrate_database.py` and handles:
 #### Behavior with Existing Databases
 
 **Without `--clean` flag:**
+
 - The script will attempt to restore objects to the destination database
 - If tables/objects already exist, `pg_restore` may:
   - Fail with errors (e.g., "relation already exists")
@@ -543,12 +584,14 @@ The migration script is located at `scripts/migrate_database.py` and handles:
 - **This will NOT automatically overwrite existing data**
 
 **With `--clean` flag:**
+
 - Drops all existing objects (tables, sequences, functions, etc.) before restoring
 - **WARNING: This will DELETE all existing data in the destination database**
 - Use this when you want to completely replace the destination database with source data
 - Recommended for initial migrations or when you're sure you want to overwrite
 
 **Best Practice:**
+
 - For initial migrations: Use `--clean` to ensure a clean restore
 - For updates/re-syncs: Use `--clean` only if you're certain you want to replace all data
 - For incremental updates: Consider using application-specific sync mechanisms instead
@@ -574,6 +617,7 @@ The migration script is located at `scripts/migrate_database.py` and handles:
 #### Default Configuration
 
 The script uses these defaults:
+
 - **Source server**: `prod-postgres-cluster-0` in `homelab` namespace
 - **Source user**: `homelab`
 - **Destination server**: `postgres-statefulset-0` in `shared` namespace
@@ -582,16 +626,20 @@ The script uses these defaults:
 #### Troubleshooting
 
 **Error: "role does not exist"**
+
 - Check the PostgreSQL user name with: `kubectl exec -n <namespace> <pod> -c <container> -- env | grep POSTGRES_USER`
 - Use `--source-user` or `--dest-user` flags to specify correct users
 
 **Error: "database does not exist"**
+
 - Create the destination database manually before running the script
 - Verify database names match the `{namespace}_{name}` convention
 
 **Error: "permission denied for schema"**
+
 - The script should fix this automatically
 - If issues persist, manually grant permissions:
+
   ```sql
   GRANT USAGE ON SCHEMA <schema_name> TO <db_user>;
   GRANT CREATE ON SCHEMA <schema_name> TO <db_user>;
@@ -606,9 +654,81 @@ Some charts may still have legacy resources that should be kept as-is:
 - **PostgresDatabase** (legacy `homelab.mortenolsen.pro/v1`) - Use `common.database` for new PostgresDatabase instead
 - **GenerateSecret** (legacy `homelab.mortenolsen.pro/v1`) - Use `common.externalSecrets` for External Secrets instead
 
+### Migrating from OidcClient to AuthentikClient
+
+**Before (OidcClient):**
+
+```yaml
+# templates/client.yaml
+apiVersion: homelab.mortenolsen.pro/v1
+kind: OidcClient
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  environment: "{{ .Values.globals.environment }}"
+  redirectUris:
+    - path: oauth2/oidc/callback
+      subdomain: "{{ .Values.subdomain }}"
+      matchingMode: strict
+```
+
+**After (AuthentikClient):**
+
+```yaml
+# values.yaml
+oidc:
+  enabled: true
+  redirectUris:
+    - "/oauth2/oidc/callback"  # Path only, domain is automatically prepended
+  subjectMode: user_username  # Optional, defaults to "user_username"
+
+# templates/client.yaml (or oidc.yaml)
+{{ include "common.oidc" . }}
+```
+
+**Key Changes:**
+
+1. **API Version**: Changed from `homelab.mortenolsen.pro/v1` to `authentik.homelab.mortenolsen.pro/v1alpha1`
+2. **Resource Kind**: Changed from `OidcClient` to `AuthentikClient`
+3. **Redirect URIs**: Now specified as paths only (e.g., `"/oauth2/oidc/callback"`). The full URL is automatically constructed as `https://{subdomain}.{domain}{path}`
+4. **Subject Mode**: New `subjectMode` field defaults to `"user_username"` but can be customized
+5. **Secret Name**: The generated secret name changed from `{release}-client` to `{release}-oidc-credentials`
+6. **Secret Keys**: The secret key `configurationIssuer` changed to `issuer`
+
+**Environment Variable Updates:**
+
+When migrating, update your environment variables to reference the new secret:
+
+```yaml
+env:
+  OAUTH2_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"  # Changed from {release}-client
+        key: clientId
+  OAUTH2_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"  # Changed from {release}-client
+        key: clientSecret
+  OAUTH2_OIDC_DISCOVERY_ENDPOINT:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"  # Changed from {release}-client
+        key: issuer  # Changed from configurationIssuer
+```
+
+**Subject Mode Options:**
+
+The `subjectMode` field controls how the subject identifier is generated:
+- `user_username` (default) - Uses the username as the subject identifier
+- `user_email` - Uses the email address as the subject identifier
+- `user_id` - Uses the user ID as the subject identifier
+
 ### Migrating from GenerateSecret to External Secrets
 
 **Before (GenerateSecret):**
+
 ```yaml
 # templates/secret.yaml
 apiVersion: homelab.mortenolsen.pro/v1
@@ -623,6 +743,7 @@ spec:
 ```
 
 **After (External Secrets):**
+
 ```yaml
 # values.yaml
 externalSecrets:
@@ -640,7 +761,8 @@ externalSecrets:
 {{ include "common.externalSecrets" . }}
 ```
 
-**Note:** 
+**Note:**
+
 - External Secrets generates passwords directly (no encoding option)
 - The `secretKeys` field is **required** to set the key name in the secret
 - Without `secretKeys`, the Password generator defaults to using `password` as the key name
@@ -653,6 +775,7 @@ externalSecrets:
 **Error:** `found in Chart.yaml, but missing in charts/ directory: common`
 
 **Solution:**
+
 ```bash
 cd apps/charts/your-app
 rm -rf charts Chart.lock
@@ -666,6 +789,7 @@ helm dependency build
 **Error:** Template rendering fails with syntax errors
 
 **Solution:**
+
 - Ensure all placeholders use curly braces: `{release}`, not `{{release}}`
 - Check that values.yaml uses proper YAML structure
 - Verify globals are provided when testing
@@ -675,6 +799,7 @@ helm dependency build
 **Problem:** Placeholders like `{subdomain}` appear literally in output
 
 **Solution:**
+
 - Ensure you're using the latest common library version
 - Rebuild dependencies: `helm dependency build`
 - Check that placeholders are in `env:` section, not elsewhere
@@ -684,6 +809,7 @@ helm dependency build
 **Problem:** Health probe uses wrong port or type
 
 **Solution:**
+
 - For named ports, use: `port: http` (the port name)
 - For numeric ports, use: `port: 80` (the port number)
 - Ensure `container.healthProbe.type` is set correctly
@@ -693,6 +819,7 @@ helm dependency build
 **Problem:** Only one service is created when multiple are expected
 
 **Solution:**
+
 - Use `service.ports` array (not `service.port`)
 - Each port entry creates a separate service
 - Use `serviceName` in port config for custom names
