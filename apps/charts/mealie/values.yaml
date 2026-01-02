@@ -1,4 +1,77 @@
 subdomain: mealie
+
 image:
   repository: ghcr.io/mealie-recipes/mealie
   tag: latest@sha256:8c5c7765ca5f7f3070f08482aca8102c2b43193777fe958e06d86b153ec18f5f
+  pullPolicy: IfNotPresent
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+# Container configuration
+container:
+  port: 9000
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /app/data
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# OIDC client configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/login"
+  subjectMode: user_username
+
+# Environment variables
+env:
+  TZ:
+    value: "{timezone}"
+  BASE_URL:
+    value: "https://{subdomain}.{domain}"
+  ALLOW_SIGNUP: "false"
+  PUID: "1000"
+  PGID: "1000"
+  OIDC_AUTH_ENABLED: "true"
+  OIDC_SIGNUP_ENABLED: "true"
+  OIDC_USER_GROUP: "mealie-users"
+  OIDC_ADMIN_GROUP: "admin"
+  OIDC_AUTO_REDIRECT: "true"
+  OIDC_PROVIDER_NAME: Authentik
+  OIDC_REMEMBER_ME: "true"
+  OIDC_SIGNING_ALGORITHM: RS256
+  OIDC_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientId
+  OIDC_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientSecret
+  OIDC_CONFIGURATION_URL: "https://auth.{domain}/application/o/{namespace}-{release}/.well-known/openid-configuration" # TODO: fix!
