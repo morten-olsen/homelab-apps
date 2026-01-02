@@ -2,4 +2,72 @@ image:
   repository: ghcr.io/open-webui/open-webui
   tag: 0.6.43@sha256:9cb724e0bc84f05ba2f81a3da5f53f5add07e1001065d83f3b6b70b9a9eeef19
   pullPolicy: IfNotPresent
+
 subdomain: openwebui
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 8080
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /app/backend/data
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# OIDC client configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/oauth/oidc/callback"
+  subjectMode: user_username
+
+# Environment variables
+env:
+  ENABLE_SIGNUP: "false"
+  WEBUI_URL:
+    value: "https://{subdomain}.{domain}"
+  ENABLE_OAUTH_PERSISTENT_CONFIG: "false"
+  ENABLE_OAUTH_SIGNUP: "true"
+  OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
+  OAUTH_PROVIDER_NAME: authentik
+  OPENID_PROVIDER_URL: "https://auth.{domain}/application/o/{namespace}-{release}/.well-known/openid-configuration" # TODO: fix!
+  OAUTH_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientId
+  OAUTH_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientSecret
+  ENABLE_LOGIN_FORM: "false"
+  OPENID_REDIRECT:
+    value: "https://{subdomain}.{domain}/oauth/oidc/callback"
