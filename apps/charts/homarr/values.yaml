@@ -2,4 +2,93 @@ image:
   repository: ghcr.io/homarr-labs/homarr
   tag: v1.48.0@sha256:47f827c16e7a93435159f77ddb726d8dacdf8b6dd8fb7bb91777b933a915bf05
   pullPolicy: IfNotPresent
+
 subdomain: homarr
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 7575
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /appdata
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# OIDC client configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/api/auth/callback/oidc"
+  subjectMode: user_username
+
+# External Secrets configuration
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: encryptionkey
+        length: 32
+        allowRepeat: true
+        encoding: hex
+        secretKeys:
+          - encryptionkey
+
+# Environment variables
+env:
+  BASE_URL:
+    value: "https://{subdomain}.{domain}"
+  NEXTAUTH_URL:
+    value: "https://{subdomain}.{domain}"
+  AUTH_PROVIDERS: oidc
+  AUTH_OIDC_CLIENT_NAME: Authentik
+  AUTH_OIDC_SCOPE_OVERWRITE: "openid email profile"
+  AUTH_OIDC_GROUPS_ATTRIBUTE: groups
+  AUTH_OIDC_AUTO_LOGIN: "true"
+  AUTH_OIDC_ADMIN_GROUP: "admin"
+  AUTH_OIDC_ENABLE_DANGEROUS_ACCOUNT_LINKING: "true"
+  SECRET_ENCRYPTION_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: encryptionkey
+  AUTH_OIDC_ISSUER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: issuer
+  AUTH_OIDC_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientId
+  AUTH_OIDC_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientSecret
