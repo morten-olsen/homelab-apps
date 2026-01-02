@@ -12,9 +12,13 @@ deployment:
 
 # Container configuration
 container:
-  port: 5000
+  ports:
+    - name: http
+      port: 5000
+      protocol: TCP
   healthProbe:
     type: tcpSocket
+    port: http
 
 # Service configuration
 service:
@@ -44,6 +48,7 @@ oidc:
   enabled: true
   redirectUris:
     - "/api/auth/oidc/callback"
+  subjectMode: user_username
 
 # Environment variables
 env:
@@ -54,15 +59,15 @@ env:
   OIDC_CLIENT_ID:
     valueFrom:
       secretKeyRef:
-        name: "{release}-client"
+        name: "{release}-oidc-credentials"
         key: clientId
   OIDC_CLIENT_SECRET:
     valueFrom:
       secretKeyRef:
-        name: "{release}-client"
+        name: "{release}-oidc-credentials"
         key: clientSecret
   OIDC_ISSUER_URL:
     valueFrom:
       secretKeyRef:
-        name: "{release}-client"
-        key: configurationIssuer
+        name: "{release}-oidc-credentials"
+        key: issuer
