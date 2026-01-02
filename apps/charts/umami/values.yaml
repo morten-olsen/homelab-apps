@@ -2,4 +2,60 @@ image:
   repository: docker.umami.is/umami-software/umami
   tag: postgresql-latest@sha256:28f263fe06f79ebffa5a6a6e9bd33b7a278e9342a88e0bdac812416c9f9e4361
   pullPolicy: IfNotPresent
+
 subdomain: umami
+
+# Deployment configuration
+deployment:
+  strategy: RollingUpdate
+  replicas: 1
+
+# Container configuration
+container:
+  port: 3000
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# Database configuration
+database:
+  enabled: true
+
+# External Secrets configuration
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: encryptionkey
+        length: 64
+        allowRepeat: true
+        encoding: hex
+        secretKeys:
+          - encryptionkey
+
+# Environment variables
+env:
+  TZ:
+    value: "{timezone}"
+  DISABLE_TELEMETRY: "1"
+  APP_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: encryptionkey
+  DATABASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url
