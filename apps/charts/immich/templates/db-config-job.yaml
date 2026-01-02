@@ -27,8 +27,10 @@ spec:
               curl -sSL "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" -o /tmp/kubectl && \
               chmod +x /tmp/kubectl && mv /tmp/kubectl /usr/local/bin/kubectl
               
-              PASSWORD=$(cat /secrets/password)
-              # URL encode the password to handle special characters using Python
+              PASSWORD_B64=$(cat /secrets/password)
+              # Decode the password (secret is double base64-encoded, Kubernetes auto-decodes first level)
+              # Then URL encode the password to handle special characters using Python
+              PASSWORD=$(python3 -c "import base64; import sys; print(base64.b64decode(sys.stdin.read().strip()).decode('utf-8'))" <<< "$PASSWORD_B64")
               ENCODED_PASSWORD=$(python3 -c "import urllib.parse; import sys; print(urllib.parse.quote(sys.stdin.read().strip(), safe=''))" <<< "$PASSWORD")
               DB_URL="postgresql://immich:${ENCODED_PASSWORD}@{{ .Release.Name }}-postgres.{{ .Release.Namespace }}.svc.cluster.local:5432/immich"
               # Create or update the ConfigMap
