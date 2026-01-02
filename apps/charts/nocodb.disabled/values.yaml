@@ -1,5 +1,0 @@
-image:
-  repository: nocodb/nocodb
-  tag: 0.265.1@sha256:8fd57018accf775fb5390392910e4b0ef6bb154f17c5732b478eb76c40ee8d1e
-  pullPolicy: IfNotPresent
-subdomain: nocodb
