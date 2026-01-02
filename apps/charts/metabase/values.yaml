@@ -1,4 +1,63 @@
 subdomain: metabase
+
 image:
   repository: index.docker.io/metabase/metabase
   tag: latest@sha256:791299d1e7e382fb2426bcc3bbb4f29d51e9a63f96c5aa40d590f72285d02a53
+  pullPolicy: IfNotPresent
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+# Container configuration
+container:
+  port: 3000
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# Database configuration
+database:
+  enabled: true
+
+# Environment variables
+env:
+  MB_DB_TYPE: postgres
+  MB_DB_DBNAME:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: database
+  MB_DB_PORT:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: port
+  MB_DB_USER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: user
+  MB_DB_PASS:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: password
+  MB_DB_HOST:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: host
