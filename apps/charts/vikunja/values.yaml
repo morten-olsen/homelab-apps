@@ -2,4 +2,115 @@ image:
   repository: vikunja/vikunja
   tag: latest@sha256:e457d7c75d195935df0da68321f9dc3388db710c7543085d785ae523d415b0f2
   pullPolicy: IfNotPresent
+
 subdomain: vikunja
+
+# Deployment configuration
+deployment:
+  strategy: RollingUpdate
+  replicas: 1
+
+# Container configuration
+container:
+  port: 3456
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /app/vikunja/files
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# OIDC client configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/auth/openid/oidc"
+  subjectMode: user_username
+
+# Database configuration
+database:
+  enabled: true
+
+# External Secrets configuration
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: encryptionkey
+        length: 64
+        allowRepeat: true
+        encoding: hex
+        secretKeys:
+          - encryptionkey
+
+# Environment variables
+env:
+  VIKUNJA_SERVICE_TIMEZONE:
+    value: "{timezone}"
+  VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"
+  VIKUNJA_AUTH_OPENID_ENABLED: "true"
+  VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_NAME: Authentik
+  VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_AUTHURL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: issuer
+  VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_USERNAMEFALLBACK: "true"
+  VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_EMAILFALLBACK: "true"
+  VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_CLIENTID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientId
+  VIKUNJA_AUTH_OPENID_PROVIDERS_OIDC_CLIENTSECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientSecret
+  VIKUNJA_SERVICE_PUBLICURL:
+    value: "https://{subdomain}.{domain}"
+  VIKUNJA_SERVICE_JWTSECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: encryptionkey
+  VIKUNJA_DATABASE_TYPE: postgres
+  VIKUNJA_DATABASE_DATABASE:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: database
+  VIKUNJA_DATABASE_HOST:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: host
+  VIKUNJA_DATABASE_USER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: user
+  VIKUNJA_DATABASE_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: password
