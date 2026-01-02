@@ -2,7 +2,57 @@ image:
   repository: ghcr.io/home-assistant/home-assistant
   tag: 2025.12.5@sha256:9a5a3eb4a213dfb25932dee9dc6815c9305f78cecb5afa716fa2483163d8fb5b
   pullPolicy: IfNotPresent
+
 subdomain: home-assistant
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+
+# Container configuration
+container:
+  port: 8123
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+  securityContext:
+    privileged: true
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# OIDC client configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/auth/openid/callback"
+  subjectMode: user_username
+
+# Volume configuration
+volumes:
+  - name: config
+    mountPath: /config
+    persistentVolumeClaim: config
+  - name: misc
+    mountPath: /media/misc
+    persistentVolumeClaim: misc # External PVC, not prefixed
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: config
+    size: 1Gi
 piper:
   image:
     repository: ghcr.io/morten-olsen/glados-voice

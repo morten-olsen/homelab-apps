@@ -286,7 +286,11 @@ spec:
   strategy:
     type: {{ include "common.deploymentStrategy" . }}
   replicas: {{ .Values.deployment.replicas | default 1 }}
-  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit | default 2 }}
+  {{- if hasKey .Values.deployment "revisionHistoryLimit" }}
+  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
+  {{- else }}
+  revisionHistoryLimit: 2
+  {{- end }}
   selector:
     matchLabels:
       {{- include "common.selectorLabels" . | nindent 6 }}
@@ -301,6 +305,9 @@ spec:
       {{- if .Values.deployment.hostNetwork }}
       hostNetwork: {{ .Values.deployment.hostNetwork }}
       {{- end }}
+      {{- if .Values.deployment.dnsPolicy }}
+      dnsPolicy: {{ .Values.deployment.dnsPolicy }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -312,6 +319,10 @@ spec:
 {{ include "common.healthProbe" . | indent 12 }}
           readinessProbe:
 {{ include "common.healthProbe" . | indent 12 }}
+          {{- end }}
+          {{- if .Values.container.securityContext }}
+          securityContext:
+            {{- toYaml .Values.container.securityContext | nindent 12 }}
           {{- end }}
           {{- if .Values.volumes }}
           volumeMounts:
