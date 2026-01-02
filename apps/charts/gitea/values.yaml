@@ -7,7 +7,7 @@ subdomain: gitea
 
 # Deployment configuration
 deployment:
-  strategy: RollingUpdate
+  strategy: Recreate
   replicas: 1
 
 # Container configuration - multiple ports
@@ -21,7 +21,7 @@ container:
       protocol: TCP
   healthProbe:
     type: tcpSocket
-    port: http  # Use named port
+    port: http # Use named port
 
 # Service configuration - multiple services
 service:
@@ -36,7 +36,7 @@ service:
       targetPort: 22
       protocol: TCP
       type: LoadBalancer
-      serviceName: ssh  # Results in: {release}-ssh
+      serviceName: ssh # Results in: {release}-ssh
 
 # Volume configuration
 volumes:
@@ -55,7 +55,18 @@ virtualService:
   gateways:
     public: true
     private: true
-  servicePort: 80  # Route to the http service port
+  servicePort: 80 # Route to the http service port
+
+# OIDC client configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/user/oauth2/Authentik/callback"
+  subjectMode: user_username
+
+# Database configuration
+database:
+  enabled: true
 
 # Environment variables
 env:
@@ -83,20 +94,20 @@ env:
   GITEA__database__NAME:
     valueFrom:
       secretKeyRef:
-        name: "{release}-pg-connection"
+        name: "{release}-connection"
         key: database
   GITEA__database__HOST:
     valueFrom:
       secretKeyRef:
-        name: "{release}-pg-connection"
+        name: "{release}-connection"
         key: host
   GITEA__database__USER:
     valueFrom:
       secretKeyRef:
-        name: "{release}-pg-connection"
+        name: "{release}-connection"
         key: user
   GITEA__database__PASSWD:
     valueFrom:
       secretKeyRef:
-        name: "{release}-pg-connection"
+        name: "{release}-connection"
         key: password
