@@ -286,9 +286,7 @@ spec:
   strategy:
     type: {{ include "common.deploymentStrategy" . }}
   replicas: {{ .Values.deployment.replicas | default 1 }}
-  {{- if .Values.deployment.revisionHistoryLimit }}
-  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
-  {{- end }}
+  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit | default 2 }}
   selector:
     matchLabels:
       {{- include "common.selectorLabels" . | nindent 6 }}

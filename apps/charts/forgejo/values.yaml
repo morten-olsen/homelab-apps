@@ -24,6 +24,23 @@ container:
     type: tcpSocket
     port: http # Use named port
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+# OIDC/Authentik configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/user/oauth2/Authentik/callback"
+
+# Database configuration
+database:
+  enabled: true
+
 # Service configuration - multiple services
 service:
   ports:
@@ -84,22 +101,22 @@ env:
   FORGEJO__database__NAME:
     valueFrom:
       secretKeyRef:
-        name: "{release}-pg-connection"
+        name: "{release}-connection"
         key: database
   FORGEJO__database__HOST:
     valueFrom:
       secretKeyRef:
-        name: "{release}-pg-connection"
+        name: "{release}-connection"
         key: host
   FORGEJO__database__USER:
     valueFrom:
       secretKeyRef:
-        name: "{release}-pg-connection"
+        name: "{release}-connection"
         key: user
   FORGEJO__database__PASSWD:
     valueFrom:
       secretKeyRef:
-        name: "{release}-pg-connection"
+        name: "{release}-connection"
         key: password
   # Actions configuration
   FORGEJO__actions__ENABLED: "true"

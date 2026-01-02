@@ -1,8 +1,0 @@
-repoURL: "https://github.com/morten-olsen/homelab-apps"
-targetRevision: "main"
-path: "foundation/charts"
-exclude: "*.disabled"
-project: "foundation"
-globals:
-  timezone: Europe/Amsterdam
-  storageClass: prod
