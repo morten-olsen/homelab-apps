@@ -21,8 +21,8 @@ spec:
           env:
             - name: DB_URL
               valueFrom:
-                configMapKeyRef:
-                  name: "{{ .Release.Name }}-db-config"
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-connection"
                   key: url
             - name: DB_VECTOR_EXTENSION
               value: pgvector
@@ -124,8 +124,8 @@ spec:
           env:
             - name: DB_URL
               valueFrom:
-                configMapKeyRef:
-                  name: "{{ .Release.Name }}-db-config"
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-connection"
                   key: url
             - name: DB_VECTOR_EXTENSION
               value: pgvector
