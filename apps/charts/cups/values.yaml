@@ -1,0 +1,92 @@
+image:
+  repository: olbat/cupsd
+  tag: latest
+  pullPolicy: IfNotPresent
+
+subdomain: cups
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  hostNetwork: true  # Required for printer discovery and Android device access
+  dnsPolicy: ClusterFirstWithHostNet
+
+# Container configuration
+container:
+  ports:
+    - name: ipp
+      port: 631
+      protocol: TCP
+  healthProbe:
+    type: tcpSocket
+    port: ipp
+  securityContext:
+    privileged: false
+    runAsUser: 0  # CUPS typically needs root for printer access
+
+# Service configuration
+service:
+  ports:
+    - name: ipp
+      port: 631
+      targetPort: 631
+      protocol: TCP
+      type: ClusterIP
+  # Note: With hostNetwork, the service is mainly for service discovery
+  # CUPS will be accessible directly on node IP:631
+
+# Volume configuration
+volumes:
+  - name: config
+    mountPath: /etc/cups
+    persistentVolumeClaim: config
+  - name: spool
+    mountPath: /var/spool/cups
+    persistentVolumeClaim: spool
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: config
+    size: 1Gi
+  - name: spool
+    size: 5Gi
+
+# VirtualService configuration (for web UI)
+# Enables access via https://cups.{domain} for administration
+# IPP printing can still work via direct node IP or through the service
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+  servicePort: 631
+
+# OIDC client configuration (disabled with hostNetwork)
+# Web UI will be accessible directly via node IP
+oidc:
+  enabled: false
+
+# External Secrets configuration
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: cupspassword
+        length: 32
+        allowRepeat: true
+        encoding: alphanumeric
+        secretKeys:
+          - cupspassword
+
+# Environment variables
+env:
+  TZ:
+    value: "{timezone}"
+  CUPSADMIN:
+    value: admin
+  CUPSPASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: cupspassword
