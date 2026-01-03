@@ -107,6 +107,18 @@ container:
     runAsUser: 1000
     runAsGroup: 1000
 
+# Command and args (optional)
+# Override the container's default command/entrypoint
+# Useful for initialization scripts or custom startup logic
+command:
+  - /bin/sh
+  - -c
+args:
+  - |
+    echo "Running initialization..."
+    # Your custom startup logic here
+    exec /app/start.sh
+
 # Service configuration
 service:
   # Single service (simple case)
@@ -447,7 +459,7 @@ env:
 
 The library provides full resource templates that can be included directly:
 
-- `common.deployment` - Full Deployment resource with all standard configurations
+- `common.deployment` - Full Deployment resource with all standard configurations (supports custom command/args)
 - `common.service` - Full Service resource(s) - supports multiple services
 - `common.pvc` - Full PVC resources - supports multiple PVCs
 - `common.virtualService` - Full VirtualService resources (public + private gateways)

@@ -1,0 +1,53 @@
+{{- if and .Values.virtualService.enabled .Values.subdomain (hasKey .Values.globals "domain") (ne .Values.globals.domain "") }}
+{{- if and .Values.virtualService.gateways.public (hasKey .Values.globals "istio") (hasKey .Values.globals.istio "gateways") (hasKey .Values.globals.istio.gateways "public") (ne .Values.globals.istio.gateways.public "") }}
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ include "common.fullname" . }}-public
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    - {{ .Values.globals.istio.gateways.public | quote }}
+    - mesh
+  hosts:
+    - {{ include "common.domain" . }}
+    - mesh
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ include "common.fullname" . }}
+            port:
+              number: {{ .Values.virtualService.servicePort | default 631 }}
+---
+{{- end }}
+{{- if and .Values.virtualService.gateways.private (hasKey .Values.globals "istio") (hasKey .Values.globals.istio "gateways") (hasKey .Values.globals.istio.gateways "private") (ne .Values.globals.istio.gateways.private "") }}
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ include "common.fullname" . }}-private
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    - {{ .Values.globals.istio.gateways.private | quote }}
+    - mesh
+  hosts:
+    - {{ include "common.domain" . }}
+    - mesh
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ include "common.fullname" . }}
+            port:
+              number: {{ .Values.virtualService.servicePort | default 631 }}
+{{- end }}
+{{- end }}

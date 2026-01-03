@@ -1,0 +1,218 @@
+image:
+  repository: olbat/cupsd
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Command to initialize and start CUPS
+command:
+  - /bin/sh
+  - -c
+args:
+  - |
+    echo "Starting CUPS initialization..."
+    mkdir -p /etc/cups/ssl /var/spool/cups/tmp /var/log/cups /var/cache/cups /var/run
+    chmod 755 /etc/cups /var/spool/cups 2>&1 || true
+
+    if [ ! -f /etc/cups/cupsd.conf ]; then
+      echo "CUPS config not found, creating configuration with web access..."
+      {
+        echo "Listen *:631"
+        echo "ServerRoot /etc/cups"
+        echo "StateDir /var/spool/cups"
+        echo "CacheDir /var/cache/cups"
+        echo "DataDir /usr/share/cups"
+        echo "AccessLog /var/log/cups/access_log"
+        echo "ErrorLog /var/log/cups/error_log"
+        echo "LogLevel warn"
+        echo "MaxLogSize 0"
+        echo "SystemGroup lpadmin"
+        echo "User root"
+        echo "Group lp"
+        echo "ServerAdmin root"
+        echo ""
+        echo "# Network printer discovery"
+        echo "BrowseLocalProtocols dnssd"
+        echo "BrowseRemoteProtocols dnssd"
+        echo "BrowseAddress @LOCAL"
+        echo "BrowsePoll 192.168.0.0/16"
+        echo "BrowsePoll 192.168.1.0/24"
+        echo "BrowsePoll 192.168.10.0/24"
+        echo "BrowsePoll 192.168.20.0/24"
+        echo "BrowsePoll 192.168.30.0/24"
+        echo ""
+        echo "<Location />"
+        echo "  Order allow,deny"
+        echo "  Allow all"
+        echo "</Location>"
+        echo ""
+        echo "<Location /admin>"
+        echo "  Order allow,deny"
+        echo "  Allow all"
+        echo "</Location>"
+        echo ""
+        echo "<Location /admin/conf>"
+        echo "  AuthType Default"
+        echo "  Require user @SYSTEM"
+        echo "  Order allow,deny"
+        echo "  Allow all"
+        echo "</Location>"
+        echo ""
+        echo "<Policy default>"
+        echo "  JobPrivateAccess default"
+        echo "  JobPrivateValues default"
+        echo "  SubscriptionPrivateAccess default"
+        echo "  SubscriptionPrivateValues default"
+        echo "  <Limit Create-Job Print-Job Print-URI Validate-Job>"
+        echo "    Require user @OWNER @SYSTEM"
+        echo "  </Limit>"
+        echo "  <Limit Send-Document Send-URI Hold-Job Release-Job Restart-Job Purge-Jobs Set-Job-Attributes Create-Job-Subscription Renew-Subscription Cancel-Subscription Get-Notifications Reprocess-Job Cancel-Current-Job Suspend-Current-Job Resume-Job CUPS-Move-Job CUPS-Get-Document>"
+        echo "    Require user @OWNER @SYSTEM"
+        echo "  </Limit>"
+        echo "  <Limit Pause-Printer Resume-Printer Enable-Printer Disable-Printer Pause-Printer-After-Current-Job Hold-New-Jobs Release-Held-New-Jobs Deactivate-Printer Activate-Printer Restart-Printer Shutdown-Printer Startup-Printer Promote-Job Schedule-Job-After Cancel-Jobs CUPS-Accept-Jobs CUPS-Reject-Jobs>"
+        echo "    Require user @SYSTEM"
+        echo "  </Limit>"
+        echo "  <Limit CUPS-Add-Modify-Printer CUPS-Delete-Printer CUPS-Add-Modify-Class CUPS-Delete-Class CUPS-Set-Default CUPS-Get-Devices>"
+        echo "    Require user @SYSTEM"
+        echo "  </Limit>"
+        echo "  <Limit All>"
+        echo "    Order deny,allow"
+        echo "  </Limit>"
+        echo "</Policy>"
+      } > /etc/cups/cupsd.conf
+      echo "Created CUPS configuration file"
+    else
+      echo "CUPS config already exists, ensuring access controls and discovery are present..."
+      # Add network discovery settings if not present
+      if ! grep -q "BrowseLocalProtocols" /etc/cups/cupsd.conf; then
+        {
+          echo ""
+          echo "# Network printer discovery"
+          echo "BrowseLocalProtocols dnssd"
+          echo "BrowseRemoteProtocols dnssd"
+          echo "BrowseAddress @LOCAL"
+          echo "BrowsePoll 192.168.0.0/16"
+          echo "BrowsePoll 192.168.1.0/24"
+          echo "BrowsePoll 192.168.10.0/24"
+          echo "BrowsePoll 192.168.20.0/24"
+          echo "BrowsePoll 192.168.30.0/24"
+        } >> /etc/cups/cupsd.conf
+        echo "Added network discovery settings"
+      fi
+      # Always ensure Location sections exist for web access
+      if ! grep -q "<Location />" /etc/cups/cupsd.conf; then
+        {
+          echo ""
+          echo "<Location />"
+          echo "  Order allow,deny"
+          echo "  Allow all"
+          echo "</Location>"
+          echo ""
+          echo "<Location /admin>"
+          echo "  Order allow,deny"
+          echo "  Allow all"
+          echo "</Location>"
+          echo ""
+          echo "<Location /admin/conf>"
+          echo "  AuthType Default"
+          echo "  Require user @SYSTEM"
+          echo "  Order allow,deny"
+          echo "  Allow all"
+          echo "</Location>"
+        } >> /etc/cups/cupsd.conf
+        echo "Added access control sections to existing config"
+      fi
+    fi
+
+    echo "Testing CUPS configuration..."
+    /usr/sbin/cupsd -t 2>&1 || echo "Config test warnings (may be normal)"
+
+    echo "Starting CUPS daemon in foreground..."
+    exec /usr/sbin/cupsd -f
+
+subdomain: cups
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  hostNetwork: true # Required for printer discovery and Android device access
+  dnsPolicy: ClusterFirstWithHostNet
+
+# Container configuration
+container:
+  ports:
+    - name: ipp
+      port: 631
+      protocol: TCP
+  healthProbe:
+    type: tcpSocket
+    port: ipp
+  securityContext:
+    privileged: false
+    runAsUser: 0 # CUPS typically needs root for printer access
+
+# Service configuration
+service:
+  ports:
+    - name: ipp
+      port: 631
+      targetPort: 631
+      protocol: TCP
+      type: ClusterIP
+  # Note: With hostNetwork, the service is mainly for service discovery
+  # CUPS will be accessible directly on node IP:631
+
+# Volume configuration
+volumes:
+  - name: config
+    mountPath: /etc/cups
+    persistentVolumeClaim: cups-config
+  - name: spool
+    mountPath: /var/spool/cups
+    persistentVolumeClaim: cups-spool
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: config
+    size: 1Gi
+  - name: spool
+    size: 5Gi
+
+# VirtualService configuration (for web UI)
+# Enables access via https://cups.{domain} for administration
+# IPP printing can still work via direct node IP or through the service
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+  servicePort: 631
+
+# OIDC client configuration (disabled with hostNetwork)
+# Web UI will be accessible directly via node IP
+oidc:
+  enabled: false
+
+# External Secrets configuration
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: cupspassword
+        length: 16
+        allowRepeat: true
+        encoding: hex
+        secretKeys:
+          - cupspassword
+
+# Environment variables
+env:
+  TZ:
+    value: "{timezone}"
+  CUPSADMIN:
+    value: admin
+  CUPSPASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: cupspassword
