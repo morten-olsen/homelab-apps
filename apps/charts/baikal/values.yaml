@@ -15,7 +15,11 @@ container:
   port: 80
   healthProbe:
     type: tcpSocket
-    port: http  # Use named port
+    port: http # Use named port
+
+# Database configuration
+database:
+  enabled: true
 
 # Service configuration
 service:
