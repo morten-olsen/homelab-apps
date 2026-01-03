@@ -3,7 +3,8 @@ kind: Deployment
 metadata:
   name: "{{ .Release.Name }}"
   labels:
-    app: "{{ .Release.Name }}"
+    app.kubernetes.io/instance: "{{ .Release.Name }}"
+    app.kubernetes.io/app: "{{ .Release.Name }}"
 spec:
   replicas: 1
   revisionHistoryLimit: 0
@@ -11,11 +12,13 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: "{{ .Release.Name }}"
+      app.kubernetes.io/instance: "{{ .Release.Name }}"
+      app.kubernetes.io/app: "{{ .Release.Name }}"
   template:
     metadata:
       labels:
-        app: "{{ .Release.Name }}"
+        app.kubernetes.io/instance: "{{ .Release.Name }}"
+        app.kubernetes.io/app: "{{ .Release.Name }}"
     spec:
       initContainers:
         - name: render-config
