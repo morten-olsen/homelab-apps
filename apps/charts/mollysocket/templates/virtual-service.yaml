@@ -1,11 +1,11 @@
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: "{{ .Release.Name }}-public"
+  name: "{{ .Release.Name }}-private"
   namespace: "{{ .Release.Namespace }}"
 spec:
   gateways:
-    - "{{ .Values.globals.istio.gateways.public }}"
+    - "{{ .Values.globals.istio.gateways.private }}"
     - mesh
   hosts:
     - "{{ .Values.subdomain }}.{{ .Values.globals.domain }}"
