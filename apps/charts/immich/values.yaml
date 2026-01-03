@@ -1,4 +1,6 @@
 subdomain: immich
+
+# Image configurations for multiple deployments
 server:
   image:
     repository: ghcr.io/immich-app/immich-server
@@ -23,3 +25,29 @@ postgres:
 # Database configuration
 database:
   enabled: true
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: upload
+    size: 100Gi
+  - name: library
+    size: 100Gi
+  - name: model-cache
+    size: 10Gi
+
+# Note: Services are kept custom due to different selectors for each deployment
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+  servicePort: 80  # Port of the main server service
+
+# OIDC client configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/api/auth/callback/authentik"
+  subjectMode: user_username

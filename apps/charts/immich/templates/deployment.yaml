@@ -53,17 +53,17 @@ spec:
             - name: OAUTH_ISSUER_URL
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Release.Name }}-client"
-                  key: configuration
+                  name: "{{ .Release.Name }}-oidc-credentials"
+                  key: issuer
             - name: OAUTH_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Release.Name }}-client"
+                  name: "{{ .Release.Name }}-oidc-credentials"
                   key: clientId
             - name: OAUTH_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Release.Name }}-client"
+                  name: "{{ .Release.Name }}-oidc-credentials"
                   key: clientSecret
             - name: OAUTH_SCOPE
               value: "openid profile email"
