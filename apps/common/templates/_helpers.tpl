@@ -272,6 +272,36 @@ VirtualService gateway list for private gateway
 {{- end }}
 
 {{/*
+DNS configuration for pod spec
+*/}}
+{{- define "common.dnsConfig" -}}
+{{- if .Values.deployment.dns }}
+{{- if .Values.deployment.dns.nameservers }}
+dnsPolicy: {{ .Values.deployment.dns.policy | default "None" }}
+dnsConfig:
+  nameservers:
+{{- range .Values.deployment.dns.nameservers }}
+    - {{ . | quote }}
+{{- end }}
+{{- if .Values.deployment.dns.searches }}
+  searches:
+{{- range .Values.deployment.dns.searches }}
+    - {{ . | quote }}
+{{- end }}
+{{- end }}
+{{- if .Values.deployment.dns.options }}
+  options:
+{{- range .Values.deployment.dns.options }}
+    - {{ toYaml . | nindent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- else if .Values.deployment.dnsPolicy }}
+dnsPolicy: {{ .Values.deployment.dnsPolicy }}
+{{- end }}
+{{- end }}
+
+{{/*
 Full Deployment resource
 */}}
 {{- define "common.deployment" -}}
@@ -305,9 +335,7 @@ spec:
       {{- if .Values.deployment.hostNetwork }}
       hostNetwork: {{ .Values.deployment.hostNetwork }}
       {{- end }}
-      {{- if .Values.deployment.dnsPolicy }}
-      dnsPolicy: {{ .Values.deployment.dnsPolicy }}
-      {{- end }}
+      {{- include "common.dnsConfig" . | nindent 6 }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
