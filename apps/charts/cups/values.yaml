@@ -1,6 +1,6 @@
 image:
   repository: olbat/cupsd
-  tag: latest
+  tag: latest@sha256:2d218ee1706c922a80c7469532a0b6b02bb4e92b0672db1d98b3b6e6e2ba1b78
   pullPolicy: IfNotPresent
 
 # Command to initialize and start CUPS
