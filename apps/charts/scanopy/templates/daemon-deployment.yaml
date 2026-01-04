@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-daemon
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    component: daemon
+spec:
+  strategy:
+    type: {{ .Values.daemon.deployment.strategy | default "Recreate" }}
+  replicas: {{ .Values.daemon.deployment.replicas | default 1 }}
+  {{- if .Values.daemon.deployment.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ .Values.daemon.deployment.revisionHistoryLimit }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+      component: daemon
+  template:
+    metadata:
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+        component: daemon
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: daemon
+          image: "{{ .Values.daemon.image.repository }}:{{ .Values.daemon.image.tag }}"
+          imagePullPolicy: {{ .Values.daemon.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            {{- if .Values.daemon.container.ports }}
+            {{- range .Values.daemon.container.ports }}
+            - name: {{ .name }}
+              containerPort: {{ .port }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+            {{- else if .Values.daemon.container.port }}
+            - name: http
+              containerPort: {{ .Values.daemon.container.port }}
+              protocol: TCP
+            {{- end }}
+          {{- if .Values.daemon.container.healthProbe }}
+          livenessProbe:
+            {{- if eq .Values.daemon.container.healthProbe.type "httpGet" }}
+            httpGet:
+              path: {{ .Values.daemon.container.healthProbe.path }}
+              port: {{ .Values.daemon.container.healthProbe.port }}
+            {{- else if eq .Values.daemon.container.healthProbe.type "tcpSocket" }}
+            tcpSocket:
+              port: {{ .Values.daemon.container.healthProbe.port }}
+            {{- end }}
+            {{- if .Values.daemon.container.healthProbe.initialDelaySeconds }}
+            initialDelaySeconds: {{ .Values.daemon.container.healthProbe.initialDelaySeconds }}
+            {{- end }}
+            {{- if .Values.daemon.container.healthProbe.periodSeconds }}
+            periodSeconds: {{ .Values.daemon.container.healthProbe.periodSeconds }}
+            {{- else }}
+            periodSeconds: 5
+            {{- end }}
+            {{- if .Values.daemon.container.healthProbe.timeoutSeconds }}
+            timeoutSeconds: {{ .Values.daemon.container.healthProbe.timeoutSeconds }}
+            {{- else }}
+            timeoutSeconds: 3
+            {{- end }}
+            {{- if .Values.daemon.container.healthProbe.failureThreshold }}
+            failureThreshold: {{ .Values.daemon.container.healthProbe.failureThreshold }}
+            {{- else }}
+            failureThreshold: 15
+            {{- end }}
+          readinessProbe:
+            {{- if eq .Values.daemon.container.healthProbe.type "httpGet" }}
+            httpGet:
+              path: {{ .Values.daemon.container.healthProbe.path }}
+              port: {{ .Values.daemon.container.healthProbe.port }}
+            {{- else if eq .Values.daemon.container.healthProbe.type "tcpSocket" }}
+            tcpSocket:
+              port: {{ .Values.daemon.container.healthProbe.port }}
+            {{- end }}
+            {{- if .Values.daemon.container.healthProbe.initialDelaySeconds }}
+            initialDelaySeconds: {{ .Values.daemon.container.healthProbe.initialDelaySeconds }}
+            {{- end }}
+            {{- if .Values.daemon.container.healthProbe.periodSeconds }}
+            periodSeconds: {{ .Values.daemon.container.healthProbe.periodSeconds }}
+            {{- else }}
+            periodSeconds: 5
+            {{- end }}
+            {{- if .Values.daemon.container.healthProbe.timeoutSeconds }}
+            timeoutSeconds: {{ .Values.daemon.container.healthProbe.timeoutSeconds }}
+            {{- else }}
+            timeoutSeconds: 3
+            {{- end }}
+            {{- if .Values.daemon.container.healthProbe.failureThreshold }}
+            failureThreshold: {{ .Values.daemon.container.healthProbe.failureThreshold }}
+            {{- else }}
+            failureThreshold: 15
+            {{- end }}
+          {{- end }}
+          {{- if .Values.daemon.container.securityContext }}
+          securityContext:
+            {{- toYaml .Values.daemon.container.securityContext | nindent 12 }}
+          {{- end }}
+          {{- if .Values.daemon.volumes }}
+          volumeMounts:
+            {{- range .Values.daemon.volumes }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .readOnly }}
+              readOnly: {{ .readOnly }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          env:
+            {{- if .Values.daemon.env }}
+            {{- range $key, $value := .Values.daemon.env }}
+            - name: {{ $key }}
+              {{- if kindIs "map" $value }}
+              {{- if $value.value }}
+              value: {{ $value.value | replace "{release}" $.Release.Name | replace "{namespace}" $.Release.Namespace | replace "{subdomain}" $.Values.subdomain | replace "{domain}" $.Values.globals.domain | replace "{timezone}" $.Values.globals.timezone }}
+              {{- else if $value.valueFrom }}
+              valueFrom:
+                {{- if $value.valueFrom.secretKeyRef }}
+                secretKeyRef:
+                  name: {{ $value.valueFrom.secretKeyRef.name | replace "{release}" $.Release.Name }}
+                  key: {{ $value.valueFrom.secretKeyRef.key }}
+                {{- end }}
+              {{- end }}
+              {{- else }}
+              value: {{ $value | quote }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.globals.timezone }}
+            - name: TZ
+              value: {{ .Values.globals.timezone | quote }}
+            {{- end }}
+      {{- if .Values.daemon.volumes }}
+      volumes:
+        {{- range .Values.daemon.volumes }}
+        - name: {{ .name }}
+          {{- if .persistentVolumeClaim }}
+          persistentVolumeClaim:
+            {{- if or (eq .persistentVolumeClaim "config") (eq .persistentVolumeClaim "metadata") (eq .persistentVolumeClaim "data") (eq .persistentVolumeClaim "daemon-config") }}
+            claimName: {{ $.Release.Name }}-{{ .persistentVolumeClaim }}
+            {{- else }}
+            claimName: {{ .persistentVolumeClaim }}
+            {{- end }}
+          {{- else if .hostPath }}
+          hostPath:
+            path: {{ .hostPath.path }}
+            {{- if .hostPath.type }}
+            type: {{ .hostPath.type }}
+            {{- end }}
+          {{- else if .emptyDir }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+      {{- end }}
