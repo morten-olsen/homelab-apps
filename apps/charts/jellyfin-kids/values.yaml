@@ -3,7 +3,7 @@ image:
   tag: latest@sha256:6d819e9ab067efcf712993b23455cc100ee5585919bb297ea5a109ac00cb626e
   pullPolicy: IfNotPresent
 
-subdomain: jellyfin
+subdomain: jellyfin-kids
 
 # Deployment configuration
 deployment:
@@ -34,15 +34,9 @@ volumes:
   - name: config
     mountPath: /config
     persistentVolumeClaim: config
-  - name: movies
-    mountPath: /media/movies
-    persistentVolumeClaim: movies # External PVC (not prefixed)
-  - name: tvshows
-    mountPath: /media/tv-shows
-    persistentVolumeClaim: tvshows # External PVC (not prefixed)
-  - name: music
-    mountPath: /media/music
-    persistentVolumeClaim: music # External PVC (not prefixed)
+  - name: kidsmusic
+    mountPath: /media/kids-music
+    persistentVolumeClaim: kidsmusic # External PVC (not prefixed)
 
 # Persistent volume claims
 persistentVolumeClaims:
