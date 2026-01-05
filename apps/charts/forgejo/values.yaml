@@ -152,7 +152,7 @@ actions:
     dind:
       image:
         repository: code.forgejo.org/oci/docker
-        tag: dind
+        tag: dind@sha256:173f284a4299164772a90f52b373e73e087583c0963f1334c9995f190ef6f3f5
         pullPolicy: IfNotPresent
     name: default
     replicas: 1
