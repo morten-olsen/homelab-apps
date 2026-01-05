@@ -32,6 +32,7 @@ volumes:
 persistentVolumeClaims:
   - name: data
     size: 1Gi
+    storageClassName: persistent
 
 # VirtualService configuration
 virtualService:

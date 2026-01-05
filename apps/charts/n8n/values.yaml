@@ -48,6 +48,7 @@ volumes:
   - name: data
     mountPath: /home/node/.n8n
     persistentVolumeClaim: data
+    storageClassName: persistent
 
 # Persistent volume claims
 persistentVolumeClaims:

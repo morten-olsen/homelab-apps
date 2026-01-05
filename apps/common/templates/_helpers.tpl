@@ -315,7 +315,11 @@ metadata:
 spec:
   strategy:
     type: {{ include "common.deploymentStrategy" . }}
-  replicas: {{ .Values.deployment.replicas | default 1 }}
+  {{- if hasKey .Values.deployment "replicas" }}
+  replicas: {{ .Values.deployment.replicas }}
+  {{- else }}
+  replicas: {{ .Values.deployment.replicas }}
+  {{- end }}
   {{- if hasKey .Values.deployment "revisionHistoryLimit" }}
   revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
   {{- else }}
@@ -445,6 +449,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ $.Release.Name }}-{{ .name }}
+  annotations:
+    longhorn.io/description: "{{ $.Release.Namespace }}/{{ $.Release.Name }}"
+    argocd.argoproj.io/sync-options: Delete=false
   labels:
     {{- include "common.labels" $ | nindent 4 }}
 spec:
@@ -453,8 +460,10 @@ spec:
   resources:
     requests:
       storage: {{ .size }}
-  {{- if $.Values.globals.environment }}
-  storageClassName: {{ $.Values.globals.environment }}
+  {{- if .storageClassName }}
+  storageClassName: {{ .storageClassName }}
+  {{- else if $.Values.globals.storageClassName }}
+  storageClassName: {{ $.Values.globals.storageClassName }}
   {{- end }}
 {{- end }}
 {{- end }}

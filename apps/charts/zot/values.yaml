@@ -41,7 +41,8 @@ volumes:
 # Persistent volume claims
 persistentVolumeClaims:
   - name: data
-    size: 1Gi
+    size: 50Gi
+    storageClassName: persistent
 
 # VirtualService configuration
 virtualService:

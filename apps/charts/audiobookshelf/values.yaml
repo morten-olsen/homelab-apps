@@ -26,10 +26,10 @@ service:
 volumes:
   - name: config
     mountPath: /config
-    persistentVolumeClaim: config  # Will be prefixed with release name in template
+    persistentVolumeClaim: config # Will be prefixed with release name in template
   - name: metadata
     mountPath: /metadata
-    persistentVolumeClaim: metadata  # Will be prefixed with release name in template
+    persistentVolumeClaim: metadata # Will be prefixed with release name in template
   - name: audiobooks
     mountPath: /audiobooks
     persistentVolumeClaim: books
@@ -41,8 +41,10 @@ volumes:
 persistentVolumeClaims:
   - name: config
     size: 1Gi
+    storageClassName: persistent
   - name: metadata
-    size: 1Gi
+    size: 5Gi
+    storageClassName: persistent
 
 # DNS configuration
 dns:

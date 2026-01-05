@@ -16,7 +16,7 @@ container:
   port: 8080
   healthProbe:
     type: tcpSocket
-    port: http  # Use named port
+    port: http # Use named port
 
 # Service configuration
 service:
@@ -73,7 +73,7 @@ env:
     valueFrom:
       secretKeyRef:
         name: "{release}-oidc-credentials"
-        key: issuer 
+        key: issuer
   OAUTH2_OIDC_PROVIDER_NAME: Authentik
   OAUTH2_PROVIDER: oidc
   OAUTH2_REDIRECT_URL:

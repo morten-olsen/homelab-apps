@@ -25,15 +25,16 @@ service:
 volumes:
   - name: data
     mountPath: /config
-    persistentVolumeClaim: data  # Will be prefixed with release name
+    persistentVolumeClaim: data # Will be prefixed with release name
   - name: books
     mountPath: /calibre-library
-    persistentVolumeClaim: books  # External PVC, used as-is
+    persistentVolumeClaim: books # External PVC, used as-is
 
 # Persistent volume claims
 persistentVolumeClaims:
   - name: data
     size: 1Gi
+    storageClassName: persistent
 
 # VirtualService configuration
 virtualService:

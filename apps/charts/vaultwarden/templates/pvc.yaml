@@ -7,5 +7,5 @@ spec:
     - "ReadWriteOnce"
   resources:
     requests:
-      storage: "1Gi"
-  storageClassName: "{{ .Values.globals.environment }}"
+      storage: "3Gi"
+  storageClassName: persistent

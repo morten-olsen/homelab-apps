@@ -30,8 +30,10 @@ database:
 persistentVolumeClaims:
   - name: upload
     size: 100Gi
+    storageClassName: persistent
   - name: library
     size: 100Gi
+    storageClassName: persistent
   - name: model-cache
     size: 10Gi
 
@@ -43,7 +45,7 @@ virtualService:
   gateways:
     public: true
     private: true
-  servicePort: 80  # Port of the main server service
+  servicePort: 80 # Port of the main server service
 
 # OIDC client configuration
 oidc:

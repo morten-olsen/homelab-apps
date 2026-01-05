@@ -9,14 +9,14 @@ subdomain: esphome
 deployment:
   strategy: Recreate
   replicas: 1
-  hostNetwork: true  # ESPHome needs hostNetwork for device discovery
+  hostNetwork: true # ESPHome needs hostNetwork for device discovery
 
 # Container configuration
 container:
   port: 6052
   healthProbe:
     type: tcpSocket
-    port: http  # Use named port
+    port: http # Use named port
 
 # Service configuration
 service:
@@ -32,7 +32,8 @@ volumes:
 # Persistent volume claims
 persistentVolumeClaims:
   - name: data
-    size: 1Gi
+    size: 10Gi
+    storageClassName: persistent
 
 # VirtualService configuration
 virtualService:

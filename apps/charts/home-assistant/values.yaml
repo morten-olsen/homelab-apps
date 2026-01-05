@@ -52,7 +52,8 @@ volumes:
 # Persistent volume claims
 persistentVolumeClaims:
   - name: config
-    size: 1Gi
+    size: 5Gi
+    storageClassName: persistent
 piper:
   image:
     repository: ghcr.io/morten-olsen/glados-voice

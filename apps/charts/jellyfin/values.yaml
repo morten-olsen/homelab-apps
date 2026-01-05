@@ -51,6 +51,7 @@ volumes:
 persistentVolumeClaims:
   - name: config
     size: 5Gi
+    storageClassName: persistent
 
 # VirtualService configuration
 virtualService:
