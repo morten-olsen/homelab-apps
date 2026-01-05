@@ -50,7 +50,7 @@ volumes:
 # Persistent volume claims
 persistentVolumeClaims:
   - name: config
-    size: 1Gi
+    size: 5Gi
 
 # VirtualService configuration
 virtualService:
