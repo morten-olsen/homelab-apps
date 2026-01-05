@@ -655,6 +655,7 @@ metadata:
     {{- include "common.labels" $ | nindent 4 }}
 spec:
   refreshInterval: 1h
+  # rotationPolicy is intentionally not set to ensure no automatic rotation
   target:
     name: {{ $secretName }}
     creationPolicy: Owner
