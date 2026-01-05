@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-redis"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app: "{{ .Release.Name }}-redis"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-redis"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-redis"
+    spec:
+      initContainers:
+        - name: fix-permissions
+          image: busybox:latest
+          command: ['sh', '-c']
+          args:
+            - |
+              mkdir -p /data
+              chown -R 999:999 /data || chown -R 0:0 /data
+              chmod -R 755 /data
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: "{{ .Release.Name }}-redis"
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: "{{ .Values.redis.image.pullPolicy }}"
+          ports:
+            - name: tcp
+              containerPort: 6379
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          command:
+            - redis-server
+            - --appendonly
+            - "no"
+            - --save
+            - ""
+            - --stop-writes-on-bgsave-error
+            - "no"
+          livenessProbe:
+            tcpSocket:
+              port: tcp
+          readinessProbe:
+            tcpSocket:
+              port: tcp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-redis-data"

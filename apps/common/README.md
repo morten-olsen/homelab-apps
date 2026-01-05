@@ -185,12 +185,16 @@ externalSecrets:
     passwords:
       - name: apiKey
         length: 32
-        encoding: hex  # or base64, alphanumeric
+        encoding: hex  # Supported: base64, base64url, base32, hex, raw
         allowRepeat: true
+        secretKeys:  # Required: sets the key name in the secret
+          - apiKey
       - name: encryptionKey
         length: 64
         encoding: base64
         allowRepeat: false
+        secretKeys:  # Required: sets the key name in the secret
+          - encryptionKey
 
 # Environment variables
 env:
@@ -270,6 +274,8 @@ Add secret generation templates:
 # templates/secret-external-secrets.yaml
 {{ include "common.externalSecrets.externalSecrets" . }}
 ```
+
+**Note:** Remember to include `secretKeys` in each password configuration in `values.yaml` to set the key names in the generated secret. See the [External Secrets](#external-secrets) section for details.
 
 ## Complete Examples
 
@@ -429,10 +435,14 @@ externalSecrets:
         length: 64
         encoding: base64
         allowRepeat: true
+        secretKeys:  # Required: sets the key name in the secret
+          - encryptionKey
       - name: apiToken
         length: 32
         encoding: hex
         allowRepeat: false
+        secretKeys:  # Required: sets the key name in the secret
+          - apiToken
 
 env:
   ENCRYPTION_KEY:
@@ -489,7 +499,26 @@ When `database.enabled: true`, the PostgresDatabase creates a secret named `{rel
 
 ### External Secrets
 
-External secrets are created with the name specified in `externalSecrets[].name` (use `{release}` placeholder). Each password field becomes a key in the secret.
+External secrets are created with the name specified in `externalSecrets[].name` (use `{release}` placeholder). 
+
+**Important:** The `secretKeys` field is **required** for each password generator to set the key name in the secret. Without `secretKeys`, the Password generator defaults to using `password` as the key name. The `name` field in the password config is used for the generator name, not the secret key name.
+
+**Supported encodings:** `base64`, `base64url`, `base32`, `hex`, `raw` (note: `alphanumeric` is not supported)
+
+**Example:**
+```yaml
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: my-password-generator  # Generator name (used in resource name)
+        length: 32
+        encoding: hex
+        allowRepeat: true
+        secretKeys:  # Required: sets the key name in the secret
+          - mySecretKey  # This becomes the key name in the secret
+```
+
+The secret will contain a key named `mySecretKey` (not `my-password-generator`).
 
 ## Placeholders
 

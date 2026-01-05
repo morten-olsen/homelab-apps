@@ -1,0 +1,27 @@
+{{ include "common.pvc" . }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "{{ .Release.Name }}-redis-data"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "{{ .Release.Name }}-es-data"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi

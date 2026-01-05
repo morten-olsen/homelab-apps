@@ -1,0 +1,116 @@
+image:
+  repository: bbilly1/tubearchivist
+  tag: latest
+  pullPolicy: IfNotPresent
+
+subdomain: tubearchivist
+
+# Use the image's default CMD as specified in Dockerfile
+# Dependencies are already installed in /root/.local from the multi-stage build
+# Note: tini location may vary, using bash directly as fallback
+command:
+  - /bin/bash
+  - /app/run.sh
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 2
+  podAnnotations:
+    sidecar.istio.io/rewriteAppHTTPProbers: "false"
+
+# Container configuration
+container:
+  ports:
+    - name: http
+      port: 8000
+      protocol: TCP
+  healthProbe:
+    type: tcpSocket
+    port: http
+    initialDelaySeconds: 30
+    periodSeconds: 120
+    timeoutSeconds: 10
+    failureThreshold: 3
+  # securityContext removed - image expects to run as root to access /root/.local packages
+
+# Service configuration
+service:
+  port: 80
+  targetPort: http
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: media
+    mountPath: /youtube
+    persistentVolumeClaim: kidsyoutube # External PVC (not prefixed with release name)
+  - name: cache
+    mountPath: /cache
+    persistentVolumeClaim: data # Use "data" so common library prefixes it correctly
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 10Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# External Secrets configuration for initial credentials
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: ta-password
+        length: 32
+        allowRepeat: true
+        encoding: hex
+        secretKeys:
+          - ta-password
+      - name: elastic-password
+        length: 32
+        allowRepeat: true
+        encoding: hex
+        secretKeys:
+          - elastic-password
+
+# Environment variables
+env:
+  ES_URL:
+    value: "http://{release}-es.{namespace}.svc.cluster.local:9200"
+  REDIS_CON:
+    value: "redis://{release}-redis.{namespace}.svc.cluster.local:6379"
+  HOST_UID: "1000"
+  HOST_GID: "1000"
+  TA_HOST:
+    value: "https://{subdomain}.{domain}"
+  TA_USERNAME: "tubearchivist"
+  TA_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: ta-password
+  ELASTIC_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: elastic-password
+
+# Redis configuration
+redis:
+  image:
+    repository: redis
+    tag: latest
+    pullPolicy: IfNotPresent
+
+# Elasticsearch configuration
+elasticsearch:
+  image:
+    repository: bbilly1/tubearchivist-es
+    tag: latest
+    pullPolicy: IfNotPresent

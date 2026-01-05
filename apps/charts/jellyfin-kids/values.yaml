@@ -37,6 +37,9 @@ volumes:
   - name: kidsmusic
     mountPath: /media/kids-music
     persistentVolumeClaim: kidsmusic # External PVC (not prefixed)
+  - name: media
+    mountPath: /media/youtube
+    persistentVolumeClaim: kidsyoutube # External PVC (not prefixed with release name)
 
 # Persistent volume claims
 persistentVolumeClaims:

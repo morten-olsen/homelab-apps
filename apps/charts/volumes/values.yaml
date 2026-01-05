@@ -20,5 +20,5 @@ shares:
     path: /mnt/HDD/Misc
   kidsmusic:
     path: /mnt/HDD/Misc/Kids_Music
-  images:
-    path: /mnt/HDD/images
+  kidsyoutube:
+    path: /mnt/HDD/Kids/YouTube

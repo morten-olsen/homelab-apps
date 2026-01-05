@@ -330,6 +330,10 @@ spec:
       {{- include "common.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- if .Values.deployment.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.deployment.podAnnotations | nindent 8 }}
+      {{- end }}
       labels:
         {{- include "common.selectorLabels" . | nindent 8 }}
     spec:

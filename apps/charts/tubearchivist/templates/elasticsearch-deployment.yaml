@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-es"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app: "{{ .Release.Name }}-es"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-es"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-es"
+    spec:
+      initContainers:
+        - name: fix-permissions
+          image: busybox:latest
+          command: ['sh', '-c']
+          args:
+            - |
+              mkdir -p /usr/share/elasticsearch/data
+              chown -R 1000:1000 /usr/share/elasticsearch/data
+              chmod -R 755 /usr/share/elasticsearch/data
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+      containers:
+        - name: "{{ .Release.Name }}-es"
+          image: "{{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}"
+          imagePullPolicy: "{{ .Values.elasticsearch.image.pullPolicy }}"
+          ports:
+            - name: http
+              containerPort: 9200
+              protocol: TCP
+          env:
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: elastic-password
+            - name: ES_JAVA_OPTS
+              value: "-Xms1g -Xmx1g"
+            - name: xpack.security.enabled
+              value: "true"
+            - name: discovery.type
+              value: "single-node"
+            - name: path.repo
+              value: "/usr/share/elasticsearch/data/snapshot"
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+          resources:
+            limits:
+              memory: "2Gi"
+            requests:
+              memory: "1Gi"
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  curl -s -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health | grep -q '"status":"green"\|"status":"yellow"'
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+      securityContext:
+        fsGroup: 1000
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-es-data"
