@@ -19,6 +19,14 @@ spec:
         - name: "{{ .Release.Name }}"
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          env:
+          - name: OLLAMA_INTEL_GPU
+            value: "true"
+          resources:
+            limits:
+              gpu.intel.com/i915: "1"
+            requests:
+              gpu.intel.com/i915: "1"
           ports:
             - name: http
               containerPort: 11434
