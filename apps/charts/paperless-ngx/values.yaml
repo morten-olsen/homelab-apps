@@ -31,13 +31,13 @@ volumes:
     persistentVolumeClaim: data
   - name: media
     mountPath: /usr/src/paperless/media
-    persistentVolumeClaim: media
+    persistentVolumeClaim: paperless-ngx-media
   - name: consume
     mountPath: /usr/src/paperless/consume
-    persistentVolumeClaim: consume
+    persistentVolumeClaim: paperless-ngx-consume
   - name: export
     mountPath: /usr/src/paperless/export
-    persistentVolumeClaim: export
+    persistentVolumeClaim: paperless-ngx-export
 
 # Persistent volume claims
 persistentVolumeClaims:
@@ -79,7 +79,7 @@ externalSecrets:
       - name: secretkey
         length: 64
         encoding: hex
-        allowRepeat: false
+        allowRepeat: true
         secretKeys:
           - secretkey
 

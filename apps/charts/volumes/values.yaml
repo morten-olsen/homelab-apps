@@ -5,7 +5,7 @@ shares:
   tvshows:
     path: /mnt/HDD/TV-Shows
   music:
-    path: /mnt/HDD/Music2
+    path: /mnt/HDD/Music
   books:
     path: /mnt/HDD/Books
   podcasts:
@@ -19,7 +19,7 @@ shares:
   misc:
     path: /mnt/HDD/Misc
   kidsmusic:
-    path: /mnt/HDD/Misc/Kids_Music
+    path: /mnt/HDD/Kids/Music
   images:
     path: /mnt/HDD/images
   kidsyoutube:
