@@ -1,1 +1,17 @@
 {{ include "common.pvc" . }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "{{ .Release.Name }}-valkey-data"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.valkey.storage.size | default "1Gi" }}
+  {{- if .Values.valkey.storage.storageClassName }}
+  storageClassName: {{ .Values.valkey.storage.storageClassName }}
+  {{- end }}

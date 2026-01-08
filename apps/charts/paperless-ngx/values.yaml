@@ -121,9 +121,9 @@ env:
       secretKeyRef:
         name: "{release}-connection"
         key: password
-  # Redis configuration (external Redis required)
-  # Update these values to point to your Redis instance
-  PAPERLESS_REDIS: redis://redis.shared.svc.cluster.local:6379
+  # Redis/Valkey configuration
+  PAPERLESS_REDIS:
+    value: "redis://{release}-valkey.{namespace}.svc.cluster.local:6379"
   # OIDC configuration using django-allauth
   PAPERLESS_ENABLE_ALLAUTH: "true"
   PAPERLESS_APPS: "allauth.socialaccount.providers.openid_connect"
@@ -146,3 +146,13 @@ env:
       secretKeyRef:
         name: "{release}-oidc-credentials"
         key: issuer
+
+# Valkey (Redis-compatible) configuration
+valkey:
+  image:
+    repository: valkey/valkey
+    tag: latest
+    pullPolicy: IfNotPresent
+  storage:
+    size: 1Gi
+    storageClassName: persistent
