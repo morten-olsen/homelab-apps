@@ -1,0 +1,7 @@
+apiVersion: v2
+version: 1.0.0
+name: paperless-ngx
+dependencies:
+  - name: common
+    version: 1.0.0
+    repository: file://../../common

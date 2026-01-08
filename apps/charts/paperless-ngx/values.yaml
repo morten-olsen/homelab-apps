@@ -1,0 +1,148 @@
+image:
+  repository: ghcr.io/paperless-ngx/paperless-ngx
+  tag: latest
+  pullPolicy: IfNotPresent
+
+subdomain: paperless
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 8000
+  healthProbe:
+    type: httpGet
+    path: /api/
+    port: http
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /usr/src/paperless/data
+    persistentVolumeClaim: data
+  - name: media
+    mountPath: /usr/src/paperless/media
+    persistentVolumeClaim: media
+  - name: consume
+    mountPath: /usr/src/paperless/consume
+    persistentVolumeClaim: consume
+  - name: export
+    mountPath: /usr/src/paperless/export
+    persistentVolumeClaim: export
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 10Gi
+    storageClassName: persistent
+  - name: media
+    size: 50Gi
+    storageClassName: persistent
+  - name: consume
+    size: 5Gi
+    storageClassName: persistent
+  - name: export
+    size: 5Gi
+    storageClassName: persistent
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# OIDC client configuration
+oidc:
+  enabled: true
+  redirectUris:
+    - "/accounts/oidc/authentik/login/callback/"
+  subjectMode: user_username
+
+# Database configuration
+database:
+  enabled: true
+
+# External Secrets configuration
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: secretkey
+        length: 64
+        encoding: hex
+        allowRepeat: false
+        secretKeys:
+          - secretkey
+
+# Environment variables
+env:
+  TZ:
+    value: "{timezone}"
+  PAPERLESS_URL:
+    value: "https://{subdomain}.{domain}"
+  PAPERLESS_SECRET_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: secretkey
+  # Database configuration
+  PAPERLESS_DBENGINE: postgresql
+  PAPERLESS_DBHOST:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: host
+  PAPERLESS_DBPORT:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: port
+  PAPERLESS_DBNAME:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: database
+  PAPERLESS_DBUSER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: user
+  PAPERLESS_DBPASS:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: password
+  # Redis configuration (external Redis required)
+  # Update these values to point to your Redis instance
+  PAPERLESS_REDIS: redis://redis.shared.svc.cluster.local:6379
+  # OIDC configuration using django-allauth
+  PAPERLESS_ENABLE_ALLAUTH: "true"
+  PAPERLESS_APPS: "allauth.socialaccount.providers.openid_connect"
+  # PAPERLESS_SOCIALACCOUNT_PROVIDERS is set via init container (see deployment.yaml)
+  PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "true"
+  PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
+  # OIDC credentials for init container (will be used to construct JSON)
+  PAPERLESS_OIDC_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientId
+  PAPERLESS_OIDC_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientSecret
+  PAPERLESS_OIDC_ISSUER_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: issuer

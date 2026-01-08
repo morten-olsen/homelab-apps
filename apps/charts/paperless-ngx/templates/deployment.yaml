@@ -1,0 +1,105 @@
+{{- if .Values.deployment }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: {{ include "common.deploymentStrategy" . }}
+  {{- if hasKey .Values.deployment "replicas" }}
+  replicas: {{ .Values.deployment.replicas }}
+  {{- else }}
+  replicas: {{ .Values.deployment.replicas }}
+  {{- end }}
+  {{- if hasKey .Values.deployment "revisionHistoryLimit" }}
+  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
+  {{- else }}
+  revisionHistoryLimit: 2
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- if .Values.deployment.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.deployment.podAnnotations | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if .Values.oidc.enabled }}
+      serviceAccountName: {{ include "common.fullname" . }}-oidc-config
+      {{- else if .Values.deployment.serviceAccountName }}
+      serviceAccountName: {{ .Values.deployment.serviceAccountName | replace "{release}" .Release.Name | replace "{fullname}" (include "common.fullname" .) }}
+      {{- end }}
+      {{- if .Values.deployment.hostNetwork }}
+      hostNetwork: {{ .Values.deployment.hostNetwork }}
+      {{- end }}
+      {{- include "common.dnsConfig" . | nindent 6 }}
+      {{- if .Values.oidc.enabled }}
+      initContainers:
+      - name: oidc-config-generator
+        image: bitnami/kubectl:latest
+        command:
+        - sh
+        - -c
+        - |
+          CLIENT_ID=$(kubectl get secret {{ .Release.Name }}-oidc-credentials -o jsonpath='{.data.clientId}' | base64 -d)
+          CLIENT_SECRET=$(kubectl get secret {{ .Release.Name }}-oidc-credentials -o jsonpath='{.data.clientSecret}' | base64 -d)
+          ISSUER=$(kubectl get secret {{ .Release.Name }}-oidc-credentials -o jsonpath='{.data.issuer}' | base64 -d)
+          # Construct well-known URL from issuer
+          SERVER_URL="${ISSUER}/.well-known/openid-configuration"
+          JSON="{\"openid_connect\":{\"OAUTH_PKCE_ENABLED\":true,\"APPS\":[{\"provider_id\":\"authentik\",\"name\":\"authentik\",\"client_id\":\"$CLIENT_ID\",\"secret\":\"$CLIENT_SECRET\",\"settings\":{\"server_url\":\"$SERVER_URL\"}}]}"
+          kubectl create secret generic {{ include "common.fullname" . }}-oidc-providers --from-literal=providers="$JSON" --dry-run=client -o yaml | kubectl apply -f -
+        env:
+        - name: KUBERNETES_SERVICE_HOST
+          value: "kubernetes.default.svc"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "443"
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          {{- if .Values.command }}
+          command: {{- toYaml .Values.command | nindent 12 }}
+          {{- end }}
+          {{- if .Values.args }}
+          args: {{- toYaml .Values.args | nindent 12 }}
+          {{- end }}
+          ports:
+{{ include "common.containerPorts" . | indent 12 }}
+          {{- if .Values.container.healthProbe }}
+          livenessProbe:
+{{ include "common.healthProbe" . | indent 12 }}
+          readinessProbe:
+{{ include "common.healthProbe" . | indent 12 }}
+          {{- end }}
+          {{- if .Values.container.securityContext }}
+          securityContext:
+            {{- toYaml .Values.container.securityContext | nindent 12 }}
+          {{- end }}
+          {{- if .Values.volumes }}
+          volumeMounts:
+{{ include "common.volumeMounts" . | indent 12 }}
+          {{- end }}
+          {{- if or .Values.env .Values.globals.timezone .Values.oidc.enabled }}
+          env:
+{{ include "common.env" . | indent 12 }}
+{{- if .Values.oidc.enabled }}
+            - name: PAPERLESS_SOCIALACCOUNT_PROVIDERS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.fullname" . }}-oidc-providers
+                  key: providers
+{{- end }}
+          {{- end }}
+      {{- if .Values.volumes }}
+      volumes:
+        {{- include "common.volumes" . | nindent 8 }}
+      {{- end }}
+{{- end }}
+
