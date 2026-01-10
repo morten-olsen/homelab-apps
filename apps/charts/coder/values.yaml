@@ -44,6 +44,7 @@ persistentVolumeClaims:
 # VirtualService configuration
 virtualService:
   enabled: true
+  allowWildcard: true
   gateways:
     public: false
     private: true
@@ -55,6 +56,8 @@ env:
   CODER_OIDC_GROUP_FIELD: groups
   CODER_ACCESS_URL:
     value: "https://{subdomain}.{domain}"
+  CODER_WILDCARD_ACCESS_URL:
+    value: "*.{subdomain}.{domain}"
   CODER_OIDC_ICON_URL: "https://{subdomain}.{domain}/static/dist/assets/icons/icon.png"
   CODER_DISABLE_PASSWORD_AUTH: "true"
   CODER_OAUTH2_GITHUB_ALLOW_SIGNUPS: "false"

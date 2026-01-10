@@ -491,6 +491,9 @@ spec:
     {{- include "common.virtualServiceGatewaysPublic" . | nindent 4 }}
   hosts:
     - {{ include "common.domain" . }}
+    {{- if .Values.virtualService.allowWildcard }}
+    - "*.{{ include "common.domain" . }}"
+    {{- end }}
     - mesh
   http:
     - route:
@@ -518,6 +521,9 @@ spec:
     {{- include "common.virtualServiceGatewaysPrivate" . | nindent 4 }}
   hosts:
     - {{ include "common.domain" . }}
+    {{- if .Values.virtualService.allowWildcard }}
+    - "*.{{ include "common.domain" . }}"
+    {{- end }}
     - mesh
   http:
     - route:
