@@ -14,6 +14,8 @@ shares:
     path: /mnt/HDD/Pictures
   backups:
     path: /mnt/HDD/Backups
+  downloads:
+    path: /mnt/HDD/Downloads
   youtube:
     path: /mnt/HDD/Youtube
   misc:
@@ -24,3 +26,5 @@ shares:
     path: /mnt/HDD/images
   kidsyoutube:
     path: /mnt/HDD/Kids/YouTube
+  comics:
+    path: /mnt/HDD/Comics

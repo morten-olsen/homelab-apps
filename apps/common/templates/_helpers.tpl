@@ -344,6 +344,10 @@ spec:
       hostNetwork: {{ .Values.deployment.hostNetwork }}
       {{- end }}
       {{- include "common.dnsConfig" . | nindent 6 }}
+      {{- if .Values.initContainers }}
+      initContainers:
+        {{- toYaml .Values.initContainers | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

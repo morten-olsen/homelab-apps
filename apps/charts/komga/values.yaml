@@ -1,0 +1,55 @@
+image:
+  repository: gotson/komga
+  tag: latest
+  pullPolicy: IfNotPresent
+
+subdomain: komga
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+container:
+  port: 25600
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+  healthProbe:
+    type: tcpSocket
+    port: "25600"
+
+service:
+  port: 80
+  targetPort: 25600
+  type: ClusterIP
+
+volumes:
+  - name: config
+    mountPath: /config
+    persistentVolumeClaim: komga-config
+  - name: comics
+    mountPath: /data/comics
+    persistentVolumeClaim: comics
+  - name: downloads
+    mountPath: /data/downloads
+    persistentVolumeClaim: downloads
+
+persistentVolumeClaims:
+  - name: config
+    size: 1Gi
+
+initContainers:
+  - name: fix-permissions
+    image: busybox
+    command: ["sh", "-c", "chown -R 1000:1000 /config"]
+    securityContext:
+      runAsUser: 0
+    volumeMounts:
+      - name: config
+        mountPath: /config
+
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true

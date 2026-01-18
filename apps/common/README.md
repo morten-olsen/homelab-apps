@@ -107,6 +107,18 @@ container:
     runAsUser: 1000
     runAsGroup: 1000
 
+# Init Containers (optional)
+# Add init containers, for example to fix permissions
+initContainers:
+  - name: fix-permissions
+    image: busybox
+    command: ["sh", "-c", "chown -R 1000:1000 /data"]
+    volumeMounts:
+      - name: data
+        mountPath: /data
+    securityContext:
+      runAsUser: 0
+
 # Command and args (optional)
 # Override the container's default command/entrypoint
 # Useful for initialization scripts or custom startup logic
