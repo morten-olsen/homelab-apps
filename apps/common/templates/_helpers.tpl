@@ -306,6 +306,7 @@ Full Deployment resource
 */}}
 {{- define "common.deployment" -}}
 {{- if .Values.deployment }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -390,6 +391,7 @@ Full ServiceAccount resource
 */}}
 {{- define "common.serviceAccount" -}}
 {{- if .Values.serviceAccount }}
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -430,6 +432,7 @@ spec:
     {{- include "common.selectorLabels" $ | nindent 4 }}
 {{- end }}
 {{- else }}
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -483,6 +486,7 @@ Full VirtualService resources
 {{- define "common.virtualService" -}}
 {{- if and .Values.virtualService.enabled .Values.subdomain (hasKey .Values.globals "domain") (ne .Values.globals.domain "") }}
 {{- if and .Values.virtualService.gateways.public (hasKey .Values.globals "istio") (hasKey .Values.globals.istio "gateways") (hasKey .Values.globals.istio.gateways "public") (ne .Values.globals.istio.gateways.public "") }}
+---
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
@@ -510,9 +514,9 @@ spec:
               number: {{ include "common.servicePort" . }}
               {{- end }}
 
----
 {{- end }}
 {{- if and .Values.virtualService.gateways.private (hasKey .Values.globals "istio") (hasKey .Values.globals.istio "gateways") (hasKey .Values.globals.istio.gateways "private") (ne .Values.globals.istio.gateways.private "") }}
+---
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
@@ -547,7 +551,8 @@ spec:
 Full DNS resource
 */}}
 {{- define "common.dns" -}}
-{{- if and .Values.dns.enabled (hasKey .Values.globals "networking") (hasKey .Values.globals.networking "private") (hasKey .Values.globals.networking.private "ip") (ne .Values.globals.networking.private.ip "") }}
+{{- if and .Values.dns .Values.dns.enabled (hasKey .Values.globals "networking") (hasKey .Values.globals.networking "private") (hasKey .Values.globals.networking.private "ip") (ne .Values.globals.networking.private.ip "") }}
+---
 apiVersion: dns.homelab.mortenolsen.pro/v1alpha1
 kind: DNSRecord
 metadata:
@@ -572,7 +577,8 @@ spec:
 Full OIDC/AuthentikClient resource
 */}}
 {{- define "common.oidc" -}}
-{{- if and .Values.oidc.enabled (hasKey .Values.globals "authentik") (hasKey .Values.globals.authentik "ref") (hasKey .Values.globals.authentik.ref "name") (hasKey .Values.globals.authentik.ref "namespace") (ne .Values.globals.authentik.ref.name "") (ne .Values.globals.authentik.ref.namespace "") }}
+{{- if and .Values.oidc .Values.oidc.enabled (hasKey .Values.globals "authentik") (hasKey .Values.globals.authentik "ref") (hasKey .Values.globals.authentik.ref "name") (hasKey .Values.globals.authentik.ref "namespace") (ne .Values.globals.authentik.ref.name "") (ne .Values.globals.authentik.ref.namespace "") }}
+---
 apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
 kind: AuthentikClient
 metadata:
@@ -597,7 +603,8 @@ spec:
 Full PostgreSQL Database resource
 */}}
 {{- define "common.database" -}}
-{{- if and .Values.database.enabled (hasKey .Values.globals "database") (hasKey .Values.globals.database "ref") (hasKey .Values.globals.database.ref "name") (hasKey .Values.globals.database.ref "namespace") (ne .Values.globals.database.ref.name "") (ne .Values.globals.database.ref.namespace "") }}
+{{- if and .Values.database .Values.database.enabled (hasKey .Values.globals "database") (hasKey .Values.globals.database "ref") (hasKey .Values.globals.database.ref "name") (hasKey .Values.globals.database.ref "namespace") (ne .Values.globals.database.ref.name "") (ne .Values.globals.database.ref.namespace "") }}
+---
 apiVersion: postgres.homelab.mortenolsen.pro/v1
 kind: PostgresDatabase
 metadata:
@@ -688,4 +695,20 @@ Combined helper that outputs generators first, then ExternalSecrets
 {{- define "common.externalSecrets" -}}
 {{- include "common.externalSecrets.passwordGenerators" . }}
 {{- include "common.externalSecrets.externalSecrets" . }}
+{{- end }}
+
+{{/*
+Full All-in-One resource
+Includes all standard resources based on values.yaml configuration
+*/}}
+{{- define "common.all" -}}
+{{- include "common.deployment" . }}
+{{- include "common.serviceAccount" . }}
+{{- include "common.service" . }}
+{{- include "common.pvc" . }}
+{{- include "common.virtualService" . }}
+{{- include "common.dns" . }}
+{{- include "common.oidc" . }}
+{{- include "common.database" . }}
+{{- include "common.externalSecrets" . }}
 {{- end }}

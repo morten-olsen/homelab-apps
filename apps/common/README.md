@@ -30,9 +30,20 @@ Run `helm dependency build` to download the dependency.
 
 Create `values.yaml` with the standardized structure (see [Values Structure](#values-structure) below).
 
-### 4. Create Template Files
+### 4. Create Template File
 
-Replace complex templates with simple includes:
+Use a single template file that includes all resources:
+
+```yaml
+# templates/common.yaml
+{{ include "common.all" . }}
+```
+
+The `common.all` helper automatically includes all standard resources based on your `values.yaml` configuration. Resources are only rendered if their corresponding values are defined and enabled.
+
+**Alternative: Individual Templates**
+
+If you need more control, you can use individual template files instead:
 
 ```yaml
 # templates/deployment.yaml
@@ -239,9 +250,29 @@ env:
 
 ## Template Files
 
-### Basic Application
+### Recommended: Single Template with `common.all`
 
-For a simple application with persistent storage:
+The simplest approach is to use a single template file:
+
+```yaml
+# templates/common.yaml
+{{ include "common.all" . }}
+```
+
+This automatically renders all resources based on your `values.yaml`:
+- **Deployment** - always rendered if `deployment` is defined
+- **Service** - always rendered if `service` is defined
+- **ServiceAccount** - rendered if `serviceAccount` is defined
+- **PVC** - rendered if `persistentVolumeClaims` is defined
+- **VirtualService** - rendered if `virtualService.enabled: true`
+- **DNS** - rendered if `dns.enabled: true`
+- **OIDC** - rendered if `oidc.enabled: true`
+- **Database** - rendered if `database.enabled: true`
+- **ExternalSecrets** - rendered if `externalSecrets` is defined
+
+### Alternative: Individual Templates
+
+For more control or custom resources, use individual template files:
 
 ```yaml
 # templates/deployment.yaml
@@ -255,31 +286,13 @@ For a simple application with persistent storage:
 
 # templates/virtual-service.yaml
 {{ include "common.virtualService" . }}
-```
 
-### With OIDC Authentication
-
-Add OIDC client template:
-
-```yaml
-# templates/client.yaml (or oidc.yaml)
+# templates/client.yaml (OIDC)
 {{ include "common.oidc" . }}
-```
 
-### With Database
-
-Add database template:
-
-```yaml
 # templates/database.yaml
 {{ include "common.database" . }}
-```
 
-### With External Secrets
-
-Add secret generation templates:
-
-```yaml
 # templates/secret-password-generators.yaml
 {{ include "common.externalSecrets.passwordGenerators" . }}
 
@@ -328,14 +341,8 @@ env:
 ```
 
 ```yaml
-# templates/deployment.yaml
-{{ include "common.deployment" . }}
-
-# templates/service.yaml
-{{ include "common.service" . }}
-
-# templates/virtual-service.yaml
-{{ include "common.virtualService" . }}
+# templates/common.yaml
+{{ include "common.all" . }}
 ```
 
 ### Example 2: Application with OIDC and Database
@@ -415,23 +422,8 @@ env:
 ```
 
 ```yaml
-# templates/deployment.yaml
-{{ include "common.deployment" . }}
-
-# templates/service.yaml
-{{ include "common.service" . }}
-
-# templates/pvc.yaml
-{{ include "common.pvc" . }}
-
-# templates/virtual-service.yaml
-{{ include "common.virtualService" . }}
-
-# templates/client.yaml
-{{ include "common.oidc" . }}
-
-# templates/database.yaml
-{{ include "common.database" . }}
+# templates/common.yaml
+{{ include "common.all" . }}
 ```
 
 ### Example 3: Application with Generated Secrets
@@ -470,25 +462,26 @@ env:
 ```
 
 ```yaml
-# templates/secret-password-generators.yaml
-{{ include "common.externalSecrets.passwordGenerators" . }}
-
-# templates/secret-external-secrets.yaml
-{{ include "common.externalSecrets.externalSecrets" . }}
+# templates/common.yaml
+{{ include "common.all" . }}
 ```
 
 ## Available Templates
 
 The library provides full resource templates that can be included directly:
 
+- **`common.all`** - All-in-one template that renders all resources based on values (recommended)
 - `common.deployment` - Full Deployment resource with all standard configurations (supports custom command/args)
 - `common.service` - Full Service resource(s) - supports multiple services
+- `common.serviceAccount` - Full ServiceAccount resource
 - `common.pvc` - Full PVC resources - supports multiple PVCs
 - `common.virtualService` - Full VirtualService resources (public + private gateways)
+- `common.dns` - Full DNSRecord resource
 - `common.oidc` - Full AuthentikClient resource for OIDC authentication
 - `common.database` - Full PostgresDatabase resource for database provisioning
-- `common.externalSecrets.passwordGenerators` - Password generator resources
-- `common.externalSecrets.externalSecrets` - ExternalSecret resources
+- `common.externalSecrets` - Combined Password generators + ExternalSecret resources
+- `common.externalSecrets.passwordGenerators` - Password generator resources only
+- `common.externalSecrets.externalSecrets` - ExternalSecret resources only
 
 ## Secret References
 
@@ -697,7 +690,7 @@ After creating your chart:
 ## Examples
 
 See migrated charts for real-world examples:
-- `apps/charts/readeck` - Simple application
-- `apps/charts/miniflux` - Application with OIDC and database
+- `apps/charts/komga` - Simple application using `common.all`
+- `apps/charts/homarr` - Application with OIDC and external secrets using `common.all`
 - `apps/charts/n8n` - Complex application with multiple services
 - `apps/charts/home-assistant` - Application with host networking and privileged containers
