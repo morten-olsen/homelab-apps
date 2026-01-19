@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-social-providers-template
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+data:
+  socialaccount_providers.json.template: |
+    {
+      "authentik": {
+        "APPS": [
+          {
+            "client_id": "${CLIENT_ID}",
+            "secret": "${CLIENT_SECRET}",
+            "settings": {
+              "server_url": "${ISSUER}/.well-known/openid-configuration"
+            }
+          }
+        ]
+      }
+    }

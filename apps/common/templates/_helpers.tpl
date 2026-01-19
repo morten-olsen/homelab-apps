@@ -347,17 +347,58 @@ spec:
       {{- include "common.dnsConfig" . | nindent 6 }}
       {{- if .Values.initContainers }}
       initContainers:
-        {{- toYaml .Values.initContainers | nindent 8 }}
+        {{- $initContainers := toYaml .Values.initContainers -}}
+        {{- $initContainers = $initContainers | replace "{release}" .Release.Name -}}
+        {{- $initContainers = $initContainers | replace "{namespace}" .Release.Namespace -}}
+        {{- $initContainers = $initContainers | replace "{fullname}" (include "common.fullname" .) -}}
+        {{- if .Values.subdomain -}}
+        {{- $initContainers = $initContainers | replace "{subdomain}" .Values.subdomain -}}
+        {{- end -}}
+        {{- if and .Values.globals .Values.globals.domain -}}
+        {{- $initContainers = $initContainers | replace "{domain}" .Values.globals.domain -}}
+        {{- end -}}
+        {{- if and .Values.globals .Values.globals.timezone -}}
+        {{- $initContainers = $initContainers | replace "{timezone}" .Values.globals.timezone -}}
+        {{- end -}}
+        {{- $initContainers | nindent 8 }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           {{- if .Values.command }}
-          command: {{- toYaml .Values.command | nindent 12 }}
+          command:
+            {{- $command := toYaml .Values.command -}}
+            {{- $command = $command | replace "{release}" .Release.Name -}}
+            {{- $command = $command | replace "{namespace}" .Release.Namespace -}}
+            {{- $command = $command | replace "{fullname}" (include "common.fullname" .) -}}
+            {{- if .Values.subdomain -}}
+            {{- $command = $command | replace "{subdomain}" .Values.subdomain -}}
+            {{- end -}}
+            {{- if and .Values.globals .Values.globals.domain -}}
+            {{- $command = $command | replace "{domain}" .Values.globals.domain -}}
+            {{- end -}}
+            {{- if and .Values.globals .Values.globals.timezone -}}
+            {{- $command = $command | replace "{timezone}" .Values.globals.timezone -}}
+            {{- end -}}
+            {{- $command | nindent 12 }}
           {{- end }}
           {{- if .Values.args }}
-          args: {{- toYaml .Values.args | nindent 12 }}
+          args:
+            {{- $args := toYaml .Values.args -}}
+            {{- $args = $args | replace "{release}" .Release.Name -}}
+            {{- $args = $args | replace "{namespace}" .Release.Namespace -}}
+            {{- $args = $args | replace "{fullname}" (include "common.fullname" .) -}}
+            {{- if .Values.subdomain -}}
+            {{- $args = $args | replace "{subdomain}" .Values.subdomain -}}
+            {{- end -}}
+            {{- if and .Values.globals .Values.globals.domain -}}
+            {{- $args = $args | replace "{domain}" .Values.globals.domain -}}
+            {{- end -}}
+            {{- if and .Values.globals .Values.globals.timezone -}}
+            {{- $args = $args | replace "{timezone}" .Values.globals.timezone -}}
+            {{- end -}}
+            {{- $args | nindent 12 }}
           {{- end }}
           ports:
 {{ include "common.containerPorts" . | indent 12 }}

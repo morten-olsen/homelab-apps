@@ -1,0 +1,142 @@
+image:
+  repository: vabene1111/recipes
+  tag: latest
+  pullPolicy: IfNotPresent
+
+subdomain: recipes
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+container:
+  port: 80
+
+service:
+  port: 80
+  type: ClusterIP
+
+volumes:
+  - name: media
+    mountPath: /opt/recipes/mediafiles
+    persistentVolumeClaim: tandoor-media
+  - name: static
+    mountPath: /opt/recipes/staticfiles
+    persistentVolumeClaim: tandoor-static
+  - name: social-providers-vol
+    mountPath: /run/secrets
+    emptyDir: {}
+  - name: config-template
+    mountPath: /config-template
+    configMap: "{release}-social-providers-template"
+
+initContainers:
+  - name: create-social-providers
+    image: alpine:latest
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        sed -e "s|\${CLIENT_ID}|$CLIENT_ID|g" \
+            -e "s|\${CLIENT_SECRET}|$CLIENT_SECRET|g" \
+            -e "s|\${ISSUER}|$ISSUER|g" \
+            /config-template/socialaccount_providers.json.template > /run/secrets/socialaccount_providers.txt
+    env:
+      - name: CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            name: "{release}-oidc-credentials"
+            key: clientId
+      - name: CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: "{release}-oidc-credentials"
+            key: clientSecret
+      - name: ISSUER
+        valueFrom:
+          secretKeyRef:
+            name: "{release}-oidc-credentials"
+            key: issuer
+    volumeMounts:
+      - name: social-providers-vol
+        mountPath: /run/secrets
+      - name: config-template
+        mountPath: /config-template
+
+persistentVolumeClaims:
+  - name: media
+    size: 10Gi
+  - name: static
+    size: 1Gi
+
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+oidc:
+  enabled: true
+  redirectUris:
+    - "/accounts/authentik/login/callback/"
+  subjectMode: user_username
+
+database:
+  enabled: true
+
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: secret-key
+        length: 64
+        encoding: base64
+        allowRepeat: true
+        secretKeys:
+          - secret-key
+
+env:
+  TZ:
+    value: "{timezone}"
+
+  DEBUG: "0"
+  TANDOOR_PORT: "80"
+  # ALLOWED_HOSTS: "*"
+  SECRET_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: secret-key
+
+  # Database
+  POSTGRES_HOST:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: host
+  POSTGRES_PORT:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: port
+  POSTGRES_DB:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: database
+  POSTGRES_USER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: user
+  POSTGRES_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: password
+
+  # Authentication
+  SOCIALACCOUNT_PROVIDERS_FILE: "/run/secrets/socialaccount_providers.txt"
+  ENABLE_OIDC: "1"
+
+  # Gunicorn configuration to serve files without nginx
+  TANDOOR_GUNICORN_MEDIA: "1"
+  TANDOOR_GUNICORN_STATIC: "1"

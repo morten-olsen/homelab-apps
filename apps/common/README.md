@@ -525,54 +525,66 @@ externalSecrets:
 
 The secret will contain a key named `mySecretKey` (not `my-password-generator`).
 
-## Secret-based Configurations
+## Secret-based Configurations (via Init Container)
 
-When an application requires a configuration file (like `config.yaml` or `.env`) that contains sensitive data, you should generate a `Secret` using External Secrets templating instead of a `ConfigMap`. This keeps the sensitive data encrypted in ETCD while allowing you to merge static and dynamic values.
+When an application requires a configuration file (like `config.yaml` or `.env`) that contains sensitive data from multiple sources (e.g., merging static config with secrets), you can use an `initContainer` to generate the file from a template. This is especially useful when a `SecretStore` is not available for External Secrets templating.
 
-### 1. Create an External Secret with a Template
-Create a custom template in your chart (e.g., `templates/external-config.yaml`):
+### 1. Create a ConfigMap Template
+Create a custom template in your chart (e.g., `templates/config-template.yaml`):
 
 ```yaml
-apiVersion: external-secrets.io/v1beta1
-kind: ExternalSecret
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: {{ include "common.fullname" . }}-config
-spec:
-  refreshInterval: 1h
-  secretStoreRef:
-    name: vault-backend # Replace with your SecretStore name
-    kind: SecretStore
-  target:
-    name: {{ include "common.fullname" . }}-config
-    template:
-      engineVersion: v2
-      data:
-        config.yaml: |
-          server:
-            port: 8080
-          database:
-            user: {{ "{{" }} .db_user | toString {{ "}}" }}
-            password: {{ "{{" }} .db_pass | toString {{ "}}" }}
-  data:
-    - secretKey: db_user
-      remoteRef:
-        key: database/credentials
-        property: username
-    - secretKey: db_pass
-      remoteRef:
-        key: database/credentials
-        property: password
+  name: {{ include "common.fullname" . }}-config-template
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+data:
+  config.yaml.template: |
+    server:
+      port: 8080
+    database:
+      user: "${DB_USER}"
+      password: "${DB_PASS}"
 ```
 
-### 2. Mount the Secret in values.yaml
-Reference the generated secret in your `volumes` configuration using the `{release}` placeholder:
+### 2. Configure Init Container and Volumes in values.yaml
+Reference the template and secrets in your `values.yaml`:
 
 ```yaml
 volumes:
-  - name: config
-    mountPath: /app/config.yaml
-    subPath: config.yaml
-    secret: "{release}-config"
+  - name: config-vol
+    mountPath: /app/config
+    emptyDir: {}
+  - name: config-template
+    mountPath: /config-template
+    configMap: "{release}-config-template"
+
+initContainers:
+  - name: generate-config
+    image: alpine:latest
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        sed -e "s|\${DB_USER}|$DB_USER|g" \
+            -e "s|\${DB_PASS}|$DB_PASS|g" \
+            /config-template/config.yaml.template > /app/config/config.yaml
+    env:
+      - name: DB_USER
+        valueFrom:
+          secretKeyRef:
+            name: "{release}-db-credentials"
+            key: username
+      - name: DB_PASS
+        valueFrom:
+          secretKeyRef:
+            name: "{release}-db-credentials"
+            key: password
+    volumeMounts:
+      - name: config-vol
+        mountPath: /app/config
+      - name: config-template
+        mountPath: /config-template
 ```
 
 ## Placeholders
