@@ -214,10 +214,10 @@ Standard volumes
     {{- end }}
   {{- else if .configMap }}
   configMap:
-    name: {{ .configMap }}
+    name: {{ .configMap | replace "{release}" $.Release.Name | replace "{namespace}" $.Release.Namespace | replace "{fullname}" (include "common.fullname" $) }}
   {{- else if .secret }}
   secret:
-    secretName: {{ .secret }}
+    secretName: {{ .secret | replace "{release}" $.Release.Name | replace "{namespace}" $.Release.Namespace | replace "{fullname}" (include "common.fullname" $) }}
   {{- end }}
 {{- end }}
 {{- end }}

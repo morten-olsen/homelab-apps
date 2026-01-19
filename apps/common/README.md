@@ -525,6 +525,56 @@ externalSecrets:
 
 The secret will contain a key named `mySecretKey` (not `my-password-generator`).
 
+## Secret-based Configurations
+
+When an application requires a configuration file (like `config.yaml` or `.env`) that contains sensitive data, you should generate a `Secret` using External Secrets templating instead of a `ConfigMap`. This keeps the sensitive data encrypted in ETCD while allowing you to merge static and dynamic values.
+
+### 1. Create an External Secret with a Template
+Create a custom template in your chart (e.g., `templates/external-config.yaml`):
+
+```yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: {{ include "common.fullname" . }}-config
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend # Replace with your SecretStore name
+    kind: SecretStore
+  target:
+    name: {{ include "common.fullname" . }}-config
+    template:
+      engineVersion: v2
+      data:
+        config.yaml: |
+          server:
+            port: 8080
+          database:
+            user: {{ "{{" }} .db_user | toString {{ "}}" }}
+            password: {{ "{{" }} .db_pass | toString {{ "}}" }}
+  data:
+    - secretKey: db_user
+      remoteRef:
+        key: database/credentials
+        property: username
+    - secretKey: db_pass
+      remoteRef:
+        key: database/credentials
+        property: password
+```
+
+### 2. Mount the Secret in values.yaml
+Reference the generated secret in your `volumes` configuration using the `{release}` placeholder:
+
+```yaml
+volumes:
+  - name: config
+    mountPath: /app/config.yaml
+    subPath: config.yaml
+    secret: "{release}-config"
+```
+
 ## Placeholders
 
 Use placeholders in `values.yaml` for dynamic values that are resolved at template time:
