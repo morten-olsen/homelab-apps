@@ -1,6 +1,6 @@
 image:
   repository: gotson/komga
-  tag: latest
+  tag: latest@sha256:09129eae6eff50337f039bd6e99d995126cb03226950c80e9864cbc05f10a661
   pullPolicy: IfNotPresent
 
 subdomain: komga
@@ -40,7 +40,7 @@ persistentVolumeClaims:
 
 initContainers:
   - name: fix-permissions
-    image: busybox
+    image: busybox@sha256:2383baad1860bbe9d8a7a843775048fd07d8afe292b94bd876df64a69aae7cb1
     command: ["sh", "-c", "chown -R 1000:1000 /config"]
     securityContext:
       runAsUser: 0
