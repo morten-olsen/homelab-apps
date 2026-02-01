@@ -1,0 +1,57 @@
+image:
+  repository: ghcr.io/morten-olsen/agentic
+  tag: 0.0.21
+  pullPolicy: Always
+
+subdomain: glados
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+container:
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+
+initContainers:
+  - name: fix-permissions
+    image: busybox
+    command: ["sh", "-c", "chown -R 1000:1000 /data"]
+    volumeMounts:
+      - name: data
+        mountPath: /data
+    securityContext:
+      runAsUser: 0
+
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 10Gi
+
+env:
+  GLADOS_LLM_MODEL:
+    valueFrom:
+      secretKeyRef:
+        name: glados-secrets
+        key: GLADOS_LLM_MODEL
+  GLADOS_LLM_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: glados-secrets
+        key: GLADOS_LLM_API_KEY
+  GLADOS_TELEGRAM_BOT_TOKEN:
+    valueFrom:
+      secretKeyRef:
+        name: glados-secrets
+        key: GLADOS_TELEGRAM_BOT_TOKEN
+  GLADOS_TELEGRAM_OWNER_ID:
+    valueFrom:
+      secretKeyRef:
+        name: glados-secrets
+        key: GLADOS_TELEGRAM_OWNER_ID

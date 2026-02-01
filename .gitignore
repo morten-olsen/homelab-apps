@@ -7,3 +7,5 @@ charts/*.tgz
 __pycache__/
 
 **/Chart.lock
+
+*-local-secret.yaml

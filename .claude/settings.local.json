@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/alice/Projects/private/homelab/apps log --oneline -10)",
+      "Bash(git -C /Users/alice/Projects/private/homelab/apps remote -v)",
+      "Bash(git -C /Users/alice/Projects/private/homelab/apps config --list)",
+      "Bash(ls:*)",
+      "Bash(git -C /Users/alice/Projects/private/homelab/apps log --all --oneline --decorate -15)",
+      "Bash(git -C /Users/alice/Projects/private/homelab/apps branch -a)",
+      "Bash(helm dependency:*)",
+      "Bash(helm lint:*)",
+      "Bash(helm template:*)"
+    ]
+  }
+}
