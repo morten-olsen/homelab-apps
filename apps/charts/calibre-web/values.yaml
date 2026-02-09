@@ -1,6 +1,6 @@
 image:
   repository: crocodilestick/calibre-web-automated
-  tag: latest@sha256:577e846f104fd21453ef306eefb4a95dd95b3b9ddd2463a150944494284da0fd
+  tag: latest@sha256:c31a738b6d5ec6982c050063dd3f063b6943eb1051fc81144789f840d9093a8d
   pullPolicy: IfNotPresent
 
 subdomain: calibre-web
