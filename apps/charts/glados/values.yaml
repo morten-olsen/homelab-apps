@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/morten-olsen/agentic
-  tag: 0.0.39
+  tag: 0.0.55
   pullPolicy: Always
 
 subdomain: glados
@@ -12,8 +12,12 @@ deployment:
 container:
   ports:
     - name: http
-      port: 8080
+      port: 3000
       protocol: TCP
+# Service configuration
+service:
+  port: 3000
+  type: ClusterIP
 
 initContainers:
   - name: fix-permissions
@@ -33,6 +37,13 @@ volumes:
 persistentVolumeClaims:
   - name: data
     size: 10Gi
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
 
 env:
   GLADOS_LLM_MODEL:
@@ -67,3 +78,11 @@ env:
         key: GLADOS_HOMEASSISTANT_TOKEN
   GLADOS_HOMEASSISTANT_CALENDARS: "calendar.cecilie_og_morten,calendar.morten_olsen_zeronorth_com"
   GLADOS_HOMEASSISTANT_PERSON_ENTITY: "person.morten"
+  LANGSMITH_TRACING: "true"
+  LANGSMITH_ENDPOINT: https://eu.api.smith.langchain.com
+  LANGSMITH_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: glados-secrets
+        key: LANGSMITH_API_KEY
+  LANGSMITH_PROJECT: "GlaDOS"
