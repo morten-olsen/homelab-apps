@@ -1,6 +1,6 @@
 image:
   repository: codeberg.org/forgejo/forgejo
-  tag: 13@sha256:d05b9e587f02a746784d42c815c486b1d4f138646128f990a841833f513fe088
+  tag: 14@sha256:fa8ce5aba7c20e106c649e00da1f568e8f39c58f1706bcf4f6921f16aaf5ba48
   pullPolicy: IfNotPresent
 
 subdomain: code

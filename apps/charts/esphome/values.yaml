@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/esphome/esphome
-  tag: 2025.12.4@sha256:a7915def0a60c76506db766b7b733760f09b47ab6a511d5052a6d38bc3f424e3
+  tag: 2026.1.4@sha256:c6d4a461cb479b953bb9f6f4fb7844dc06ec8efd94c84fcb6d221597b54f24a9
   pullPolicy: IfNotPresent
 
 subdomain: esphome
