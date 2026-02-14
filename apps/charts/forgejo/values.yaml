@@ -147,7 +147,7 @@ actions:
   runner:
     image:
       repository: code.forgejo.org/forgejo/runner
-      tag: "12.3.1"
+      tag: "12.6.4@sha256:2b65f3ba4345026d66de34dc8eddabb7b0f64c0e14905193ae81746f2728caa0"
       pullPolicy: IfNotPresent
     dind:
       image:
