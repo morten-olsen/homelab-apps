@@ -1,6 +1,6 @@
 image:
-  repository: ghcr.io/morten-olsen/agentic
-  tag: 0.0.57@sha256:4712ecab8f4a013aa9ff66f1413a91430a6f9cdea259bdeea42cead901c4c094
+  repository: ghcr.io/morten-olsen/aperture
+  tag: 0.2.3
   pullPolicy: Always
 
 subdomain: glados
@@ -22,7 +22,7 @@ service:
 initContainers:
   - name: fix-permissions
     image: busybox@sha256:b3255e7dfbcd10cb367af0d409747d511aeb66dfac98cf30e97e87e4207dd76f
-    command: ["sh", "-c", "chown -R 1000:1000 /data"]
+    command: ["sh", "-c", "chown -R 1001:1001 /data"]
     volumeMounts:
       - name: data
         mountPath: /data
@@ -33,6 +33,9 @@ volumes:
   - name: data
     mountPath: /data
     persistentVolumeClaim: data
+  - name: config
+    mountPath: /etc/glados
+    secret: glados-secrets
 
 persistentVolumeClaims:
   - name: data
@@ -44,45 +47,3 @@ virtualService:
   gateways:
     public: false
     private: true
-
-env:
-  GLADOS_LLM_MODEL:
-    valueFrom:
-      secretKeyRef:
-        name: glados-secrets
-        key: GLADOS_LLM_MODEL
-  GLADOS_LLM_API_KEY:
-    valueFrom:
-      secretKeyRef:
-        name: glados-secrets
-        key: GLADOS_LLM_API_KEY
-  GLADOS_TELEGRAM_BOT_TOKEN:
-    valueFrom:
-      secretKeyRef:
-        name: glados-secrets
-        key: GLADOS_TELEGRAM_BOT_TOKEN
-  GLADOS_TELEGRAM_OWNER_ID:
-    valueFrom:
-      secretKeyRef:
-        name: glados-secrets
-        key: GLADOS_TELEGRAM_OWNER_ID
-  GLADOS_HOMEASSISTANT_URL:
-    valueFrom:
-      secretKeyRef:
-        name: glados-secrets
-        key: GLADOS_HOMEASSISTANT_URL
-  GLADOS_HOMEASSISTANT_TOKEN:
-    valueFrom:
-      secretKeyRef:
-        name: glados-secrets
-        key: GLADOS_HOMEASSISTANT_TOKEN
-  GLADOS_HOMEASSISTANT_CALENDARS: "calendar.cecilie_og_morten,calendar.morten_olsen_zeronorth_com"
-  GLADOS_HOMEASSISTANT_PERSON_ENTITY: "person.morten"
-  LANGSMITH_TRACING: "true"
-  LANGSMITH_ENDPOINT: https://eu.api.smith.langchain.com
-  LANGSMITH_API_KEY:
-    valueFrom:
-      secretKeyRef:
-        name: glados-secrets
-        key: LANGSMITH_API_KEY
-  LANGSMITH_PROJECT: "GlaDOS"
