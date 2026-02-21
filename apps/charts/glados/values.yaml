@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/morten-olsen/aperture
-  tag: 0.23.0
+  tag: 0.23.0@sha256:b94f36df4077bca490d027ceda961e6362e25e1ecd0bdbd56818ab020523e7d5
   pullPolicy: Always
 
 subdomain: glados
