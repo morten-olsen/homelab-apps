@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/morten-olsen/aperture
-  tag: 0.29.2
+  tag: 0.29.9
   pullPolicy: Always
 
 subdomain: glados
@@ -29,13 +29,19 @@ initContainers:
     securityContext:
       runAsUser: 0
 
+env:
+  OPENAI_BASE_URL: "https://openrouter.ai/api/v1"
+  OPENAI_MODEL: "google/gemini-3-flash-preview"
+  OPENAI_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: glados-secrets
+        key: OPENAI_API_KEY
+
 volumes:
   - name: data
     mountPath: /data
     persistentVolumeClaim: data
-  - name: config
-    mountPath: /etc/glados
-    secret: glados-secrets
 
 persistentVolumeClaims:
   - name: data
