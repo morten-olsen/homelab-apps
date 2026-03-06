@@ -1,6 +1,6 @@
 image:
   repository: vikunja/vikunja
-  tag: latest@sha256:84b56920e2860c67cb889bce0e0950aa529e42838b45bdf81eb2422178e90cc7
+  tag: latest@sha256:f13103b0287aef74a69241fa46e6cac76e14caf643602144ccaca57fc76e587f
   pullPolicy: IfNotPresent
 
 subdomain: vikunja
