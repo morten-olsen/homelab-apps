@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/morten-olsen/aperture
-  tag: 0.29.9@sha256:5739d021f5742cdc74c707749e30d4409eab7fc25d160835cc2a81e04f84dcb1
+  tag: 0.29.10
   pullPolicy: Always
 
 subdomain: glados
@@ -22,7 +22,7 @@ service:
 initContainers:
   - name: fix-permissions
     image: busybox@sha256:b3255e7dfbcd10cb367af0d409747d511aeb66dfac98cf30e97e87e4207dd76f
-    command: ["sh", "-c", "chown -R 1001:1001 /data"]
+    command: ["sh", "-c", "chown -R 1000:1000 /data"]
     volumeMounts:
       - name: data
         mountPath: /data
