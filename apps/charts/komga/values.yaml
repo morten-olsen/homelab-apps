@@ -7,7 +7,7 @@ subdomain: komga
 
 deployment:
   strategy: Recreate
-  replicas: 1
+  replicas: 0
 
 container:
   port: 25600
@@ -37,6 +37,7 @@ volumes:
 persistentVolumeClaims:
   - name: config
     size: 1Gi
+    storageClassName: local-path
 
 initContainers:
   - name: fix-permissions

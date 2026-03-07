@@ -7,7 +7,7 @@ subdomain: recipes
 
 deployment:
   strategy: Recreate
-  replicas: 1
+  replicas: 0
 
 container:
   port: 80
@@ -65,8 +65,10 @@ initContainers:
 persistentVolumeClaims:
   - name: media
     size: 10Gi
+    storageClassName: local-path
   - name: static
     size: 1Gi
+    storageClassName: local-path
 
 virtualService:
   enabled: true

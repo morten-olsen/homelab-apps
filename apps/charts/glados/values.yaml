@@ -7,7 +7,7 @@ subdomain: glados
 
 deployment:
   strategy: Recreate
-  replicas: 1
+  replicas: 0
 
 container:
   ports:
@@ -46,6 +46,7 @@ volumes:
 persistentVolumeClaims:
   - name: data
     size: 10Gi
+    storageClassName: local-path
 
 # VirtualService configuration
 virtualService:
