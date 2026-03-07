@@ -8,7 +8,7 @@ subdomain: coder
 # Deployment configuration
 deployment:
   strategy: Recreate
-  replicas: 0
+  replicas: 1
   serviceAccountName: "{release}-serviceaccount" # Will be templated
 
 # Container configuration
