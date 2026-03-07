@@ -8,7 +8,7 @@ subdomain: readeck
 # Deployment configuration
 deployment:
   strategy: Recreate
-  replicas: 0
+  replicas: 1
 
 # Container configuration
 container:
