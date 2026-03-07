@@ -8,7 +8,7 @@ subdomain: jellyfin-kids
 # Deployment configuration
 deployment:
   strategy: Recreate
-  replicas: 1
+  replicas: 0
 
 # Container configuration
 container:
@@ -45,7 +45,7 @@ volumes:
 persistentVolumeClaims:
   - name: config
     size: 5Gi
-    storageClassName: persistent
+    storageClassName: local-path
 
 # VirtualService configuration
 virtualService:

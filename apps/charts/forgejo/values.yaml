@@ -8,7 +8,7 @@ subdomain: code
 # Deployment configuration
 deployment:
   strategy: Recreate
-  replicas: 1
+  replicas: 0
   revisionHistoryLimit: 2
 
 # Container configuration - multiple ports
@@ -66,7 +66,7 @@ volumes:
 persistentVolumeClaims:
   - name: data
     size: 10Gi
-    storageClassName: persistent
+    storageClassName: local-path
 
 # VirtualService configuration
 virtualService:

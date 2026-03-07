@@ -8,7 +8,7 @@ subdomain: esphome
 # Deployment configuration
 deployment:
   strategy: Recreate
-  replicas: 1
+  replicas: 0
   hostNetwork: true # ESPHome needs hostNetwork for device discovery
 
 # Container configuration
@@ -33,7 +33,7 @@ volumes:
 persistentVolumeClaims:
   - name: data
     size: 10Gi
-    storageClassName: persistent
+    storageClassName: local-path
 
 # VirtualService configuration
 virtualService:

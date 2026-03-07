@@ -8,7 +8,7 @@ subdomain: gitea
 # Deployment configuration
 deployment:
   strategy: Recreate
-  replicas: 1
+  replicas: 0
 
 # Container configuration - multiple ports
 container:
@@ -48,7 +48,7 @@ volumes:
 persistentVolumeClaims:
   - name: data
     size: 10Gi
-    storageClassName: persistent
+    storageClassName: local-path
 
 # VirtualService configuration
 virtualService:
