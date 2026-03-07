@@ -7,7 +7,7 @@ subdomain: glados
 
 deployment:
   strategy: Recreate
-  replicas: 0
+  replicas: 1
 
 container:
   ports:
