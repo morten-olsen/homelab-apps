@@ -8,7 +8,7 @@ subdomain: zot
 # Deployment configuration
 deployment:
   strategy: Recreate
-  replicas: 1
+  replicas: 0
   revisionHistoryLimit: 0
 
 # Container configuration
@@ -42,7 +42,7 @@ volumes:
 persistentVolumeClaims:
   - name: data
     size: 50Gi
-    storageClassName: persistent
+    storageClassName: local-path
 
 # VirtualService configuration
 virtualService:
