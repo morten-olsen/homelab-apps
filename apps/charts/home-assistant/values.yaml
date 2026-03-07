@@ -8,7 +8,7 @@ subdomain: home-assistant
 # Deployment configuration
 deployment:
   strategy: Recreate
-  replicas: 1
+  replicas: 0
   hostNetwork: true
   dnsPolicy: ClusterFirstWithHostNet
 
@@ -53,7 +53,7 @@ volumes:
 persistentVolumeClaims:
   - name: config
     size: 5Gi
-    storageClassName: persistent
+    storageClassName: local-path
 piper:
   image:
     repository: ghcr.io/morten-olsen/glados-voice

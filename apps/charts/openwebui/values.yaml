@@ -8,7 +8,7 @@ subdomain: openwebui
 # Deployment configuration
 deployment:
   strategy: Recreate
-  replicas: 1
+  replicas: 0
   revisionHistoryLimit: 0
 
 # Container configuration
@@ -33,7 +33,7 @@ volumes:
 persistentVolumeClaims:
   - name: data
     size: 3Gi
-    storageClassName: persistent
+    storageClassName: local-path
 
 # VirtualService configuration
 virtualService:
