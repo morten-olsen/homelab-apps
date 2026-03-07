@@ -30,12 +30,13 @@ database:
 persistentVolumeClaims:
   - name: upload
     size: 100Gi
-    storageClassName: persistent
+    storageClassName: local-path
   - name: library
     size: 100Gi
-    storageClassName: persistent
+    storageClassName: local-path
   - name: model-cache
     size: 10Gi
+    storageClassName: local-path
 
 # Note: Services are kept custom due to different selectors for each deployment
 
