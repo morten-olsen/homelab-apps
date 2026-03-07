@@ -14,7 +14,7 @@ subdomain: n8n
 # Deployment configuration
 deployment:
   strategy: RollingUpdate
-  replicas: 0
+  replicas: 1
 
 # Container configuration (multiple ports)
 container:
