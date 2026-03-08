@@ -2,5 +2,39 @@ image:
   repository: bbernhard/signal-cli-rest-api
   tag: "0.97@sha256:5fcb8e8620f20f944d747627841ca97f19104acb3e1adb1d5c8983b5db422529"
   pullPolicy: IfNotPresent
+
 subdomain: apprise
-mode: json-rpc
+
+command:
+  - /usr/bin/signal-cli
+args:
+  - --config=/home/.local/share/signal-cli
+  - daemon
+  - --http=0.0.0.0:8080
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+container:
+  port: 8080
+  healthProbe:
+    type: tcpSocket
+
+service:
+  port: 80
+
+volumes:
+  - name: data
+    mountPath: /home/.local/share/signal-cli
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+virtualService:
+  enabled: false
+
+env:
+  MODE: "json-rpc"

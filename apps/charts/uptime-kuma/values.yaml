@@ -2,4 +2,33 @@ image:
   repository: louislam/uptime-kuma
   tag: 2@sha256:85d68948704fcadc7438f45c9f2666ef2239b5b84073479e1c5bc4d4d8b6d17c
   pullPolicy: IfNotPresent
+
 subdomain: uptime-kuma
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 3001
+  healthProbe:
+    type: tcpSocket
+
+service:
+  port: 80
+
+volumes:
+  - name: data
+    mountPath: /app/data
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true

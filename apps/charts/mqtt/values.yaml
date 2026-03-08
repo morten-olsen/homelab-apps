@@ -2,5 +2,45 @@ image:
   repository: docker.io/eclipse-mosquitto
   tag: 2.0.22@sha256:6852da90a65dfff7aa3a1c8b249e92bb83c17ea8bbcce56bedff8707332a1a29
   pullPolicy: IfNotPresent
+
 subdomain: mqtt
-mode: json-rpc
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 1883
+  healthProbe:
+    type: exec
+    command:
+      - sh
+      - -c
+      - mosquitto_pub -h localhost -p 1883 -t health/ready -m "ready" -q 0 -i readiness_client -V 5
+    initialDelaySeconds: 10
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+service:
+  type: LoadBalancer
+  port: 1883
+
+volumes:
+  - name: config
+    mountPath: /mosquitto/config
+    configMap: "{release}-config"
+  - name: data
+    mountPath: /mosquitto/data
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true

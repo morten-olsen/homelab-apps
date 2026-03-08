@@ -2,4 +2,69 @@ image:
   repository: ghcr.io/mollyim/mollysocket
   tag: latest@sha256:7e6134342d0805db199e6c701dcb7ef5802372b9acfbd14791f4ca14b402fdb0
   pullPolicy: IfNotPresent
+
 subdomain: mollysocket
+
+initContainers:
+  - name: mollysocket-vapid-gentor
+    image: "ghcr.io/mollyim/mollysocket:latest@sha256:7e6134342d0805db199e6c701dcb7ef5802372b9acfbd14791f4ca14b402fdb0"
+    imagePullPolicy: IfNotPresent
+    command: ["sh", "-c"]
+    args:
+      - |
+        VAPID_DIR="/data/vapid"
+        PRIVATE_KEY_PATH="${VAPID_DIR}/private_key.txt"
+        mkdir -p "${VAPID_DIR}"
+        if [ -f "${PRIVATE_KEY_PATH}" ]; then
+          echo "VAPID private key already exists. Skipping generation."
+        else
+          echo "Generating new VAPID keys..."
+          mollysocket vapid gen > "${PRIVATE_KEY_PATH}"
+        fi
+    volumeMounts:
+      - mountPath: /data
+        name: data
+
+args:
+  - serve
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 8020
+  healthProbe:
+    type: tcpSocket
+  resources:
+    limits:
+      memory: "128Mi"
+      cpu: "500m"
+
+service:
+  port: 80
+
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+env:
+  MOLLY_DB: "/data/db.sqlite"
+  MOLLY_HOST: "0.0.0.0"
+  MOLLY_PORT: "8020"
+  MOLLY_VAPID_KEY_FILE: "/data/vapid/private_key.txt"
+  MOLLY_ALLOWED_ENDPOINTS:
+    value: '["*","https://ntfy.{domain}/"]'
+  RUST_LOG: "info"

@@ -2,4 +2,41 @@ image:
   repository: ollama/ollama
   tag: 0.17.6@sha256:8318e7716a2d43ce66a3cfb8670153a4ca850fb757be45021370756938c15140
   pullPolicy: IfNotPresent
+
 subdomain: ollama
+
+deployment:
+  strategy: RollingUpdate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 11434
+  healthProbe:
+    type: tcpSocket
+  resources:
+    limits:
+      gpu.intel.com/i915: "1"
+    requests:
+      gpu.intel.com/i915: "1"
+
+service:
+  port: 80
+
+volumes:
+  - name: data
+    mountPath: /root/.ollama
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: false
+
+env:
+  OLLAMA_INTEL_GPU: "true"

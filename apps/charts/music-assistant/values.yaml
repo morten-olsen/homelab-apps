@@ -2,4 +2,39 @@ image:
   repository: ghcr.io/music-assistant/server
   tag: 2.7.7@sha256:004ce2decfe074cb6b2fde7f0b98ad0b14055579172d9be1080d5331189f4e73
   pullPolicy: IfNotPresent
+
 subdomain: music-assistant
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  hostNetwork: true
+
+container:
+  port: 8095
+  healthProbe:
+    type: tcpSocket
+  securityContext:
+    capabilities:
+      add:
+        - SYS_ADMIN
+        - DAC_READ_SEARCH
+
+service:
+  port: 80
+
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true

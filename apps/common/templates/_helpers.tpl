@@ -141,18 +141,14 @@ Standard health probe
 {{- if eq .Values.container.healthProbe.type "httpGet" }}
 httpGet:
   path: {{ .Values.container.healthProbe.path | default "/" }}
-  {{- if regexMatch "^[0-9]+$" $probePort }}
   port: {{ $probePort }}
-  {{- else }}
-  port: {{ $probePort }}
-  {{- end }}
 {{- else if eq .Values.container.healthProbe.type "tcpSocket" }}
 tcpSocket:
-  {{- if regexMatch "^[0-9]+$" $probePort }}
   port: {{ $probePort }}
-  {{- else }}
-  port: {{ $probePort }}
-  {{- end }}
+{{- else if eq .Values.container.healthProbe.type "exec" }}
+exec:
+  command:
+    {{- toYaml .Values.container.healthProbe.command | nindent 4 }}
 {{- end }}
 {{- if .Values.container.healthProbe.initialDelaySeconds }}
 initialDelaySeconds: {{ .Values.container.healthProbe.initialDelaySeconds }}
@@ -316,11 +312,7 @@ metadata:
 spec:
   strategy:
     type: {{ include "common.deploymentStrategy" . }}
-  {{- if hasKey .Values.deployment "replicas" }}
-  replicas: {{ .Values.deployment.replicas }}
-  {{- else }}
-  replicas: {{ .Values.deployment.replicas }}
-  {{- end }}
+  replicas: {{ .Values.deployment.replicas | default 1 }}
   {{- if hasKey .Values.deployment "revisionHistoryLimit" }}
   revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
   {{- else }}
@@ -407,6 +399,10 @@ spec:
 {{ include "common.healthProbe" . | indent 12 }}
           readinessProbe:
 {{ include "common.healthProbe" . | indent 12 }}
+          {{- end }}
+          {{- if .Values.container.resources }}
+          resources:
+            {{- toYaml .Values.container.resources | nindent 12 }}
           {{- end }}
           {{- if .Values.container.securityContext }}
           securityContext:

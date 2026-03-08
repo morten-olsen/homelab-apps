@@ -2,4 +2,21 @@ image:
   repository: apache/tika
   tag: 3.2.3.0-full@sha256:21d8052de04e491ccf66e8680ade4da6f3d453a56d59f740b4167e54167219b7
   pullPolicy: IfNotPresent
+
 subdomain: tika
+
+deployment:
+  strategy: RollingUpdate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 9998
+  healthProbe:
+    type: tcpSocket
+
+service:
+  port: 80
+
+virtualService:
+  enabled: false

@@ -2,5 +2,38 @@ image:
   repository: vaultwarden/server
   tag: latest@sha256:43498a94b22f9563f2a94b53760ab3e710eefc0d0cac2efda4b12b9eb8690664
   pullPolicy: IfNotPresent
+
 subdomain: vaultwarden
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 80
+  healthProbe:
+    type: tcpSocket
+
+service:
+  port: 80
+
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 3Gi
+
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+env:
+  DOMAIN:
+    value: "https://{subdomain}.{domain}"
 
