@@ -40,6 +40,9 @@ persistentVolumeClaims:
     size: 1Gi
     storageClassName: local-path
 
+probe:
+  enabled: false  # MQTT protocol, not HTTP
+
 virtualService:
   enabled: true
   gateways:

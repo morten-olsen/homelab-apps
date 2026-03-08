@@ -735,6 +735,42 @@ Combined helper that outputs generators first, then ExternalSecrets
 {{- end }}
 
 {{/*
+Blackbox Probe for HTTP service monitoring.
+Automatically generated when .Values.service is defined, unless probe.enabled=false.
+Supports optional probe.path to override the probed URL path (default: /).
+*/}}
+{{- define "common.probe" -}}
+{{- $probeEnabled := true }}
+{{- if and .Values.probe (hasKey .Values.probe "enabled") }}
+{{- $probeEnabled = .Values.probe.enabled }}
+{{- end }}
+{{- if and .Values.service $probeEnabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: prometheus-operator
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  interval: 60s
+  scrapeTimeout: 10s
+  module: http_2xx
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+    path: /probe
+  targets:
+    staticConfig:
+      static:
+        - http://{{ include "common.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ include "common.servicePort" . }}{{ if and .Values.probe .Values.probe.path }}{{ .Values.probe.path }}{{ end }}
+      labels:
+        probe_group: application
+{{- end }}
+{{- end }}
+
+{{/*
 Full All-in-One resource
 Includes all standard resources based on values.yaml configuration
 */}}
@@ -748,4 +784,5 @@ Includes all standard resources based on values.yaml configuration
 {{- include "common.oidc" . }}
 {{- include "common.database" . }}
 {{- include "common.externalSecrets" . }}
+{{- include "common.probe" . }}
 {{- end }}
