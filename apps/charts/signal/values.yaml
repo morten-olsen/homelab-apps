@@ -1,3 +1,5 @@
+fullnameOverride: signal
+
 image:
   repository: bbernhard/signal-cli-rest-api
   tag: "0.97@sha256:5fcb8e8620f20f944d747627841ca97f19104acb3e1adb1d5c8983b5db422529"
