@@ -1,6 +1,6 @@
 apiVersion: v2
 version: 1.0.0
-name: apprise
+name: signal
 dependencies:
   - name: common
     version: 1.0.0
