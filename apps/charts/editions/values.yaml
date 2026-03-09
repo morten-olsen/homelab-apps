@@ -1,0 +1,52 @@
+image:
+  repository: ghcr.io/morten-olsen/editions
+  tag: 0.4.0
+  pullPolicy: Always
+
+subdomain: editions
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+container:
+  ports:
+    - name: http
+      port: 3007
+      protocol: TCP
+  securityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+# Service configuration
+service:
+  port: 3007
+  type: ClusterIP
+
+initContainers:
+  - name: fix-permissions
+    image: busybox@sha256:b3255e7dfbcd10cb367af0d409747d511aeb66dfac98cf30e97e87e4207dd76f
+    command: ["sh", "-c", "chown -R 1001:1001 /data"]
+    volumeMounts:
+      - name: data
+        mountPath: /data
+    securityContext:
+      runAsUser: 0
+env:
+  EDITIONS_PORT: "3007"
+
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 10Gi
+    storageClassName: local-path
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
