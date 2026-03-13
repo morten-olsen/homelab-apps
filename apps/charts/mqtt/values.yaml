@@ -11,7 +11,9 @@ deployment:
   revisionHistoryLimit: 0
 
 container:
-  port: 1883
+  ports:
+    - name: tcp-mqtt
+      port: 1883
   healthProbe:
     type: exec
     command:
@@ -25,7 +27,10 @@ container:
 
 service:
   type: LoadBalancer
-  port: 1883
+  ports:
+    - name: tcp-mqtt
+      port: 1883
+      targetPort: 1883
 
 volumes:
   - name: config
