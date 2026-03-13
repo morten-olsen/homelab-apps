@@ -1,6 +1,6 @@
 image:
   repository: codeberg.org/readeck/readeck
-  tag: latest@sha256:92cfd6ca120d844b4105d6b5024c1b614836f9c1c58c1711f9445c0f66437aa4
+  tag: latest@sha256:13fc370031543af7de0dbab84b3476ade6b77570e8dfffddbebdd7bfb8ffb387
   pullPolicy: IfNotPresent
 
 subdomain: readeck
