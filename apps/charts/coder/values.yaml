@@ -64,6 +64,7 @@ env:
   CODER_OAUTH2_GITHUB_ALLOW_SIGNUPS: "false"
   CODER_OIDC_SIGN_IN_TEXT: "Sign in with OIDC"
   CODER_OIDC_SCOPES: "openid,profile,email,offline_access"
+  CODER_OIDC_IGNORE_EMAIL_VERIFIED: "true"
   CODER_OIDC_ISSUER_URL:
     valueFrom:
       secretKeyRef:
