@@ -27,6 +27,6 @@ spec:
     - port: 6379
       targetPort: 6379
       protocol: TCP
-      name: tcp
+      name: redis
   selector:
     app: {{ include "common.fullname" . }}-redis

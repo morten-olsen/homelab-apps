@@ -184,12 +184,12 @@ spec:
           image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
           imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
           ports:
-            - name: tcp
+            - name: redis
               containerPort: 6379
               protocol: TCP
           livenessProbe:
             tcpSocket:
-              port: tcp
+              port: 6379
           readinessProbe:
             tcpSocket:
-              port: tcp
+              port: 6379
