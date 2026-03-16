@@ -113,6 +113,7 @@ env:
   USE_CELERY: "True"
 
   # Application settings
+  WGER_PORT: "8000"
   DJANGO_DEBUG: "False"
   WGER_USE_GUNICORN: "True"
   ALLOW_REGISTRATION: "False"
