@@ -1,0 +1,212 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          env:
+{{ include "common.env" . | indent 12 }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              port: http
+              path: /
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              port: http
+              path: /
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          startupProbe:
+            httpGet:
+              port: http
+              path: /
+            failureThreshold: 30
+            periodSeconds: 10
+          volumeMounts:
+            - mountPath: /home/wger/static
+              name: static
+            - mountPath: /home/wger/media
+              name: media
+        - name: "{{ .Release.Name }}-nginx"
+          image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}"
+          imagePullPolicy: "{{ .Values.nginx.image.pullPolicy }}"
+          ports:
+            - name: nginx
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: nginx
+          readinessProbe:
+            tcpSocket:
+              port: nginx
+          volumeMounts:
+            - mountPath: /wger/static
+              name: static
+              readOnly: true
+            - mountPath: /wger/media
+              name: media
+              readOnly: true
+            - mountPath: /etc/nginx/conf.d/default.conf
+              name: nginx-config
+              subPath: default.conf
+      volumes:
+        - name: static
+          emptyDir: {}
+        - name: media
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-media"
+        - name: nginx-config
+          configMap:
+            name: "{{ .Release.Name }}-nginx-config"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-redis"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-redis"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-redis"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-redis"
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: "{{ .Values.redis.image.pullPolicy }}"
+          ports:
+            - name: tcp
+              containerPort: 6379
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: tcp
+          readinessProbe:
+            tcpSocket:
+              port: tcp
+          volumeMounts:
+            - mountPath: /data
+              name: redis-data
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-redis-data"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-celery-worker"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-celery-worker"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-celery-worker"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-celery-worker"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          command: ["/start-worker"]
+          env:
+{{ include "common.env" . | indent 12 }}
+          livenessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - wger
+                - inspect
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - wger
+                - inspect
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 10
+          volumeMounts:
+            - mountPath: /home/wger/media
+              name: media
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-media"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-celery-beat"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-celery-beat"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-celery-beat"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-celery-beat"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          command: ["/start-beat"]
+          env:
+{{ include "common.env" . | indent 12 }}
+          volumeMounts:
+            - mountPath: /home/wger/beat
+              name: celery-beat
+      volumes:
+        - name: celery-beat
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-celery-beat"
