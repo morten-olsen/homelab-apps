@@ -1,0 +1,195 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}-web
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: {{ include "common.fullname" . }}-web
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.fullname" . }}-web
+    spec:
+      containers:
+        - name: wger
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: gunicorn
+              containerPort: 8000
+              protocol: TCP
+          env:
+{{ include "common.env" . | indent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /en/user/login
+              port: gunicorn
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /en/user/login
+              port: gunicorn
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: media
+              mountPath: /home/wger/media
+            - name: static
+              mountPath: /home/wger/static
+        - name: nginx
+          image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}"
+          imagePullPolicy: {{ .Values.nginx.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+            - name: static
+              mountPath: /wger/static
+              readOnly: true
+            - name: media
+              mountPath: /wger/media
+              readOnly: true
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}-media
+        - name: static
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: {{ include "common.fullname" . }}-nginx
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}-celery
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: {{ include "common.fullname" . }}-celery
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.fullname" . }}-celery
+    spec:
+      containers:
+        - name: celery
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/start-worker"]
+          env:
+{{ include "common.env" . | indent 12 }}
+          livenessProbe:
+            exec:
+              command: ["celery", "-A", "wger", "inspect", "ping"]
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            timeoutSeconds: 30
+            failureThreshold: 3
+          volumeMounts:
+            - name: media
+              mountPath: /home/wger/media
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}-media
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}-celery-beat
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: {{ include "common.fullname" . }}-celery-beat
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.fullname" . }}-celery-beat
+    spec:
+      containers:
+        - name: celery-beat
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/start-beat"]
+          env:
+{{ include "common.env" . | indent 12 }}
+          volumeMounts:
+            - name: beat-schedule
+              mountPath: /home/wger/beat
+      volumes:
+        - name: beat-schedule
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}-beat-schedule
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}-redis
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: {{ include "common.fullname" . }}-redis
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.fullname" . }}-redis
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          ports:
+            - name: tcp
+              containerPort: 6379
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: tcp
+          readinessProbe:
+            tcpSocket:
+              port: tcp
