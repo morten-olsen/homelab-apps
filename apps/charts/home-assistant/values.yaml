@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/home-assistant/home-assistant
-  tag: 2026.2.2@sha256:3e2dff545c46e91f4ab2b21597016011d76d0de58bc8eaf51d75e841f337bf88
+  tag: 2026.3.3@sha256:4c1d99af9fcb666263fff855edc2d1116066faa259f66e6768cee518c8ce3b06
   pullPolicy: IfNotPresent
 
 subdomain: home-assistant
