@@ -771,6 +771,53 @@ spec:
 {{- end }}
 
 {{/*
+Volsync ReplicationSource resources for PVCs with backup enabled.
+Creates one ReplicationSource per PVC that has backup: true.
+Mounts the NFS share directly into the restic mover pod via moverVolumes.
+*/}}
+{{- define "common.backup" -}}
+{{- if and .Values.globals .Values.globals.backup .Values.globals.backup.enabled .Values.persistentVolumeClaims }}
+{{- $globals := .Values.globals }}
+{{- $backup := .Values.globals.backup }}
+{{- range .Values.persistentVolumeClaims }}
+{{- if .backup }}
+{{- $backupName := printf "backup-%s-%s" $.Release.Name .name }}
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: {{ $backupName }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  sourcePVC: {{ $.Release.Name }}-{{ .name }}
+  trigger:
+    schedule: {{ .backupSchedule | default (printf "%d 4 * * *" (mod (len $backupName) 60)) | quote }}
+  restic:
+    pruneIntervalDays: 7
+    repository: volsync-restic
+    copyMethod: Direct
+    cacheCapacity: 1Gi
+    moverSecurityContext:
+      runAsUser: 0
+      runAsGroup: 0
+    moverVolumes:
+      - mountPath: backup
+        volumeSource:
+          nfs:
+            server: {{ $backup.nfs.server }}
+            path: {{ $backup.nfs.path }}
+    retain:
+      {{- if .backupRetain }}
+      {{- toYaml .backupRetain | nindent 6 }}
+      {{- else }}
+      {{- toYaml $backup.retain | nindent 6 }}
+      {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Full All-in-One resource
 Includes all standard resources based on values.yaml configuration
 */}}
@@ -785,4 +832,5 @@ Includes all standard resources based on values.yaml configuration
 {{- include "common.database" . }}
 {{- include "common.externalSecrets" . }}
 {{- include "common.probe" . }}
+{{- include "common.backup" . }}
 {{- end }}

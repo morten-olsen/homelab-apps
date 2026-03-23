@@ -66,9 +66,11 @@ persistentVolumeClaims:
   - name: media
     size: 10Gi
     storageClassName: local-path
+    backup: true
   - name: static
     size: 1Gi
     storageClassName: local-path
+    backup: false
 
 virtualService:
   enabled: true

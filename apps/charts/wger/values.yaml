@@ -26,9 +26,11 @@ persistentVolumeClaims:
   - name: media
     size: 5Gi
     storageClassName: local-path
+    backup: true
   - name: beat-schedule
     size: 100Mi
     storageClassName: local-path
+    backup: false
 
 # VirtualService configuration
 virtualService:

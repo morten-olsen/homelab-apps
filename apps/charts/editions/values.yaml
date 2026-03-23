@@ -43,6 +43,7 @@ persistentVolumeClaims:
   - name: data
     size: 10Gi
     storageClassName: local-path
+    backup: true
 
 # VirtualService configuration
 virtualService:

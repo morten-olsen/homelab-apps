@@ -1,0 +1,123 @@
++ set -o nounset
++ MODULE_DIR_NAME=.claude-module
++ WORKDIR=/home/coder/project
++ PRE_INSTALL_SCRIPT=
++ INSTALL_SCRIPT='#!/bin/bash
+set -o errexit
+set -o pipefail
+
+echo -n '\''IyEvYmluL2Jhc2gKCnNldCAtZXVvIHBpcGVmYWlsCgpCT0xEPSdcMDMzWzA7MW0nCgpjb21tYW5kX2V4aXN0cygpIHsKICBjb21tYW5kIC12ICIkMSIgPiAvZGV2L251bGwgMj4mMQp9CgpBUkdfQ0xBVURFX0NPREVfVkVSU0lPTj0ke0FSR19DTEFVREVfQ09ERV9WRVJTSU9OOi19CkFSR19XT1JLRElSPSR7QVJHX1dPUktESVI6LSIkSE9NRSJ9CkFSR19JTlNUQUxMX0NMQVVERV9DT0RFPSR7QVJHX0lOU1RBTExfQ0xBVURFX0NPREU6LX0KQVJHX0NMQVVERV9CSU5BUllfUEFUSD0ke0FSR19DTEFVREVfQklOQVJZX1BBVEg6LSIkSE9NRS8ubG9jYWwvYmluIn0KQVJHX0NMQVVERV9CSU5BUllfUEFUSD0iJHtBUkdfQ0xBVURFX0JJTkFSWV9QQVRILyNcfi8kSE9NRX0iCkFSR19DTEFVREVfQklOQVJZX1BBVEg9IiR7QVJHX0NMQVVERV9CSU5BUllfUEFUSC8vXCRIT01FLyRIT01FfSIKQVJHX0lOU1RBTExfVklBX05QTT0ke0FSR19JTlNUQUxMX1ZJQV9OUE06LWZhbHNlfQpBUkdfUkVQT1JUX1RBU0tTPSR7QVJHX1JFUE9SVF9UQVNLUzotdHJ1ZX0KQVJHX01DUF9BUFBfU1RBVFVTX1NMVUc9JHtBUkdfTUNQX0FQUF9TVEFUVVNfU0xVRzotfQpBUkdfTUNQPSQoZWNobyAtbiAiJHtBUkdfTUNQOi19IiB8IGJhc2U2NCAtZCkKQVJHX01DUF9DT05GSUdfUkVNT1RFX1BBVEg9JChlY2hvIC1uICIke0FSR19NQ1BfQ09ORklHX1JFTU9URV9QQVRIOi19IiB8IGJhc2U2NCAtZCkKQVJHX0FMTE9XRURfVE9PTFM9JHtBUkdfQUxMT1dFRF9UT09MUzot
+chmod +x /tmp/install.sh
+ARG_CLAUDE_CODE_VERSION='\''latest'\'' \
+ARG_MCP_APP_STATUS_SLUG='\''ccw'\'' \
+ARG_INSTALL_CLAUDE_CODE='\''true'\'' \
+ARG_CLAUDE_BINARY_PATH='\''$HOME/.local/bin'\'' \
+ARG_INSTALL_VIA_NPM='\''false'\'' \
+ARG_REPORT_TASKS='\''true'\'' \
+ARG_WORKDIR='\''/home/coder/project'\'' \
+ARG_ALLOWED_TOOLS='\'''\'' \
+ARG_DISALLOWED_TOOLS='\'''\'' \
+ARG_MCP='\'''\'' \
+ARG_MCP_CONFIG_REMOTE_PATH='\''W10='\'' \
+ARG_ENABLE_AIBRIDGE='\''false'\'' \
+/tmp/install.sh'
++ INSTALL_AGENTAPI=true
++ AGENTAPI_VERSION=v0.11.8
++ START_SCRIPT='#!/bin/bash
+set -o errexit
+set -o pipefail
+echo -n '\''IyEvYmluL2Jhc2gKCnNldCAtZXVvIHBpcGVmYWlsCgpBUkdfQ0xBVURFX0JJTkFSWV9QQVRIPSR7QVJHX0NMQVVERV9CSU5BUllfUEFUSDotIiRIT01FLy5sb2NhbC9iaW4ifQpBUkdfQ0xBVURFX0JJTkFSWV9QQVRIPSIke0FSR19DTEFVREVfQklOQVJZX1BBVEgvI1x+LyRIT01FfSIKQVJHX0NMQVVERV9CSU5BUllfUEFUSD0iJHtBUkdfQ0xBVURFX0JJTkFSWV9QQVRILy9cJEhPTUUvJEhPTUV9IgoKZXhwb3J0IFBBVEg9IiRBUkdfQ0xBVURFX0JJTkFSWV9QQVRIOiRQQVRIIgoKY29tbWFuZF9leGlzdHMoKSB7CiAgY29tbWFuZCAtdiAiJDEiID4gL2Rldi9udWxsIDI+JjEKfQoKQVJHX1JFU1VNRV9TRVNTSU9OX0lEPSR7QVJHX1JFU1VNRV9TRVNTSU9OX0lEOi19CkFSR19DT05USU5VRT0ke0FSR19DT05USU5VRTotZmFsc2V9CkFSR19EQU5HRVJPVVNMWV9TS0lQX1BFUk1JU1NJT05TPSR7QVJHX0RBTkdFUk9VU0xZX1NLSVBfUEVSTUlTU0lPTlM6LX0KQVJHX1BFUk1JU1NJT05fTU9ERT0ke0FSR19QRVJNSVNTSU9OX01PREU6LX0KQVJHX1dPUktESVI9JHtBUkdfV09SS0RJUjotIiRIT01FIn0KQVJHX0FJX1BST01QVD0kKGVjaG8gLW4gIiR7QVJHX0FJX1BST01QVDotfSIgfCBiYXNlNjQgLWQpCkFSR19SRVBPUlRfVEFTS1M9JHtBUkdfUkVQT1JUX1RBU0tTOi10cnVlfQpBUkdfRU5BQkxFX0JPVU5EQVJZPSR7QVJHX0VOQUJMRV9CT1VOREFSWTotZmFsc2V9CkFSR19CT1VOREFSWV9WRVJTSU9OPSR7QVJHX0JPVU5EQVJZX1ZFUlNJ
+chmod +x /tmp/start.sh
+
+ARG_RESUME_SESSION_ID='\'''\'' \
+ARG_CONTINUE='\''true'\'' \
+ARG_DANGEROUSLY_SKIP_PERMISSIONS='\''false'\'' \
+ARG_PERMISSION_MODE='\'''\'' \
+ARG_WORKDIR='\''/home/coder/project'\'' \
+ARG_AI_PROMPT='\'''\'' \
+ARG_REPORT_TASKS='\''true'\'' \
+ARG_ENABLE_BOUNDARY='\''false'\'' \
+ARG_BOUNDARY_VERSION='\''latest'\'' \
+ARG_COMPILE_FROM_SOURCE='\''false'\'' \
+ARG_USE_BOUNDARY_DIRECTLY='\''false'\'' \
+ARG_CODER_HOST='\''coder.olsen.cloud'\'' \
+ARG_CLAUDE_BINARY_PATH='\''$HOME/.local/bin'\'' \
+/tmp/start.sh'
++ WAIT_FOR_START_SCRIPT='#!/bin/bash
+set -o errexit
+set -o pipefail
+
+port=${1:-3284}
+max_attempts=150
+
+# This script waits for the agentapi server to start on the given port.
+# Each attempt sleeps 0.1s, so 150 attempts ≈ 15 seconds.
+# It considers the server started after 3 consecutive successful responses.
+
+agentapi_started=false
+
+echo "Waiting for agentapi server to start on port $port..."
+for i in $(seq 1 "$max_attempts"); do
+  for j in $(seq 1 3); do
+    sleep 0.1
+    if curl -fs -o /dev/null "http://localhost:$port/status"; then
+      echo "agentapi response received ($j/3)"
+    else
+      echo "agentapi server not responding ($i/$max_attempts)"
+      continue 2
+    fi
+  done
+  agentapi_started=true
+  break
+done
+
+if [ "$agentapi_started" != "true" ]; then
+  echo "Error: agentapi server did not start on port $port after $max_attempts attempts."
+  exit 1
+fi
+
+echo "agentapi server started on port $port."'
++ POST_INSTALL_SCRIPT=
++ AGENTAPI_PORT=3284
++ AGENTAPI_CHAT_BASE_PATH=/@morten/default.7866f96d-a320-414b-88dd-213316021376/apps/ccw/chat
++ TASK_ID=53ca9657-7ca4-493f-85af-b5158c60dfc5
++ TASK_LOG_SNAPSHOT=true
++ ENABLE_STATE_PERSISTENCE=true
++ STATE_FILE_PATH=
++ PID_FILE_PATH=
++ set +o nounset
++ source /tmp/agentapi-lib.sh
++ module_path=/home/dev/.claude-module
++ mkdir -p /home/dev/.claude-module/scripts
++ [[ true == true ]]
++ [[ -n 53ca9657-7ca4-493f-85af-b5158c60dfc5 ]]
+Warning: The specified folder '/home/coder/project' does not exist.
+Creating the folder...
++ command_exists jq
++ command -v jq
++ '[' '!' -d /home/coder/project ']'
++ echo 'Warning: The specified folder '\''/home/coder/project'\'' does not exist.'
++ echo 'Creating the folder...'
++ mkdir -p /home/coder/project
+mkdir: cannot create directory '/home/coder': Permission denied
+Ubuntu 24.04.3 LTS
+Installing v4.111.0 of the amd64 release from GitHub.
+
++ mkdir -p ~/.cache/code-server
++ curl -#fL -o ~/.cache/code-server/code-server-4.111.0-linux-amd64.tar.gz.incomplete -C - https://github.com/coder/code-server/releases/download/v4.111.0/code-server-4.111.0-linux-amd64.tar.gz
+#=#=#                                                                                                                                                     0.0%###                                                                        5.3%#####                                                                      8.2%#########                                                                 13.6%###########                                                               16.5%###############                                                           21.5%#################                                                         24.7%######################                                                    30.9%#######################                                                   33.0%###########################                                               38.6%#############################                                             41.2%#################################                              
++ mv ~/.cache/code-server/code-server-4.111.0-linux-amd64.tar.gz.incomplete ~/.cache/code-server/code-server-4.111.0-linux-amd64.tar.gz
++ mkdir -p /tmp/code-server
++ mkdir -p /tmp/code-server/lib /tmp/code-server/bin
++ tar -C /tmp/code-server/lib -xzf ~/.cache/code-server/code-server-4.111.0-linux-amd64.tar.gz
++ mv -f /tmp/code-server/lib/code-server-4.111.0-linux-amd64 /tmp/code-server/lib/code-server-4.111.0
++ ln -fs /tmp/code-server/lib/code-server-4.111.0/bin/code-server /tmp/code-server/bin/code-server
+
+Standalone release has been installed into /tmp/code-server/lib/code-server-4.111.0
+
+Extend your path to use code-server:
+  PATH="/tmp/code-server/bin:$PATH"
+Then run with:
+  code-server
+
+Deploy code-server for your team with Coder: https://github.com/coder/coder

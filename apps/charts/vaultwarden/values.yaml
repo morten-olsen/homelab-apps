@@ -27,6 +27,7 @@ persistentVolumeClaims:
   - name: data
     size: 3Gi
     storageClassName: local-path
+    backup: true
 
 virtualService:
   enabled: true

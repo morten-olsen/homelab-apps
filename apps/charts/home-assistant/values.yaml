@@ -54,6 +54,7 @@ persistentVolumeClaims:
   - name: config
     size: 5Gi
     storageClassName: local-path
+    backup: true
 piper:
   image:
     repository: ghcr.io/morten-olsen/glados-voice
