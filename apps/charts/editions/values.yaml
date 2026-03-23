@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/morten-olsen/editions
-  tag: 0.4.50
+  tag: 0.4.52
   pullPolicy: Always
 
 subdomain: editions
