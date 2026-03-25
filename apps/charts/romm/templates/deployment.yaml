@@ -1,0 +1,197 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: "{{ .Release.Name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              {{- if kindIs "map" $value }}
+              {{- if $value.value }}
+              value: {{ $value.value | replace "{release}" $.Release.Name | replace "{namespace}" $.Release.Namespace | replace "{subdomain}" $.Values.subdomain | replace "{domain}" $.Values.globals.domain | replace "{timezone}" $.Values.globals.timezone | quote }}
+              {{- else if $value.valueFrom }}
+              valueFrom:
+                {{- if $value.valueFrom.secretKeyRef }}
+                secretKeyRef:
+                  name: {{ $value.valueFrom.secretKeyRef.name | replace "{release}" $.Release.Name | quote }}
+                  key: {{ $value.valueFrom.secretKeyRef.key }}
+                {{- end }}
+              {{- else }}
+              {{- toYaml $value | nindent 14 }}
+              {{- end }}
+              {{- else }}
+              value: {{ $value | quote }}
+              {{- end }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+          volumeMounts:
+            - mountPath: /romm/library
+              name: roms
+              subPath: Roms
+            - mountPath: /romm/resources
+              name: resources
+            - mountPath: /romm/assets
+              name: assets
+            - mountPath: /romm/config
+              name: config
+            - mountPath: /romm/config/config.yml
+              name: romm-configfile
+              subPath: config.yml
+      volumes:
+        - name: roms
+          persistentVolumeClaim:
+            claimName: misc
+        - name: resources
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-resources"
+        - name: assets
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-assets"
+        - name: config
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-config"
+        - name: romm-configfile
+          configMap:
+            name: "{{ .Release.Name }}-configfile"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-mariadb"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-mariadb"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-mariadb"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-mariadb"
+          image: "{{ .Values.mariadb.image.repository }}:{{ .Values.mariadb.image.tag }}"
+          imagePullPolicy: "{{ .Values.mariadb.image.pullPolicy }}"
+          env:
+            - name: MARIADB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: mariadb-root-password
+            - name: MARIADB_DATABASE
+              value: romm
+            - name: MARIADB_USER
+              value: romm
+            - name: MARIADB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: mariadb-password
+          ports:
+            - name: tcp
+              containerPort: 3306
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          livenessProbe:
+            tcpSocket:
+              port: tcp
+          readinessProbe:
+            tcpSocket:
+              port: tcp
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: mariadb-data
+      volumes:
+        - name: mariadb-data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-mariadb-data"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-redis"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-redis"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-redis"
+    spec:
+      containers:
+        - name: "{{ .Release.Name }}-redis"
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: "{{ .Values.redis.image.pullPolicy }}"
+          ports:
+            - name: tcp
+              containerPort: 6379
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          livenessProbe:
+            tcpSocket:
+              port: tcp
+          readinessProbe:
+            tcpSocket:
+              port: tcp
+          volumeMounts:
+            - mountPath: /data
+              name: redis-data
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-redis-data"

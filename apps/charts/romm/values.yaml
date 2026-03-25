@@ -1,0 +1,127 @@
+subdomain: romm
+
+image:
+  repository: rommapp/romm
+  tag: latest
+  pullPolicy: IfNotPresent
+
+mariadb:
+  image:
+    repository: mariadb
+    tag: latest
+    pullPolicy: IfNotPresent
+
+redis:
+  image:
+    repository: redis
+    tag: alpine
+    pullPolicy: IfNotPresent
+
+persistentVolumeClaims:
+  - name: resources
+    size: 10Gi
+    storageClassName: local-path
+    backup: true
+  - name: assets
+    size: 10Gi
+    storageClassName: local-path
+    backup: true
+  - name: config
+    size: 1Gi
+    storageClassName: local-path
+    backup: true
+  - name: mariadb-data
+    size: 5Gi
+    storageClassName: local-path
+    backup: true
+  - name: redis-data
+    size: 1Gi
+    storageClassName: local-path
+    backup: false
+
+virtualService:
+  enabled: true
+  gateways:
+    private: true
+  servicePort: 80
+
+oidc:
+  enabled: true
+  redirectUris:
+    - "/api/oauth/openid"
+  subjectMode: user_username
+
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: auth-secret
+        length: 64
+        allowRepeat: true
+        encoding: hex
+        secretKeys:
+          - auth-secret
+      - name: mariadb-root-password
+        length: 32
+        allowRepeat: true
+        encoding: hex
+        secretKeys:
+          - mariadb-root-password
+      - name: mariadb-password
+        length: 32
+        allowRepeat: true
+        encoding: hex
+        secretKeys:
+          - mariadb-password
+
+env:
+  TZ:
+    value: "{timezone}"
+  ROMM_AUTH_SECRET_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: auth-secret
+  ROMM_PORT: "8080"
+  ROMM_DB_DRIVER: mariadb
+  DB_HOST:
+    value: "{release}-mariadb.{namespace}.svc.cluster.local"
+  DB_PORT: "3306"
+  DB_NAME: romm
+  DB_USER: romm
+  DB_PASSWD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: mariadb-password
+  REDIS_HOST:
+    value: "{release}-redis.{namespace}.svc.cluster.local"
+  REDIS_PORT: "6379"
+  IGDB_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: romm-igdb
+        key: client-id
+  IGDB_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: romm-igdb
+        key: client-secret
+  OIDC_ENABLED: "true"
+  OIDC_PROVIDER: authentik
+  OIDC_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientId
+  OIDC_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientSecret
+  OIDC_REDIRECT_URI:
+    value: "https://{subdomain}.{domain}/api/oauth/openid"
+  OIDC_SERVER_APPLICATION_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: issuer
