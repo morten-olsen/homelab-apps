@@ -2,19 +2,19 @@ subdomain: romm
 
 image:
   repository: rommapp/romm
-  tag: latest
+  tag: latest@sha256:f9b16eb4fc939034205549b12b954769b6e1d82a5c0877b6fb19a294056669b0
   pullPolicy: IfNotPresent
 
 mariadb:
   image:
     repository: mariadb
-    tag: latest
+    tag: latest@sha256:e16f61b8f6ed25111adbb1c5c19bbc2904efc8ed14029999af0cbe1c7ae18bf1
     pullPolicy: IfNotPresent
 
 redis:
   image:
     repository: redis
-    tag: alpine
+    tag: alpine@sha256:81b6f81d6a6c5b9019231a2e8eb10085e3a139a34f833dcc965a8a959b040b72
     pullPolicy: IfNotPresent
 
 persistentVolumeClaims:

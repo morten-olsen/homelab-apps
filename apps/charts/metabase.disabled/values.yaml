@@ -2,7 +2,7 @@ subdomain: metabase
 
 image:
   repository: index.docker.io/metabase/metabase
-  tag: latest@sha256:5b2d277b591b8303c51dd2a5d2d91ab5f27f12b2dc3a47adb2444e1e0a41f351
+  tag: latest@sha256:7075d01d471477a435ac12334a5ece82240782d616056e77bfb9fc9824a814bc
   pullPolicy: IfNotPresent
 
 # Deployment configuration
