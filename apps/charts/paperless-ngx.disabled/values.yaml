@@ -151,7 +151,7 @@ env:
 valkey:
   image:
     repository: valkey/valkey
-    tag: latest@sha256:3eeb09785cd61ec8e3be35f8804c8892080f3ca21934d628abc24ee4ed1698f6
+    tag: latest@sha256:3b55fbaa0cd93cf0d9d961f405e4dfcc70efe325e2d84da207a0a8e6d8fde4f9
     pullPolicy: IfNotPresent
   storage:
     size: 1Gi
