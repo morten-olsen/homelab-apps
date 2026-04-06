@@ -1,0 +1,43 @@
+image:
+  repository: ghcr.io/morten-olsen/health/api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+subdomain: health
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 3007
+  healthProbe:
+    type: httpGet
+    path: /healthz
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# VirtualService configuration
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+# Database configuration
+database:
+  enabled: true
+
+# Environment variables
+env:
+  DATABASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url
