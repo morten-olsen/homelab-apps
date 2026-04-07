@@ -38,14 +38,12 @@ spec:
             - mountPath: /opt/netbox/netbox/reports
               name: reports
           livenessProbe:
-            httpGet:
-              path: /login/
+            tcpSocket:
               port: http
             initialDelaySeconds: 30
             periodSeconds: 15
           readinessProbe:
-            httpGet:
-              path: /login/
+            tcpSocket:
               port: http
             initialDelaySeconds: 15
             periodSeconds: 10
@@ -128,7 +126,8 @@ spec:
         - name: "{{ .Release.Name }}-housekeeping"
           image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
           imagePullPolicy: "{{ .Values.server.image.pullPolicy }}"
-          command: ["/opt/netbox/housekeeping.sh"]
+          command: ["/opt/netbox/venv/bin/python"]
+          args: ["/opt/netbox/netbox/manage.py", "housekeeping"]
           env:
 {{ include "netbox.env" . | indent 12 }}
           resources:

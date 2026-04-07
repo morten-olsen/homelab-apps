@@ -49,7 +49,7 @@
       name: "{{ .Release.Name }}-secrets"
       key: superuser-password
 - name: ALLOWED_HOSTS
-  value: "{{ .Values.subdomain }}.{{ .Values.globals.domain }} localhost"
+  value: "*"
 - name: REMOTE_AUTH_ENABLED
   value: "True"
 - name: REMOTE_AUTH_BACKEND
