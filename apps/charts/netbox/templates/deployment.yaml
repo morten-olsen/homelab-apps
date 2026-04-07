@@ -109,36 +109,6 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "{{ .Release.Name }}-housekeeping"
-spec:
-  strategy:
-    type: Recreate
-  replicas: 1
-  selector:
-    matchLabels:
-      app: "{{ .Release.Name }}-housekeeping"
-  template:
-    metadata:
-      labels:
-        app: "{{ .Release.Name }}-housekeeping"
-    spec:
-      containers:
-        - name: "{{ .Release.Name }}-housekeeping"
-          image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
-          imagePullPolicy: "{{ .Values.server.image.pullPolicy }}"
-          command: ["/opt/netbox/venv/bin/python"]
-          args: ["/opt/netbox/netbox/manage.py", "housekeeping"]
-          env:
-{{ include "netbox.env" . | indent 12 }}
-          resources:
-            limits:
-              cpu: "250m"
-              memory: "256Mi"
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: "{{ .Release.Name }}-redis"
 spec:
   strategy:
