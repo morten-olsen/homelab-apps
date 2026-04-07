@@ -11,6 +11,13 @@ runner:
 
 subdomain: n8n
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
 # Deployment configuration
 deployment:
   strategy: RollingUpdate

@@ -5,6 +5,13 @@ image:
 
 subdomain: apprise
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
 command:
   - /usr/bin/signal-cli
 args:

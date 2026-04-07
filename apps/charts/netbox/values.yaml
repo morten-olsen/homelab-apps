@@ -1,5 +1,12 @@
 subdomain: netbox
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
 server:
   image:
     repository: netboxcommunity/netbox

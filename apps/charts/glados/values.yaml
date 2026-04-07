@@ -5,6 +5,13 @@ image:
 
 subdomain: glados
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
 deployment:
   strategy: Recreate
   replicas: 1

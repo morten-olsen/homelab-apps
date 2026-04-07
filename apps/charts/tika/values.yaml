@@ -5,6 +5,13 @@ image:
 
 subdomain: tika
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
 deployment:
   strategy: RollingUpdate
   replicas: 1

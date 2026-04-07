@@ -1,5 +1,12 @@
 subdomain: romm
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
 image:
   repository: rommapp/romm
   tag: latest@sha256:2b7a1714b287f69b081ad2a63bb8c2fa673666a17b2f21322b580b0cd51cb266

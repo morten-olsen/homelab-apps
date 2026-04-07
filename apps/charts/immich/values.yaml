@@ -1,5 +1,12 @@
 subdomain: immich
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
 # Image configurations for multiple deployments
 server:
   image:

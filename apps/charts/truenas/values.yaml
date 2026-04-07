@@ -1,1 +1,7 @@
 subdomain: truenas
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns

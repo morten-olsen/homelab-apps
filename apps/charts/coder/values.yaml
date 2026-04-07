@@ -5,6 +5,13 @@ image:
 
 subdomain: coder
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
 # Deployment configuration
 deployment:
   strategy: Recreate

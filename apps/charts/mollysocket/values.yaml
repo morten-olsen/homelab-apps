@@ -5,6 +5,13 @@ image:
 
 subdomain: mollysocket
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
 initContainers:
   - name: mollysocket-vapid-gentor
     image: "ghcr.io/mollyim/mollysocket:latest@sha256:b725c3ff757cf56fbcd628bdd244c746967e0c090bb4fb928f665f4e80f123f2"

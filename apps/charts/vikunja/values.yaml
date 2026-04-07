@@ -5,6 +5,13 @@ image:
 
 subdomain: vikunja
 
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
 # Deployment configuration
 deployment:
   strategy: RollingUpdate
