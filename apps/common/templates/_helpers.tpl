@@ -805,7 +805,7 @@ spec:
         volumeSource:
           nfs:
             server: {{ $backup.nfs.server }}
-            path: {{ $backup.nfs.path }}
+            path: {{ $backup.nfs.path }}/{{ $.Release.Name }}-{{ .name }}
     retain:
       {{- if .backupRetain }}
       {{- toYaml .backupRetain | nindent 6 }}
