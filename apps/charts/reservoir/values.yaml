@@ -22,6 +22,9 @@ service:
   port: 80
   type: ClusterIP
 
+probe:
+  path: /docs
+
 # VirtualService configuration
 virtualService:
   enabled: true

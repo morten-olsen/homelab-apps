@@ -35,6 +35,9 @@ persistentVolumeClaims:
     storageClassName: local-path
     backup: true
 
+probe:
+  enabled: false
+
 virtualService:
   enabled: false
 

@@ -50,6 +50,9 @@ persistentVolumeClaims:
     backup: true
 
 # VirtualService configuration
+probe:
+  enabled: false
+
 virtualService:
   enabled: true
   gateways:

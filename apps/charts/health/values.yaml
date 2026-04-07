@@ -23,6 +23,9 @@ service:
   port: 80
   type: ClusterIP
 
+probe:
+  path: /healthz
+
 # VirtualService configuration
 virtualService:
   enabled: true
