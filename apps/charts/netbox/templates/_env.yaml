@@ -1,0 +1,72 @@
+{{- define "netbox.env" -}}
+- name: DB_HOST
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-connection"
+      key: host
+- name: DB_PORT
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-connection"
+      key: port
+- name: DB_NAME
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-connection"
+      key: database
+- name: DB_USER
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-connection"
+      key: user
+- name: DB_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-connection"
+      key: password
+- name: REDIS_HOST
+  value: "{{ .Release.Name }}-redis.{{ .Release.Namespace }}.svc.cluster.local"
+- name: REDIS_PORT
+  value: "6379"
+- name: REDIS_DATABASE
+  value: "0"
+- name: REDIS_CACHE_DATABASE
+  value: "1"
+- name: SECRET_KEY
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-secrets"
+      key: secret-key
+- name: SUPERUSER_API_TOKEN
+  value: ""
+- name: SUPERUSER_EMAIL
+  value: "admin@{{ .Values.globals.domain }}"
+- name: SUPERUSER_NAME
+  value: admin
+- name: SUPERUSER_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-secrets"
+      key: superuser-password
+- name: ALLOWED_HOSTS
+  value: "{{ .Values.subdomain }}.{{ .Values.globals.domain }} localhost"
+- name: REMOTE_AUTH_ENABLED
+  value: "True"
+- name: REMOTE_AUTH_BACKEND
+  value: "social_core.backends.open_id_connect.OpenIdConnectAuth"
+- name: SOCIAL_AUTH_OIDC_OIDC_ENDPOINT
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-oidc-credentials"
+      key: issuer
+- name: SOCIAL_AUTH_OIDC_KEY
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-oidc-credentials"
+      key: clientId
+- name: SOCIAL_AUTH_OIDC_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-oidc-credentials"
+      key: clientSecret
+{{- end -}}
