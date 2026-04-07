@@ -149,7 +149,7 @@ actions:
   runner:
     image:
       repository: code.forgejo.org/forgejo/runner
-      tag: "12.8.0@sha256:c1d8edf7ed81119152ee4d9ff750ba3c2eb250cad0803c5ddea8c36078824c11"
+      tag: "12.8.2@sha256:afeaf4c2bd52d9cc2c42090ce559c1f4b7061ded7afd7023c089a5b3b7109025"
       pullPolicy: IfNotPresent
     dind:
       image:

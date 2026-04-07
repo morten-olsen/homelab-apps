@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/morten-olsen/health/api
-  tag: latest
+  tag: latest@sha256:196f7eb390a620b2a592083c12e94babc6243dbc98cb04ae6d86ce41f9dc19e9
   pullPolicy: IfNotPresent
 
 subdomain: health
