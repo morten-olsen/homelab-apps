@@ -48,6 +48,11 @@
     secretKeyRef:
       name: "{{ .Release.Name }}-secrets"
       key: superuser-password
+- name: API_TOKEN_PEPPER_1
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-secrets"
+      key: token-pepper
 - name: ALLOWED_HOSTS
   value: "*"
 - name: REMOTE_AUTH_ENABLED

@@ -53,3 +53,9 @@ externalSecrets:
         allowRepeat: true
         secretKeys:
           - superuser-password
+      - name: token-pepper
+        length: 64
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - token-pepper
