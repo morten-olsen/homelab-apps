@@ -585,6 +585,64 @@ spec:
 {{- end }}
 
 {{/*
+ServiceEntry for mesh-internal DNS resolution of public domains.
+When pods resolve <subdomain>.olsen.cloud, the sidecar DNS proxy returns
+a mesh-internal VIP so traffic stays in-cluster instead of hairpinning
+through the public internet.
+- HTTP: routes directly to the backend service
+- HTTPS: routes to the Istio gateway for TLS termination
+*/}}
+{{- define "common.serviceEntry" -}}
+{{- if and .Values.virtualService.enabled .Values.subdomain (hasKey .Values.globals "domain") (ne .Values.globals.domain "") }}
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: {{ include "common.fullname" . }}-mesh-http
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - {{ include "common.domain" . }}
+  ports:
+    - number: 80
+      name: http
+      protocol: HTTP
+  resolution: DNS
+  location: MESH_INTERNAL
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: {{ include "common.fullname" . }}-mesh-https
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - {{ include "common.domain" . }}
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+  resolution: STATIC
+  location: MESH_INTERNAL
+  endpoints:
+    {{- $gatewaySvc := lookup "v1" "Service" "istio-ingress" "gateway" }}
+    {{- if $gatewaySvc }}
+    - address: {{ $gatewaySvc.spec.clusterIP }}
+      ports:
+        https: 443
+    {{- else }}
+    - address: "0.0.0.0"
+      ports:
+        https: 443
+    {{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Full DNS resource
 */}}
 {{- define "common.dns" -}}
@@ -827,6 +885,7 @@ Includes all standard resources based on values.yaml configuration
 {{- include "common.service" . }}
 {{- include "common.pvc" . }}
 {{- include "common.virtualService" . }}
+{{- include "common.serviceEntry" . }}
 {{- include "common.dns" . }}
 {{- include "common.oidc" . }}
 {{- include "common.database" . }}
