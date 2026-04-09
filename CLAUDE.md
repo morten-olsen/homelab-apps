@@ -62,7 +62,8 @@ Or use single file with `{{ include "common.all" . }}` to render all resources a
 - `common.deployment` - Deployment with health probes, volumes, init containers
 - `common.service` - Service(s) with port mapping
 - `common.pvc` - Persistent volume claims
-- `common.virtualService` - Istio routing (public/private gateways)
+- `common.virtualService` - Istio routing (public/private gateways + mesh)
+- `common.serviceEntry` - Mesh-internal DNS for public domains (avoids internet hairpin)
 - `common.oidc` - Authentik OIDC client registration
 - `common.database` - PostgreSQL database provisioning
 - `common.externalSecrets` - Password generators and secret templates

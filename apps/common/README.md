@@ -475,7 +475,8 @@ The library provides full resource templates that can be included directly:
 - `common.service` - Full Service resource(s) - supports multiple services
 - `common.serviceAccount` - Full ServiceAccount resource
 - `common.pvc` - Full PVC resources - supports multiple PVCs
-- `common.virtualService` - Full VirtualService resources (public + private gateways)
+- `common.virtualService` - Full VirtualService resources (public + private gateways, includes `mesh` gateway)
+- `common.serviceEntry` - ServiceEntry for mesh-internal DNS resolution (prevents internet hairpinning for pod-to-pod traffic using public domains)
 - `common.dns` - Full DNSRecord resource
 - `common.oidc` - Full AuthentikClient resource for OIDC authentication
 - `common.database` - Full PostgresDatabase resource for database provisioning
