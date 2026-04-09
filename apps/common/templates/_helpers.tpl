@@ -626,19 +626,12 @@ spec:
     - number: 443
       name: https
       protocol: HTTPS
-  resolution: STATIC
+  resolution: DNS
   location: MESH_INTERNAL
   endpoints:
-    {{- $gatewaySvc := lookup "v1" "Service" "istio-ingress" "gateway" }}
-    {{- if $gatewaySvc }}
-    - address: {{ $gatewaySvc.spec.clusterIP }}
+    - address: gateway.istio-ingress.svc.cluster.local
       ports:
         https: 443
-    {{- else }}
-    - address: "0.0.0.0"
-      ports:
-        https: 443
-    {{- end }}
 {{- end }}
 {{- end }}
 
