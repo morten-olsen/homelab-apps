@@ -37,5 +37,7 @@ spec:
         syncOptions:
         - CreateNamespace=true
         managedNamespaceMetadata:
+          labels:
+            istio-injection: enabled
           annotations:
             volsync.backube/privileged-movers: "true"
