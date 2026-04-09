@@ -599,7 +599,7 @@ through the public internet.
 apiVersion: networking.istio.io/v1
 kind: ServiceEntry
 metadata:
-  name: {{ include "common.fullname" . }}-mesh-http
+  name: {{ include "common.fullname" . }}-mesh
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
@@ -610,20 +610,6 @@ spec:
     - number: 80
       name: http
       protocol: HTTP
-  resolution: DNS
-  location: MESH_INTERNAL
----
-apiVersion: networking.istio.io/v1
-kind: ServiceEntry
-metadata:
-  name: {{ include "common.fullname" . }}-mesh-https
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-spec:
-  hosts:
-    - {{ include "common.domain" . }}
-  ports:
     - number: 443
       name: https
       protocol: HTTPS
