@@ -550,20 +550,6 @@ spec:
               {{- else }}
               number: {{ include "common.servicePort" . }}
               {{- end }}
-  tls:
-    - match:
-        - port: 443
-          sniHosts:
-            - {{ include "common.domain" . }}
-      route:
-        - destination:
-            host: {{ include "common.fullname" . }}
-            port:
-              {{- if .Values.virtualService.servicePort }}
-              number: {{ .Values.virtualService.servicePort }}
-              {{- else }}
-              number: {{ include "common.servicePort" . }}
-              {{- end }}
 
 {{- end }}
 {{- if and .Values.virtualService.gateways.private (hasKey .Values.globals "istio") (hasKey .Values.globals.istio "gateways") (hasKey .Values.globals.istio.gateways "private") (ne .Values.globals.istio.gateways.private "") }}
@@ -594,20 +580,6 @@ spec:
               {{- else }}
               number: {{ include "common.servicePort" . }}
               {{- end }}
-  tls:
-    - match:
-        - port: 443
-          sniHosts:
-            - {{ include "common.domain" . }}
-      route:
-        - destination:
-            host: {{ include "common.fullname" . }}
-            port:
-              {{- if .Values.virtualService.servicePort }}
-              number: {{ .Values.virtualService.servicePort }}
-              {{- else }}
-              number: {{ include "common.servicePort" . }}
-              {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -616,8 +588,10 @@ spec:
 ServiceEntry for mesh-internal DNS resolution of public domains.
 When pods resolve <subdomain>.olsen.cloud, the sidecar DNS proxy returns
 a mesh-internal VIP so traffic stays in-cluster instead of hairpinning
-through the public internet. Declares both HTTP and HTTPS ports so the
-auto-allocated VIP handles both protocols.
+through the public internet.
+- HTTP: routes directly to the backend via the mesh VirtualService
+- HTTPS: routes to the Istio gateway for TLS termination (requires
+  DestinationRule to disable mTLS on the gateway since it has no sidecar)
 */}}
 {{- define "common.serviceEntry" -}}
 {{- if and .Values.virtualService.enabled .Values.subdomain (hasKey .Values.globals "domain") (ne .Values.globals.domain "") }}
@@ -625,7 +599,7 @@ auto-allocated VIP handles both protocols.
 apiVersion: networking.istio.io/v1
 kind: ServiceEntry
 metadata:
-  name: {{ include "common.fullname" . }}-mesh
+  name: {{ include "common.fullname" . }}-mesh-http
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
@@ -636,11 +610,29 @@ spec:
     - number: 80
       name: http
       protocol: HTTP
+  resolution: DNS
+  location: MESH_INTERNAL
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: {{ include "common.fullname" . }}-mesh-https
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - {{ include "common.domain" . }}
+  ports:
     - number: 443
       name: https
-      protocol: TLS
-  resolution: NONE
+      protocol: HTTPS
+  resolution: DNS
   location: MESH_INTERNAL
+  endpoints:
+    - address: gateway.istio-ingress.svc.cluster.local
+      ports:
+        https: 443
 {{- end }}
 {{- end }}
 
