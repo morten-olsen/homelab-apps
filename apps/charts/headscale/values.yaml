@@ -93,6 +93,7 @@ dns:
 
 volumes:
   - name: config-template
+    mountPath: /etc/headscale-template
     configMap: headscale-config
   - name: config-writable
     mountPath: /etc/headscale
