@@ -11,6 +11,10 @@ deployment:
   revisionHistoryLimit: 0
   podAnnotations:
     sidecar.istio.io/inject: "false"
+  hostAliases:
+    - ip: "10.43.245.222"
+      hostnames:
+        - "headscale.olsen.cloud"
 
 container:
   port: 41641

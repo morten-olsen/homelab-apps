@@ -344,6 +344,10 @@ spec:
       {{- if .Values.deployment.hostNetwork }}
       hostNetwork: {{ .Values.deployment.hostNetwork }}
       {{- end }}
+      {{- if .Values.deployment.hostAliases }}
+      hostAliases:
+        {{- toYaml .Values.deployment.hostAliases | nindent 8 }}
+      {{- end }}
       {{- include "common.dnsConfig" . | nindent 6 }}
       {{- if .Values.initContainers }}
       initContainers:
