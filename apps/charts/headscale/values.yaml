@@ -83,7 +83,13 @@ container:
       cpu: "500m"
 
 service:
-  port: 80
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: http
+    - port: 443
+      targetPort: 8080
+      name: https
 
 dns:
   enabled: true
