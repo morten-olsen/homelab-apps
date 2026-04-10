@@ -20,6 +20,7 @@ initContainers:
         sed -i "s|issuer: TO_BE_REPLACED_BY_INIT|issuer: ${OIDC_ISSUER}|" /etc/headscale/config.yaml
         sed -i "s|client_id: TO_BE_REPLACED_BY_INIT|client_id: ${OIDC_CLIENT_ID}|" /etc/headscale/config.yaml
         sed -i "s|client_secret: TO_BE_REPLACED_BY_INIT|client_secret: ${OIDC_CLIENT_SECRET}|" /etc/headscale/config.yaml
+
     env:
       - name: DB_HOST
         valueFrom:
@@ -126,6 +127,7 @@ oidc:
 
 database:
   enabled: true
+
 
 # Headscale config.yaml values (used by the ConfigMap template)
 headscale:
