@@ -214,6 +214,14 @@ Standard volumes
   {{- else if .secret }}
   secret:
     secretName: {{ .secret | replace "{release}" $.Release.Name | replace "{namespace}" $.Release.Namespace | replace "{fullname}" (include "common.fullname" $) }}
+  {{- else if .emptyDir }}
+  emptyDir: {}
+  {{- else if .hostPath }}
+  hostPath:
+    path: {{ .hostPath }}
+    {{- if .hostPathType }}
+    type: {{ .hostPathType }}
+    {{- end }}
   {{- end }}
 {{- end }}
 {{- end }}
