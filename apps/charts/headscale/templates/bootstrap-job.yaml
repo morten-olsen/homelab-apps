@@ -20,11 +20,13 @@ spec:
             - |
               set -e
 
-              # Wait for headscale to be ready via HTTP health endpoint
+              # Wait for headscale to be ready
               echo "Waiting for headscale..."
-              until wget -qO- http://headscale.{{ .Release.Namespace }}.svc.cluster.local/health 2>/dev/null; do
+              until kubectl rollout status deploy/headscale -n {{ .Release.Namespace }} --timeout=5s 2>/dev/null; do
                 sleep 5
               done
+              # Give it a moment to finish startup
+              sleep 5
 
               # Check if the router secret already exists
               if kubectl get secret headscale-router-auth -n {{ .Release.Namespace }} 2>/dev/null; then
