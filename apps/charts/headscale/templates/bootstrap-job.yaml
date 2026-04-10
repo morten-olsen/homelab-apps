@@ -41,7 +41,7 @@ spec:
               # Create a pre-auth key for the router
               KEY=$(kubectl exec deploy/headscale -c headscale -n {{ .Release.Namespace }} -- \
                 headscale preauthkeys create --user router --reusable --expiration 87600h -o json \
-                | grep -o '"key":"[^"]*"' | head -1 | cut -d'"' -f4)
+                | tr -d '\t\n ' | grep -o '"key":"[^"]*"' | head -1 | cut -d'"' -f4)
 
               if [ -z "$KEY" ]; then
                 echo "Failed to create pre-auth key"
