@@ -43,6 +43,8 @@ env:
     value: "false"
   TS_HOSTNAME:
     value: "k8s-router"
+  TS_KUBE_SECRET:
+    value: ""
   TS_AUTHKEY:
     valueFrom:
       secretKeyRef:
