@@ -123,12 +123,12 @@ Service ports list
 - port: {{ .Values.service.port }}
   targetPort: {{ include "common.containerPort" . }}
   protocol: TCP
-  name: http
+  name: {{ .Values.service.portName | default "http" }}
 {{- else }}
 - port: 80
   targetPort: {{ include "common.containerPort" . }}
   protocol: TCP
-  name: http
+  name: {{ .Values.service.portName | default "http" }}
 {{- end }}
 {{- end }}
 
