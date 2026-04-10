@@ -9,6 +9,8 @@ deployment:
   strategy: Recreate
   replicas: 1
   revisionHistoryLimit: 0
+  podAnnotations:
+    sidecar.istio.io/inject: "false"
 
 container:
   port: 41641
