@@ -70,6 +70,8 @@ deployment:
   strategy: Recreate
   replicas: 1
   revisionHistoryLimit: 0
+  podAnnotations:
+    traffic.sidecar.istio.io/excludeInboundPorts: "8080"
 
 container:
   port: 8080
