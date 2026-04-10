@@ -20,9 +20,9 @@ spec:
             - |
               set -e
 
-              # Wait for headscale to be ready
+              # Wait for headscale to be ready via HTTP health endpoint
               echo "Waiting for headscale..."
-              until kubectl exec deploy/headscale -n {{ .Release.Namespace }} -- headscale health 2>/dev/null; do
+              until wget -qO- http://headscale.{{ .Release.Namespace }}.svc.cluster.local/health 2>/dev/null; do
                 sleep 5
               done
 
@@ -33,11 +33,11 @@ spec:
               fi
 
               # Create the router user (ignore error if exists)
-              kubectl exec deploy/headscale -n {{ .Release.Namespace }} -- \
+              kubectl exec deploy/headscale -c headscale -n {{ .Release.Namespace }} -- \
                 headscale users create router 2>/dev/null || true
 
               # Create a pre-auth key for the router
-              KEY=$(kubectl exec deploy/headscale -n {{ .Release.Namespace }} -- \
+              KEY=$(kubectl exec deploy/headscale -c headscale -n {{ .Release.Namespace }} -- \
                 headscale preauthkeys create --user router --reusable --expiration 87600h -o json \
                 | grep -o '"key":"[^"]*"' | head -1 | cut -d'"' -f4)
 
