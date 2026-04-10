@@ -32,7 +32,7 @@ virtualService:
 
 env:
   TS_EXTRA_ARGS:
-    value: "--login-server=https://headscale.{domain}"
+    value: "--login-server=http://headscale.prod.svc.cluster.local"
   TS_ROUTES:
     value: "192.168.10.0/24,192.168.20.0/24,192.168.30.0/24,10.42.0.0/16,10.43.0.0/16"
   TS_STATE_DIR:
