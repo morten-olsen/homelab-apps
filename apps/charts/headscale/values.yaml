@@ -7,7 +7,7 @@ subdomain: headscale
 
 initContainers:
   - name: inject-secrets
-    image: "docker.io/headscale/headscale:0.25.1"
+    image: "alpine:3.21"
     imagePullPolicy: IfNotPresent
     command: ["sh", "-c"]
     args:
