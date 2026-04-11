@@ -11,12 +11,12 @@ dns:
 server:
   image:
     repository: ghcr.io/immich-app/immich-server
-    tag: release@sha256:ee60b98e7fcc836d61d7f5e7689514f3de7a9480f31ec6ca62d6221056b46ae1
+    tag: release@sha256:040b2fed8f7f6b7405f9b4b26348b4656355e4d4ed0852b8e966d453dd6635cc
     pullPolicy: IfNotPresent
 ml:
   image:
     repository: ghcr.io/immich-app/immich-machine-learning
-    tag: release@sha256:aff861526d690bb720130a46bd48ee2827c44d2f601a194e61f31e979a591952
+    tag: release@sha256:e25a410b99567c369da14508c7e874dfbeee1bcf06adda2c4148ab2f32f9463d
     pullPolicy: IfNotPresent
 valkey:
   image:
