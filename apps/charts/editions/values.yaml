@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/morten-olsen/editions
-  tag: 0.4.63@sha256:0fd22a13c7b2e5607ebd7ba1540dc201695a0970227a904ee219d6c41e3b219e
+  tag: 0.4.65@sha256:3dfc4f2d5a763a4fcf1c0a40bf29242d170369b782419f913df2f0c331aa8e61
   pullPolicy: Always
 
 subdomain: editions

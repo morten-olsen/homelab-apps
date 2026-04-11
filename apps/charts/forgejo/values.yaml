@@ -1,6 +1,6 @@
 image:
   repository: codeberg.org/forgejo/forgejo
-  tag: 14@sha256:8f4b1f86750e206824c669e1af17b6c6e8da9ed1a8ebda615db7526ee86d3eb2
+  tag: 14@sha256:f33e1b5087b7dc3bdbb60ceb0e6f32bf0ce06376328d17c7db86fba62b673f6f
   pullPolicy: IfNotPresent
 
 subdomain: code
@@ -154,7 +154,7 @@ actions:
     dind:
       image:
         repository: code.forgejo.org/oci/docker
-        tag: dind@sha256:686d2c5464787b0ca42420e0aa03a94fc9781ff9bf8b5ff947614b9fa4c3c3e0
+        tag: dind@sha256:f80c26212befc1c1988b529495532c6b9180d9b1dab1611f4a1efbe9da8ec821
         pullPolicy: IfNotPresent
     name: default
     replicas: 1
