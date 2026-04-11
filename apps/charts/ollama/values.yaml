@@ -44,8 +44,8 @@ persistentVolumeClaims:
 virtualService:
   enabled: true
   gateways:
-    public: true
-    private: false
+    public: false
+    private: true
 
 env:
   OLLAMA_INTEL_GPU: "true"
