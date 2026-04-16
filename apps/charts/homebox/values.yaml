@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/sysadminsmedia/homebox
-  tag: latest@sha256:532e0428d922fdea2441b31c1eb5b4018e5f1b2684273bee06dba102db576f30
+  tag: latest@sha256:6506480a3dfadd2cc885fa97b32d11b0ee28ec58629fa34a76afdb4ac540c7fc
   pullPolicy: IfNotPresent
 
 subdomain: homebox
