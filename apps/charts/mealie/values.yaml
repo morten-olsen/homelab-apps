@@ -9,7 +9,7 @@ dns:
 
 image:
   repository: ghcr.io/mealie-recipes/mealie
-  tag: latest@sha256:b9fac07e6daaabd8c29d0dc97965c2f500ce7d6b188b0c51f494627f23ad32f2
+  tag: latest@sha256:3f1a1bf58774f9b211b91a1f4d30a4a34e1159e6c0dcb6849b3a1067bcb6858e
   pullPolicy: IfNotPresent
 
 # Deployment configuration
