@@ -5,11 +5,11 @@
 # Usage:
 #   ./scripts/migrate-common-chart.sh [repo-url]
 #
-# Default repo URL: https://morten-olsen.github.io/homelab-apps
+# Default repo URL: https://morten-olsen.github.io/homelab-core
 
 set -euo pipefail
 
-REPO_URL="${1:-https://morten-olsen.github.io/homelab-apps}"
+REPO_URL="${1:-https://morten-olsen.github.io/homelab-core}"
 CHART_VERSION="0.1.0"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CHARTS_DIR="$SCRIPT_DIR/../apps/charts"
@@ -32,6 +32,6 @@ echo ""
 echo "Migrated $count charts to homelab-common @ $REPO_URL"
 echo ""
 echo "Next steps:"
-echo "  1. Run 'helm repo add homelab-apps $REPO_URL' (if not already added)"
+echo "  1. Run 'helm repo add homelab-core $REPO_URL' (if not already added)"
 echo "  2. Run 'helm dependency build' in each chart directory"
 echo "  3. Verify with 'helm template <name> <chart-dir> --set globals.environment=prod --set globals.domain=example.com'"
