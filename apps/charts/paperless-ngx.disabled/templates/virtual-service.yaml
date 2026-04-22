@@ -1,1 +1,1 @@
-{{ include "common.virtualService" . }}
+{{ include "common.virtualService" (list . .Values) }}

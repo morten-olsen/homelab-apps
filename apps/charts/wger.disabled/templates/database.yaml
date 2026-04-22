@@ -1,1 +1,1 @@
-{{ include "common.database" . }}
+{{ include "common.database" (list . .Values) }}

@@ -1,4 +1,4 @@
-{{ include "common.pvc" . }}
+{{ include "common.pvc" (list . .Values) }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

@@ -1,1 +1,1 @@
-{{ include "common.oidc" . }}
+{{ include "common.oidc" (list . .Values) }}

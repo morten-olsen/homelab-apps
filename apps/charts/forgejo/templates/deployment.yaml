@@ -72,5 +72,5 @@ spec:
         {{- include "common.volumes" . | nindent 8 }}
       {{- end }}
 {{- else }}
-{{ include "common.deployment" . }}
+{{ include "common.deployment" (list . .Values) }}
 {{- end }}

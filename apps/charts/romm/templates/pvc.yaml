@@ -1,1 +1,1 @@
-{{ include "common.pvc" . }}
+{{ include "common.pvc" (list . .Values) }}
