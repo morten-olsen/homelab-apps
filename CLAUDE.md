@@ -35,7 +35,7 @@ helm template <release> . --set globals.environment=prod --set globals.domain=ex
 Three ArgoCD ApplicationSets auto-discover charts from their respective `charts/` directories. Folders suffixed with `.disabled` are excluded from deployment.
 
 ### Common Library Pattern
-Most charts use the common library (`apps/common/`) which provides standardized templates. A minimal chart needs:
+Most charts use the `homelab-common` library chart (published at `https://mortenolsen.pro/homelab-core/`) which provides standardized templates. A minimal chart needs:
 
 1. `Chart.yaml` with common library dependency:
 ```yaml
@@ -43,20 +43,25 @@ apiVersion: v2
 version: 1.0.0
 name: my-app
 dependencies:
-  - name: common
-    version: 1.0.0
-    repository: file://../../common
+  - name: homelab-common
+    version: ">=0.1.0"
+    repository: https://mortenolsen.pro/homelab-core/
 ```
 
 2. Standardized `values.yaml` (see `apps/common/README.md` for full structure)
 
-3. Template files that include common helpers:
+3. Template files that include common helpers using the scoped API `(list . .Values)`:
 ```yaml
 # templates/deployment.yaml
-{{ include "common.deployment" . }}
+{{ include "common.deployment" (list . .Values) }}
 ```
 
-Or use single file with `{{ include "common.all" . }}` to render all resources automatically.
+Or use single file with `{{ include "common.all" (list . .Values) }}` to render all resources automatically.
+
+For multi-app charts or value segregation, scope to a values subset:
+```yaml
+{{ include "common.all" (list . .Values.myApp) }}
+```
 
 ### Key Templates
 - `common.deployment` - Deployment with health probes, volumes, init containers
