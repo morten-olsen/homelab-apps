@@ -13,7 +13,6 @@ globals:
       namespace: shared
   istio:
     gateway: shared/private
-    gatewayAddress: "10.43.245.222"
     gateways:
       private: shared/private
       public: shared/public
