@@ -1,0 +1,1 @@
+{{ include "common.dns" (list . .Values) }}

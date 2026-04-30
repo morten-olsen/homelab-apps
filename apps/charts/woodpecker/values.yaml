@@ -1,0 +1,122 @@
+image:
+  repository: docker.io/woodpeckerci/woodpecker-server
+  tag: v3.6.0
+  pullPolicy: IfNotPresent
+
+agent:
+  image:
+    repository: docker.io/woodpeckerci/woodpecker-agent
+    tag: v3.6.0
+    pullPolicy: IfNotPresent
+  replicas: 1
+  # Namespace where the k8s backend creates ephemeral pipeline pods.
+  # Starts in prod alongside the agent; consider moving to a dedicated
+  # namespace once we have a feel for blast radius.
+  pipelineNamespace: prod
+  pipelineStorageClass: local-path
+  pipelineVolumeSize: 10G
+
+subdomain: woodpecker
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 2
+
+container:
+  ports:
+    - name: http
+      port: 8000
+      protocol: TCP
+    - name: grpc
+      port: 9000
+      protocol: TCP
+  healthProbe:
+    type: httpGet
+    path: /healthz
+    port: http
+
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+database:
+  enabled: true
+
+service:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP
+      type: ClusterIP
+    - name: grpc
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+      serviceName: grpc
+      type: ClusterIP
+
+volumes:
+  - name: data
+    mountPath: /var/lib/woodpecker
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 5Gi
+    storageClassName: local-path
+    backup: true
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+  servicePort: 80
+
+externalSecrets:
+  - name: "{release}-agent-secret"
+    passwords:
+      - name: agent-secret
+        length: 64
+        allowRepeat: true
+        encoding: hex
+        secretKeys:
+          - agent-secret
+
+env:
+  WOODPECKER_HOST:
+    value: "https://{subdomain}.{domain}"
+  WOODPECKER_OPEN: "false"
+  WOODPECKER_ADMIN: morten-olsen
+  WOODPECKER_LOG_LEVEL: info
+  # Forgejo forge integration
+  WOODPECKER_FORGEJO: "true"
+  WOODPECKER_FORGEJO_URL:
+    value: "https://code.{domain}"
+  WOODPECKER_FORGEJO_CLIENT:
+    valueFrom:
+      secretKeyRef:
+        name: woodpecker-forgejo-oauth
+        key: client-id
+  WOODPECKER_FORGEJO_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: woodpecker-forgejo-oauth
+        key: client-secret
+  # Shared secret authenticating agents
+  WOODPECKER_AGENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-agent-secret"
+        key: agent-secret
+  # Database (postgres) — single connection-string env
+  WOODPECKER_DATABASE_DRIVER: postgres
+  WOODPECKER_DATABASE_DATASOURCE:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url

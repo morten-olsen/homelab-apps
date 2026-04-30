@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-agent"
+  labels:
+    app: "{{ .Release.Name }}-agent"
+spec:
+  replicas: {{ .Values.agent.replicas | default 1 }}
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-agent"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-agent"
+    spec:
+      serviceAccountName: "{{ .Release.Name }}-agent"
+      containers:
+        - name: agent
+          image: "{{ .Values.agent.image.repository }}:{{ .Values.agent.image.tag }}"
+          imagePullPolicy: {{ .Values.agent.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: WOODPECKER_SERVER
+              value: "{{ .Release.Name }}-grpc.{{ .Release.Namespace }}.svc.cluster.local:9000"
+            - name: WOODPECKER_AGENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-agent-secret"
+                  key: agent-secret
+            - name: WOODPECKER_BACKEND
+              value: kubernetes
+            - name: WOODPECKER_BACKEND_K8S_NAMESPACE
+              value: "{{ .Values.agent.pipelineNamespace }}"
+            - name: WOODPECKER_BACKEND_K8S_STORAGE_CLASS
+              value: "{{ .Values.agent.pipelineStorageClass }}"
+            - name: WOODPECKER_BACKEND_K8S_VOLUME_SIZE
+              value: "{{ .Values.agent.pipelineVolumeSize }}"
+            # local-path is RWO; RWX would fail to bind on a single-node cluster
+            - name: WOODPECKER_BACKEND_K8S_STORAGE_RWX
+              value: "false"
+            # Keep Istio off pipeline pods — sidecars block the pod from
+            # terminating cleanly when the workflow step exits.
+            - name: WOODPECKER_BACKEND_K8S_POD_ANNOTATIONS
+              value: |
+                sidecar.istio.io/inject: "false"
+            - name: WOODPECKER_LOG_LEVEL
+              value: info
