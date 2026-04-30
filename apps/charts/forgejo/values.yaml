@@ -10,8 +10,6 @@ deployment:
   strategy: Recreate
   replicas: 1
   revisionHistoryLimit: 2
-  podAnnotations:
-    traffic.sidecar.istio.io/excludeInboundPorts: "22"
 
 # Container configuration - multiple ports
 container:
