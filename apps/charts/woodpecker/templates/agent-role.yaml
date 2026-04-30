@@ -13,3 +13,8 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # The k8s backend creates a Service (wp-hsvc-<workflow-id>) per workflow
+  # so steps can reach each other (and Woodpecker-defined services) by name.
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
