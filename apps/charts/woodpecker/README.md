@@ -48,6 +48,8 @@ steps:
         --dockerfile=Dockerfile
         --destination=code.olsen.cloud/${CI_REPO}:latest
         --destination=code.olsen.cloud/${CI_REPO}:${CI_COMMIT_SHA:0:8}
+        --label=org.opencontainers.image.source=https://code.olsen.cloud/${CI_REPO}
+        --label=org.opencontainers.image.revision=${CI_COMMIT_SHA}
 ```
 
 #### Notes
@@ -56,6 +58,7 @@ steps:
 - `${CI_REPO}` resolves to `<org>/<repo>` automatically — no per-repo edits needed.
 - Tagging both `latest` and the short SHA gives you rollbacks for free.
 - Don't add an explicit `clone:` step. Woodpecker clones implicitly; overriding `clone` replaces that built-in behaviour.
+- The `org.opencontainers.image.source` label is what makes Forgejo auto-link the pushed image to the repo's **Packages** tab. Without it the image lands in the registry but stays orphaned from the repo UI.
 
 ## Migration from `plugins/docker`
 
