@@ -44,5 +44,9 @@ spec:
             - name: WOODPECKER_BACKEND_K8S_POD_ANNOTATIONS
               value: |
                 sidecar.istio.io/inject: "false"
+            # imagePullSecrets attached to every pipeline pod so kubelet can
+            # pull private step images (e.g. code.olsen.cloud/ci/*).
+            - name: WOODPECKER_BACKEND_K8S_PULL_SECRET_NAMES
+              value: woodpecker-pull-secret
             - name: WOODPECKER_LOG_LEVEL
               value: info
