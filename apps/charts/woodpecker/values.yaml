@@ -9,6 +9,10 @@ agent:
     tag: v3.13.0
     pullPolicy: IfNotPresent
   replicas: 1
+  # Concurrent workflows this agent will run in parallel.
+  # Each pipeline pod is independent, so this scales pipeline throughput
+  # without needing more agent replicas.
+  maxWorkflows: 5
   # Namespace where the k8s backend creates ephemeral pipeline pods.
   # Starts in prod alongside the agent; consider moving to a dedicated
   # namespace once we have a feel for blast radius.

@@ -48,5 +48,7 @@ spec:
             # pull private step images (e.g. code.olsen.cloud/ci/*).
             - name: WOODPECKER_BACKEND_K8S_PULL_SECRET_NAMES
               value: woodpecker-pull-secret
+            - name: WOODPECKER_MAX_WORKFLOWS
+              value: "{{ .Values.agent.maxWorkflows | default 1 }}"
             - name: WOODPECKER_LOG_LEVEL
               value: info
