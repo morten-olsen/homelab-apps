@@ -21,8 +21,10 @@ Create an **organization-level secret** in Woodpecker so every repo in the org g
 2. In the Woodpecker UI: your org → **Secrets → New** (or via `woodpecker-cli org secret add`):
    - **Name**: `forgejo_registry_auth`
    - **Value**: the base64 string from step 1
-   - **Images**: `gcr.io/kaniko-project/executor` — restricting it to Kaniko-only prevents other pipelines from exfiltrating the secret.
    - **Events**: `push`, `tag`, `manual`
+   - **Images**: leave empty.
+
+   > **Why no image filter?** Woodpecker only enforces image filters on _plugin steps_ (those using only `settings:`). Our Kaniko snippet uses `commands:` to write the auth config, which makes it a "normal step" — image filters don't apply, and the run will fail with `secret … is only allowed to be used by plugins`. In a single-tenant org the filter was defense-in-depth, not a real boundary; revisit it if you grow the org and need isolation between users.
 
 #### Per-repo `.woodpecker.yaml`
 
