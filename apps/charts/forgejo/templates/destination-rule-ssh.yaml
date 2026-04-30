@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: {{ .Release.Name }}-ssh
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  host: {{ .Release.Name }}-ssh.{{ .Release.Namespace }}.svc.cluster.local
+  trafficPolicy:
+    portLevelSettings:
+      - port:
+          number: 2206
+        tls:
+          mode: DISABLE
