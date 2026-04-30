@@ -1,12 +1,12 @@
 image:
   repository: docker.io/woodpeckerci/woodpecker-server
-  tag: v3.6.0
+  tag: v3.13.0
   pullPolicy: IfNotPresent
 
 agent:
   image:
     repository: docker.io/woodpeckerci/woodpecker-agent
-    tag: v3.6.0
+    tag: v3.13.0
     pullPolicy: IfNotPresent
   replicas: 1
   # Namespace where the k8s backend creates ephemeral pipeline pods.
