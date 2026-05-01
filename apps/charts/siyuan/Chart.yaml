@@ -1,0 +1,7 @@
+apiVersion: v2
+version: 1.0.0
+name: siyuan
+dependencies:
+  - name: homelab-common
+    version: 0.1.7
+    repository: https://mortenolsen.pro/homelab-core/

@@ -1,0 +1,78 @@
+image:
+  repository: b3log/siyuan
+  tag: v3.6.5@sha256:09591e042f032e6236a9df1a2dba6b733223095b135518d91f734d454bae5a85
+  pullPolicy: IfNotPresent
+
+subdomain: siyuan
+
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+# --workspace must match the mounted PVC path. The access auth code is
+# supplied via SIYUAN_ACCESS_AUTH_CODE (env), so the CLI flag is omitted to
+# keep the secret out of `ps`/process listings.
+args:
+  - --workspace=/siyuan/workspace/
+
+# Container configuration
+container:
+  port: 6806
+  healthProbe:
+    type: tcpSocket
+    port: 6806
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /siyuan/workspace
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 10Gi
+    storageClassName: local-path
+    backup: true
+
+# VirtualService — private only. SiYuan has no SSO support; the access
+# auth code is the only protection, so do not expose publicly.
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+# Generate the access auth code
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: access-auth-code
+        length: 32
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - accessAuthCode
+
+# Environment variables
+env:
+  PUID: "1000"
+  PGID: "1000"
+  SIYUAN_ACCESS_AUTH_CODE:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: accessAuthCode
