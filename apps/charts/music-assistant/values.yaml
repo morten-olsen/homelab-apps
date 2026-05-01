@@ -17,6 +17,7 @@ deployment:
   replicas: 1
   revisionHistoryLimit: 0
   hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
 
 container:
   port: 8095
