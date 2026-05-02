@@ -77,7 +77,6 @@ externalSecrets:
     passwords:
       - name: password
         length: 32
-        encoding: ascii
         allowRepeat: true
         secretKeys:
           - password
