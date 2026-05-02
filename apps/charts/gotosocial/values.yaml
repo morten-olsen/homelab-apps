@@ -1,0 +1,83 @@
+image:
+  repository: superseriousbusiness/gotosocial
+  # Renovate will pin the SHA on first run.
+  tag: "0.20.0"
+  pullPolicy: IfNotPresent
+
+# `subdomain` is unused for routing — we publish on social.olsen.pro, not on
+# the cluster's primary domain. It's kept for chart-internal naming clarity
+# and to satisfy the homelab-common library's helpers.
+subdomain: gotosocial
+
+# Stateful (SQLite) — Recreate to avoid two pods racing on the same DB file.
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 8080
+  healthProbe:
+    type: httpGet
+    path: /readyz
+    port: http
+    initialDelaySeconds: 15
+    periodSeconds: 30
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+# Pass the config file mounted from the ConfigMap.
+args:
+  - --config-path
+  - /etc/gotosocial/config.yaml
+  - server
+  - start
+
+service:
+  port: 80
+  type: ClusterIP
+
+volumes:
+  - name: data
+    mountPath: /gotosocial/storage
+    persistentVolumeClaim: data
+  - name: config
+    mountPath: /etc/gotosocial/config.yaml
+    subPath: config.yaml
+    configMap: "{release}-config"
+
+persistentVolumeClaims:
+  - name: data
+    size: 20Gi
+    storageClassName: local-path
+    backup: true
+
+# Disabled — the library's VirtualService only handles `{subdomain}.{domain}`
+# hosts. Cross-domain routing (social.olsen.pro + olsen.pro) is templated in
+# this chart's own virtual-service.yaml + wellknown-redirect.yaml.
+virtualService:
+  enabled: false
+
+# Single-user, no SSO.
+oidc:
+  enabled: false
+
+# SQLite, not Postgres.
+database:
+  enabled: false
+
+# Generate the admin password used by the post-install bootstrap Job.
+externalSecrets:
+  - name: "{release}-admin"
+    passwords:
+      - name: password
+        length: 32
+        encoding: ascii
+        allowRepeat: true
+        secretKeys:
+          - password

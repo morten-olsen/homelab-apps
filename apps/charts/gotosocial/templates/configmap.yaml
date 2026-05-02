@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: gotosocial
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  config.yaml: |
+    # Identity
+    host: social.olsen.pro
+    account-domain: olsen.pro
+    protocol: https
+
+    # Networking — Istio terminates TLS and forwards plain HTTP.
+    bind-address: "0.0.0.0"
+    port: 8080
+    trusted-proxies:
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+      - "192.168.0.0/16"
+      - "127.0.0.1/32"
+
+    # Storage
+    db-type: sqlite
+    db-address: /gotosocial/storage/sqlite.db
+    storage-backend: local
+    storage-local-base-path: /gotosocial/storage
+
+    # TLS handled by Istio — never let GoToSocial fetch its own certs.
+    letsencrypt-enabled: false
+    tls-certificate-chain: ""
+    tls-certificate-key: ""
+
+    # Single-user instance — closed registration, blocklist federation.
+    accounts-registration-open: false
+    accounts-approval-required: true
+    instance-federation-mode: blocklist
+    instance-expose-public-timeline: false
+
+    # SMTP disabled — bootstrap & confirm via CLI.
+    smtp-host: ""
+
+    # Logging
+    log-level: info
+    log-db-queries: false

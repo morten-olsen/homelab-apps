@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ .Release.Name }}-public
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: gotosocial
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  gateways:
+    - {{ .Values.globals.istio.gateways.public | quote }}
+    - mesh
+  hosts:
+    - social.olsen.pro
+    - mesh
+  http:
+    - route:
+        - destination:
+            host: {{ .Release.Name }}
+            port:
+              number: {{ .Values.service.port }}

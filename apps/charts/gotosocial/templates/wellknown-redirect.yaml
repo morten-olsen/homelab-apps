@@ -1,0 +1,33 @@
+{{/*
+Per the GoToSocial split-domain docs, redirect WebFinger / host-meta /
+NodeInfo from the account-domain (olsen.pro) to the host (social.olsen.pro)
+with HTTP 301. The Istio `redirect` action with only `authority` set
+preserves the path and query string — critical for `?resource=acct:...`.
+
+Do NOT add an /api/* rule here: GoToSocial docs warn this breaks client
+heuristics.
+*/}}
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ .Release.Name }}-olsen-pro-wellknown
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: gotosocial
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  gateways:
+    - {{ .Values.globals.istio.gateways.public | quote }}
+  hosts:
+    - olsen.pro
+  http:
+    - match:
+        - uri:
+            prefix: /.well-known/webfinger
+        - uri:
+            prefix: /.well-known/host-meta
+        - uri:
+            prefix: /.well-known/nodeinfo
+      redirect:
+        authority: social.olsen.pro
+        redirectCode: 301
