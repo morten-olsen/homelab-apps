@@ -1,7 +1,7 @@
 image:
   repository: superseriousbusiness/gotosocial
   # Renovate will pin the SHA on first run.
-  tag: "0.20.0"
+  tag: "0.21.2@sha256:53106462f352c23c25a32d4bd5c03eb3c2198f2d2549ff1e7d5ef6deb7f44961"
   pullPolicy: IfNotPresent
 
 # `subdomain` is unused for routing — we publish on social.olsen.pro, not on
