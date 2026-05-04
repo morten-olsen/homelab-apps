@@ -77,3 +77,7 @@ env:
         key: url
   MEMOS_INSTANCE_URL:
     value: "https://{subdomain}.{domain}"
+  # Kubernetes auto-injects service env (MEMOS_PORT=tcp://svc:80) for the
+  # `memos` service, which Viper interprets as the listen port → 0. Pin it
+  # back to the Dockerfile default so Memos binds to 5230.
+  MEMOS_PORT: "5230"
