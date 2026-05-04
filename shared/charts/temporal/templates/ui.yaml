@@ -57,3 +57,21 @@ spec:
       name: http
   selector:
     app: "{{ .Release.Name }}-ui"
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: "{{ .Release.Name }}-ui"
+spec:
+  hosts:
+    - "{{ .Values.subdomain }}.{{ .Values.globals.domain }}"
+    - mesh
+  gateways:
+    - shared/private
+    - mesh
+  http:
+    - route:
+        - destination:
+            host: "{{ .Release.Name }}-ui"
+            port:
+              number: 80

@@ -6,3 +6,4 @@ project: "shared"
 globals:
   timezone: Europe/Amsterdam
   storageClass: prod
+  domain: olsen.cloud
