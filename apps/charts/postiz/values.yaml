@@ -49,15 +49,15 @@ volumes:
 persistentVolumeClaims:
   - name: config
     size: 1Gi
-    storageClassName: persistent
+    storageClassName: local-path
     backup: true
   - name: data
     size: 10Gi
-    storageClassName: persistent
+    storageClassName: local-path
     backup: true
   - name: redis-data
     size: 1Gi
-    storageClassName: persistent
+    storageClassName: local-path
     backup: false
 
 virtualService:
