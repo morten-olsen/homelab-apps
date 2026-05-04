@@ -1,0 +1,79 @@
+image:
+  repository: neosmemo/memos
+  # Renovate will pin the SHA on first run.
+  tag: stable
+  pullPolicy: IfNotPresent
+
+subdomain: memos
+
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+# Stateful (single Postgres + local PVC for attachments) — Recreate to avoid
+# two pods racing on the data dir during rollouts.
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 5230
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration — Postgres holds the DB; this PVC is just for
+# uploaded attachments and any other on-disk state under /var/opt/memos.
+volumes:
+  - name: data
+    mountPath: /var/opt/memos
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 5Gi
+    storageClassName: local-path
+    backup: true
+
+# VirtualService — public + private. Public is fine: WAF on the public
+# gateway protects it, and Memos' own auth gates write access.
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# OIDC client — Memos stores IdP config in the database (configured via
+# the admin UI / API, not env). We still provision an Authentik client so
+# the {release}-oidc-credentials secret exists; the admin pastes those
+# values into Memos' IdP form on first run.
+oidc:
+  enabled: true
+  redirectUris:
+    - "/auth/callback"
+
+# Database — CNPG provisions a Postgres DB; secret {release}-connection
+# exposes a URL we feed straight into MEMOS_DSN.
+database:
+  enabled: true
+
+# Environment variables
+env:
+  MEMOS_DRIVER: postgres
+  MEMOS_DSN:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url
+  MEMOS_INSTANCE_URL:
+    value: "https://{subdomain}.{domain}"
