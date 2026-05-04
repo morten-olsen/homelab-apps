@@ -79,26 +79,15 @@ env:
       secretKeyRef:
         name: "{release}-history-connection"
         key: database
+  # Auto-setup uses POSTGRES_USER for both history and visibility schema
+  # setup (no VISIBILITY_POSTGRES_USER override exists upstream). The
+  # bootstrap step grants ownership of the visibility DB to the history
+  # user — see the chart README / Temporal ticket for the SQL.
   VISIBILITY_DBNAME:
     valueFrom:
       secretKeyRef:
         name: "{release}-visibility-connection"
         key: database
-  VISIBILITY_POSTGRES_USER:
-    valueFrom:
-      secretKeyRef:
-        name: "{release}-visibility-connection"
-        key: user
-  VISIBILITY_POSTGRES_PWD:
-    valueFrom:
-      secretKeyRef:
-        name: "{release}-visibility-connection"
-        key: password
-  VISIBILITY_POSTGRES_SEEDS:
-    valueFrom:
-      secretKeyRef:
-        name: "{release}-visibility-connection"
-        key: host
   ENABLE_ES: "false"
   SKIP_DB_CREATE: "true"
   SKIP_DEFAULT_NAMESPACE_CREATION: "false"
