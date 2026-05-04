@@ -1,3 +1,0 @@
-{{ include "common.deployment" (list . .Values) }}
----
-{{ include "common.service" (list . .Values) }}

@@ -28,11 +28,12 @@ helm template <release> . --set globals.environment=prod --set globals.domain=ex
 - `apps/charts/` - Individual application Helm charts (deployed to `prod` namespace)
 - `apps/common/` - Shared Helm library chart with standardized templates
 - `apps/root/` - ArgoCD ApplicationSet for auto-discovery
-- `shared/charts/` - Shared infrastructure services (authentik, nats)
 - `scripts/` - Python/Bash utility scripts for database migration and PVC sync
 
+Shared infrastructure services (authentik, temporal, etc.) live in `homelab-core/charts/shared`, not here.
+
 ### Deployment Model
-Three ArgoCD ApplicationSets auto-discover charts from their respective `charts/` directories. Folders suffixed with `.disabled` are excluded from deployment.
+The `apps/root` ArgoCD ApplicationSet auto-discovers charts under `apps/charts/`. Folders suffixed with `.disabled` are excluded from deployment.
 
 ### Common Library Pattern
 Most charts use the `homelab-common` library chart (published at `https://mortenolsen.pro/homelab-core/`) which provides standardized templates. A minimal chart needs:
