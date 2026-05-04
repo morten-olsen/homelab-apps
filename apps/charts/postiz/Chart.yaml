@@ -1,0 +1,7 @@
+apiVersion: v2
+version: 0.1.0
+name: postiz
+dependencies:
+  - name: homelab-common
+    version: 0.1.8
+    repository: https://mortenolsen.pro/homelab-core/

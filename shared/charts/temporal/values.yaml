@@ -1,0 +1,106 @@
+# Defaults for globals not provided by shared/root (which only passes
+# timezone and storageClass). Empty strings prevent placeholder
+# substitution failures in homelab-common helpers.
+globals:
+  domain: ""
+
+image:
+  repository: temporalio/auto-setup
+  tag: 1.28.1
+  pullPolicy: IfNotPresent
+
+ui:
+  image:
+    repository: temporalio/ui
+    tag: 2.40.0
+    pullPolicy: IfNotPresent
+
+subdomain: temporal
+
+# Reference to the CNPG cluster (lives in the same `shared` namespace).
+postgresCluster:
+  name: postgres
+  namespace: shared
+
+# Server deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+container:
+  ports:
+    - name: tcp-grpc
+      port: 7233
+      protocol: TCP
+    - name: membership
+      port: 6933
+      protocol: TCP
+  healthProbe:
+    type: tcpSocket
+    port: tcp-grpc
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    failureThreshold: 10
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+service:
+  ports:
+    - name: tcp-grpc
+      port: 7233
+      targetPort: tcp-grpc
+      type: ClusterIP
+
+# Temporal server env. Two databases: history + visibility.
+env:
+  DB: postgres12
+  DB_PORT: "5432"
+  POSTGRES_USER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-history-connection"
+        key: user
+  POSTGRES_PWD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-history-connection"
+        key: password
+  POSTGRES_SEEDS:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-history-connection"
+        key: host
+  DBNAME:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-history-connection"
+        key: database
+  VISIBILITY_DBNAME:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-visibility-connection"
+        key: database
+  VISIBILITY_POSTGRES_USER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-visibility-connection"
+        key: user
+  VISIBILITY_POSTGRES_PWD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-visibility-connection"
+        key: password
+  VISIBILITY_POSTGRES_SEEDS:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-visibility-connection"
+        key: host
+  ENABLE_ES: "false"
+  SKIP_DB_CREATE: "true"
+  SKIP_DEFAULT_NAMESPACE_CREATION: "false"
+  DEFAULT_NAMESPACE: default
+  BIND_ON_IP: "0.0.0.0"
