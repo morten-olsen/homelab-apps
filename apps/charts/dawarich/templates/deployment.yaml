@@ -109,14 +109,20 @@ spec:
           # Probe via 127.0.0.1 (exec) — Istio sidecar wraps probes that
           # reach the pod IP in mTLS, which Puma rejects with
           # "Are you trying to open an SSL connection to a non-SSL Puma?".
-          # Loopback bypasses the iptables redirect. Mirrors the upstream
-          # docker-compose health check.
+          # Loopback bypasses the iptables redirect.
+          #
+          # X-Forwarded-Proto: https is required because RAILS_ENV=production
+          # + APPLICATION_PROTOCOL=https enables Rails' force_ssl, which 301s
+          # plain HTTP requests. wget then follows the redirect with TLS to
+          # the same plain HTTP port and Puma logs the same SSL error every
+          # probe interval. The header tells Rails to treat the request as
+          # already-secure and skip the redirect.
           startupProbe:
             exec:
               command:
                 - sh
                 - -c
-                - "wget -qO - http://127.0.0.1:3000/api/v1/health"
+                - "wget -qO - --header='X-Forwarded-Proto: https' http://127.0.0.1:3000/api/v1/health"
             failureThreshold: 60
             periodSeconds: 10
           livenessProbe:
@@ -124,7 +130,7 @@ spec:
               command:
                 - sh
                 - -c
-                - "wget -qO - http://127.0.0.1:3000/api/v1/health"
+                - "wget -qO - --header='X-Forwarded-Proto: https' http://127.0.0.1:3000/api/v1/health"
             periodSeconds: 30
             timeoutSeconds: 5
           readinessProbe:
@@ -132,7 +138,7 @@ spec:
               command:
                 - sh
                 - -c
-                - "wget -qO - http://127.0.0.1:3000/api/v1/health"
+                - "wget -qO - --header='X-Forwarded-Proto: https' http://127.0.0.1:3000/api/v1/health"
             periodSeconds: 10
             timeoutSeconds: 5
       volumes:
