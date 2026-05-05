@@ -1,56 +1,66 @@
 image:
-  repository: codeberg.org/git-pages/git-pages
+  repository: code.olsen.cloud/homelab/pages
   tag: latest
   pullPolicy: IfNotPresent
 
-# Subdomain is unused for hostname assembly here (we route on an external
-# domain), but homelab-common still requires it to be set for the deployment.
-subdomain: pages
+# subdomain is used for the admin VS hostname (pages-admin.{globals.domain}).
+# The public-facing site lives on an external domain — see pages.publicDomain.
+subdomain: pages-admin
 
 deployment:
   strategy: Recreate
   replicas: 1
   revisionHistoryLimit: 2
 
+# The image is FROM scratch and runs as UID/GID 65532. local-path provisions
+# the PV root as root with 0777, so an init container chowns it to 65532
+# before the main container starts.
+initContainers:
+  - name: chown-data
+    image: busybox:1.37
+    command: ["sh", "-c", "chown -R 65532:65532 /data"]
+    volumeMounts:
+      - name: data
+        mountPath: /data
+    securityContext:
+      runAsUser: 0
+
 container:
   ports:
-    - name: http
-      port: 3000
+    - name: public
+      port: 8080
       protocol: TCP
-    - name: metrics
-      port: 3002
+    - name: admin
+      port: 9090
       protocol: TCP
   healthProbe:
     type: tcpSocket
-    port: http
+    port: public
   resources:
     requests:
       cpu: 50m
-      memory: 64Mi
+      memory: 32Mi
     limits:
-      memory: 256Mi
+      memory: 128Mi
 
 service:
   ports:
-    - name: http
+    - name: public
       port: 80
-      targetPort: 3000
+      targetPort: 8080
       protocol: TCP
       type: ClusterIP
-    - name: metrics
-      port: 3002
-      targetPort: 3002
+    - name: admin
+      port: 9090
+      targetPort: 9090
       protocol: TCP
-      serviceName: metrics
+      serviceName: admin
       type: ClusterIP
 
 volumes:
   - name: data
-    mountPath: /app/data
+    mountPath: /data
     persistentVolumeClaim: data
-  - name: config
-    mountPath: /app/conf
-    configMap: "{release}-config"
 
 persistentVolumeClaims:
   - name: data
@@ -58,19 +68,34 @@ persistentVolumeClaims:
     storageClassName: local-path
     backup: true
 
-# VirtualService is hand-rolled below (templates/virtual-service.yaml) because
-# git-pages uses an external domain (mortenolsen.pro), not subdomain.{domain}
-# style routing. Disable the common helper.
+# Disable common.virtualService — we hand-roll public + admin VSes below
+# (templates/virtual-service.yaml).
 virtualService:
   enabled: false
 
 env:
-  PAGES_CONFIG: /app/conf/config.toml
+  PAGES_DATA_DIR: /data
+  PAGES_PUBLIC_ADDR: ":8080"
+  PAGES_ADMIN_ADDR: ":9090"
+  PAGES_KEEP_RELEASES: "5"
+  PAGES_ADMIN_TOKEN:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: admin-token
 
-# Domain we publish on. Must be covered by additionalDomains in core/homelab
-# values (wildcard cert) and by Cloudflare DNS (apex + wildcard A records to
-# the public IP).
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: admin-token
+        length: 48
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - admin-token
+
+# Public-facing domain. Must be covered by additionalDomains in core/homelab
+# values (wildcard cert) and by DNS (pi-hole internally; Cloudflare publicly
+# once those records exist).
 pages:
-  domain: mortenolsen.pro
-  forgeUser: morten-olsen
-  forgeUrl: https://code.olsen.cloud
+  publicDomain: mortenolsen.pro
