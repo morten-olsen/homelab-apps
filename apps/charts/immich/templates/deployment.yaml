@@ -147,9 +147,9 @@ spec:
             - name: http
               containerPort: 3003
               protocol: TCP
-          resources:
-            limits:
-              cpu: "4000m"
+          # No CPU limit — ML inference isn't latency-sensitive on this
+          # homelab; let it use spare cycles. Without a limit, K8s also
+          # doesn't implicitly set requests=limits, freeing scheduling room.
           volumeMounts:
             - mountPath: /cache
               name: model-cache
