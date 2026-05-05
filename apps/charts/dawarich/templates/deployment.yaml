@@ -1,0 +1,426 @@
+{{- $appHost := printf "%s.%s" .Values.subdomain .Values.globals.domain -}}
+{{- $dbHost := printf "%s-db" .Release.Name -}}
+{{- $redisHost := printf "%s-redis" .Release.Name -}}
+{{- $photonHost := printf "%s-photon" .Release.Name -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-app"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-app"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-app"
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
+          imagePullPolicy: "{{ .Values.app.image.pullPolicy }}"
+          command: ["web-entrypoint.sh"]
+          args: ["bin/rails", "server", "-p", "3000", "-b", "::"]
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: RAILS_ENV
+              value: production
+            - name: SELF_HOSTED
+              value: "true"
+            - name: STORE_GEODATA
+              value: "true"
+            - name: RAILS_LOG_TO_STDOUT
+              value: "true"
+            - name: TIME_ZONE
+              value: "{{ .Values.globals.timezone }}"
+            - name: APPLICATION_HOSTS
+              value: "{{ $appHost }}"
+            - name: APPLICATION_PROTOCOL
+              value: https
+            - name: DATABASE_HOST
+              value: "{{ $dbHost }}"
+            - name: DATABASE_PORT
+              value: "5432"
+            - name: DATABASE_NAME
+              value: dawarich_production
+            - name: DATABASE_USERNAME
+              value: dawarich
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: dbPassword
+            - name: REDIS_URL
+              value: "redis://{{ $redisHost }}:6379"
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: secretKeyBase
+            - name: PHOTON_API_HOST
+              value: "{{ $photonHost }}.{{ .Release.Namespace }}.svc.cluster.local:2322"
+            - name: PHOTON_API_USE_HTTPS
+              value: "false"
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-oidc-credentials"
+                  key: clientId
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-oidc-credentials"
+                  key: clientSecret
+            - name: OIDC_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-oidc-credentials"
+                  key: issuer
+            - name: OIDC_REDIRECT_URI
+              value: "https://{{ $appHost }}/users/auth/openid_connect/callback"
+            - name: OIDC_PROVIDER_NAME
+              value: Authentik
+            - name: OIDC_AUTO_REGISTER
+              value: "true"
+            - name: ALLOW_EMAIL_PASSWORD_REGISTRATION
+              value: "false"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              memory: 4Gi
+          volumeMounts:
+            - name: storage
+              mountPath: /var/app/storage
+            - name: public
+              mountPath: /var/app/public
+            - name: watched
+              mountPath: /var/app/tmp/imports/watched
+          # The Rails app needs a generous start window — bundle, asset
+          # precompile, and migrations all run via web-entrypoint.sh before
+          # the listener binds.
+          startupProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            failureThreshold: 60
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-storage"
+        - name: public
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-public"
+        - name: watched
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-watched"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-sidekiq"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-sidekiq"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-sidekiq"
+    spec:
+      containers:
+        - name: sidekiq
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
+          imagePullPolicy: "{{ .Values.app.image.pullPolicy }}"
+          command: ["sidekiq-entrypoint.sh"]
+          args: ["sidekiq"]
+          env:
+            - name: RAILS_ENV
+              value: production
+            - name: SELF_HOSTED
+              value: "true"
+            - name: STORE_GEODATA
+              value: "true"
+            - name: RAILS_LOG_TO_STDOUT
+              value: "true"
+            - name: TIME_ZONE
+              value: "{{ .Values.globals.timezone }}"
+            - name: APPLICATION_HOSTS
+              value: "{{ $appHost }}"
+            - name: APPLICATION_PROTOCOL
+              value: https
+            - name: BACKGROUND_PROCESSING_CONCURRENCY
+              value: "5"
+            - name: DATABASE_HOST
+              value: "{{ $dbHost }}"
+            - name: DATABASE_PORT
+              value: "5432"
+            - name: DATABASE_NAME
+              value: dawarich_production
+            - name: DATABASE_USERNAME
+              value: dawarich
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: dbPassword
+            - name: REDIS_URL
+              value: "redis://{{ $redisHost }}:6379"
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: secretKeyBase
+            - name: PHOTON_API_HOST
+              value: "{{ $photonHost }}.{{ .Release.Namespace }}.svc.cluster.local:2322"
+            - name: PHOTON_API_USE_HTTPS
+              value: "false"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - name: storage
+              mountPath: /var/app/storage
+            - name: public
+              mountPath: /var/app/public
+            - name: watched
+              mountPath: /var/app/tmp/imports/watched
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pgrep -f sidekiq"]
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-storage"
+        - name: public
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-public"
+        - name: watched
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-watched"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-db"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-db"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-db"
+    spec:
+      # postgres uid in the postgis/postgis:alpine image
+      securityContext:
+        fsGroup: 70
+      containers:
+        - name: db
+          image: "{{ .Values.db.image.repository }}:{{ .Values.db.image.tag }}"
+          imagePullPolicy: "{{ .Values.db.image.pullPolicy }}"
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_USER
+              value: dawarich
+            - name: POSTGRES_DB
+              value: dawarich_production
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: dbPassword
+            # Without this, initdb tries to write to the mount root and
+            # fails because lost+found etc. isn't empty on some volumes.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "dawarich", "-d", "dawarich_production"]
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "dawarich", "-d", "dawarich_production"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-db-data"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-redis"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-redis"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-redis"
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: "{{ .Values.redis.image.pullPolicy }}"
+          # Sidekiq queue state is persisted in Postgres-backed jobs and
+          # ephemeral cache; no AOF, snapshots are best-effort.
+          args:
+            - redis-server
+            - --save
+            - "900"
+            - "1"
+            - --save
+            - "300"
+            - "10"
+            - --appendonly
+            - "no"
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          livenessProbe:
+            tcpSocket:
+              port: redis
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-photon"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-photon"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-photon"
+    spec:
+      containers:
+        - name: photon
+          image: "{{ .Values.photon.image.repository }}:{{ .Values.photon.image.tag }}"
+          imagePullPolicy: "{{ .Values.photon.image.pullPolicy }}"
+          ports:
+            - name: photon
+              containerPort: 2322
+              protocol: TCP
+          env:
+            - name: REGION
+              value: "{{ .Values.photon.region }}"
+            - name: UPDATE_STRATEGY
+              value: PARALLEL
+            - name: UPDATE_INTERVAL
+              value: 30d
+            - name: LOG_LEVEL
+              value: INFO
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              memory: 4Gi
+          volumeMounts:
+            - name: data
+              mountPath: /photon/data
+          # First boot downloads ~60GB of index data; keep the pod alive
+          # long enough for the extraction to finish before health checks
+          # turn red.
+          startupProbe:
+            tcpSocket:
+              port: photon
+            failureThreshold: 360
+            periodSeconds: 30
+          livenessProbe:
+            tcpSocket:
+              port: photon
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: photon
+            periodSeconds: 15
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-photon-data"

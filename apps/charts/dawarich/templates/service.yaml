@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app: "{{ .Release.Name }}-app"
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  selector:
+    app: "{{ .Release.Name }}-app"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-db"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app: "{{ .Release.Name }}-db"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+      name: postgres
+  selector:
+    app: "{{ .Release.Name }}-db"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-redis"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app: "{{ .Release.Name }}-redis"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
+      name: redis
+  selector:
+    app: "{{ .Release.Name }}-redis"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-photon"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app: "{{ .Release.Name }}-photon"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 2322
+      targetPort: 2322
+      protocol: TCP
+      name: photon
+  selector:
+    app: "{{ .Release.Name }}-photon"

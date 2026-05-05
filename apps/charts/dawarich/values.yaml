@@ -1,0 +1,109 @@
+# Dawarich is a Rails app + Sidekiq worker backed by PostGIS-flavored
+# Postgres and Redis, with an in-cluster Photon for reverse-geocoding.
+# This chart is custom (not common.all) because it ships five deployments;
+# common.* is still used for PVCs, OIDC, VirtualService, DNS, secrets, and
+# backups so the wiring matches every other app.
+
+subdomain: dawarich
+
+# Web + worker share the same image (different entrypoints).
+app:
+  image:
+    repository: freikin/dawarich
+    # Renovate will pin the SHA on first run.
+    tag: latest
+    pullPolicy: IfNotPresent
+
+# Self-contained PostGIS rather than the cluster CNPG — Dawarich requires
+# the postgis extension and the PostgresDatabase CRD doesn't surface a way
+# to enable extensions. Data PVC is backed up via VolSync.
+db:
+  image:
+    repository: postgis/postgis
+    tag: 17-3.5-alpine
+    pullPolicy: IfNotPresent
+
+redis:
+  image:
+    repository: redis
+    tag: 7.4-alpine
+    pullPolicy: IfNotPresent
+
+# Photon does in-cluster reverse-geocoding so we don't ping the public API
+# for every point. The data dir is regenerable from the upstream OSM dump,
+# so the PVC is intentionally not backed up.
+photon:
+  image:
+    repository: ghcr.io/rtuszik/photon-docker
+    tag: latest
+    pullPolicy: IfNotPresent
+  # europe (~60GB) covers our use case; switch to `planet` (~90GB) for
+  # full coverage or a smaller country code (e.g. `dk`) to shrink the PVC.
+  region: europe
+
+# Private DNS A record so internal clients don't hairpin through the public
+# gateway.
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+# Main service — what virtualService routes to. Selector matches the web
+# Deployment via app=dawarich-app.
+service:
+  port: 80
+  type: ClusterIP
+
+virtualService:
+  enabled: true
+  gateways:
+    public: true
+    private: true
+
+# Authentik provisions {release}-oidc-credentials with clientId, clientSecret
+# and issuer; Dawarich supports env-driven OIDC discovery natively.
+oidc:
+  enabled: true
+  redirectUris:
+    - "/users/auth/openid_connect/callback"
+
+# Generated secrets:
+# - secretKeyBase: Rails SECRET_KEY_BASE (64-byte hex)
+# - dbPassword: Postgres user password, shared between app/sidekiq/db pods
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: secret-key-base
+        length: 64
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - secretKeyBase
+      - name: db-password
+        length: 32
+        allowRepeat: true
+        secretKeys:
+          - dbPassword
+
+persistentVolumeClaims:
+  - name: db-data
+    size: 10Gi
+    storageClassName: local-path
+    backup: true
+  - name: storage
+    size: 20Gi
+    storageClassName: local-path
+    backup: true
+  - name: public
+    size: 1Gi
+    storageClassName: local-path
+    backup: false
+  - name: watched
+    size: 5Gi
+    storageClassName: local-path
+    backup: false
+  - name: photon-data
+    size: 70Gi
+    storageClassName: local-path
+    backup: false
