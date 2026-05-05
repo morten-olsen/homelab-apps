@@ -39,9 +39,14 @@ container:
   resources:
     requests:
       cpu: 50m
-      memory: 32Mi
+      memory: 64Mi
     limits:
-      memory: 128Mi
+      # The server streams uploads to a release dir on disk, but tar
+      # extraction + concurrent in-memory metadata for large sites pushes
+      # well past the original 128Mi budget. 1Gi gives headroom for a
+      # ~600MB upload with room to grow; revisit if real workloads creep
+      # up further or if the server gains streaming-extraction support.
+      memory: 1Gi
 
 service:
   ports:
