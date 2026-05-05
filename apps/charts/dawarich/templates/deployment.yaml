@@ -1,12 +1,7 @@
 {{- $appHost := printf "%s.%s" .Values.subdomain .Values.globals.domain -}}
+{{- $dbHost := printf "%s-db" .Release.Name -}}
 {{- $redisHost := printf "%s-redis" .Release.Name -}}
 {{- $photonHost := printf "%s-photon" .Release.Name -}}
-{{- $dbEnv := list }}
-{{- $dbEnv = append $dbEnv (dict "name" "DATABASE_HOST" "fromKey" "host") }}
-{{- $dbEnv = append $dbEnv (dict "name" "DATABASE_PORT" "fromKey" "port") }}
-{{- $dbEnv = append $dbEnv (dict "name" "DATABASE_NAME" "fromKey" "database") }}
-{{- $dbEnv = append $dbEnv (dict "name" "DATABASE_USERNAME" "fromKey" "user") }}
-{{- $dbEnv = append $dbEnv (dict "name" "DATABASE_PASSWORD" "fromKey" "password") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -51,13 +46,19 @@ spec:
               value: "{{ $appHost }}"
             - name: APPLICATION_PROTOCOL
               value: https
-            {{- range $dbEnv }}
-            - name: {{ .name }}
+            - name: DATABASE_HOST
+              value: "{{ $dbHost }}"
+            - name: DATABASE_PORT
+              value: "5432"
+            - name: DATABASE_NAME
+              value: dawarich_production
+            - name: DATABASE_USERNAME
+              value: dawarich
+            - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: "{{ $.Release.Name }}-connection"
-                  key: {{ .fromKey }}
-            {{- end }}
+                  name: "{{ .Release.Name }}-secrets"
+                  key: dbPassword
             - name: REDIS_URL
               value: "redis://{{ $redisHost }}:6379"
             - name: SECRET_KEY_BASE
@@ -188,13 +189,19 @@ spec:
               value: https
             - name: BACKGROUND_PROCESSING_CONCURRENCY
               value: "5"
-            {{- range $dbEnv }}
-            - name: {{ .name }}
+            - name: DATABASE_HOST
+              value: "{{ $dbHost }}"
+            - name: DATABASE_PORT
+              value: "5432"
+            - name: DATABASE_NAME
+              value: dawarich_production
+            - name: DATABASE_USERNAME
+              value: dawarich
+            - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: "{{ $.Release.Name }}-connection"
-                  key: {{ .fromKey }}
-            {{- end }}
+                  name: "{{ .Release.Name }}-secrets"
+                  key: dbPassword
             - name: REDIS_URL
               value: "redis://{{ $redisHost }}:6379"
             - name: SECRET_KEY_BASE
@@ -235,6 +242,75 @@ spec:
         - name: watched
           persistentVolumeClaim:
             claimName: "{{ .Release.Name }}-watched"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-db"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-db"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-db"
+    spec:
+      # postgres uid in the postgis/postgis:alpine image
+      securityContext:
+        fsGroup: 70
+      containers:
+        - name: db
+          image: "{{ .Values.db.image.repository }}:{{ .Values.db.image.tag }}"
+          imagePullPolicy: "{{ .Values.db.image.pullPolicy }}"
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_USER
+              value: dawarich
+            - name: POSTGRES_DB
+              value: dawarich_production
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: dbPassword
+            # Without this, initdb tries to write to the mount root and
+            # fails because lost+found etc. isn't empty on some volumes.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "dawarich", "-d", "dawarich_production"]
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "dawarich", "-d", "dawarich_production"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-db-data"
 
 ---
 apiVersion: apps/v1

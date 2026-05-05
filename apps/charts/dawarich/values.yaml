@@ -1,8 +1,8 @@
-# Dawarich is a Rails app + Sidekiq worker backed by Postgres (with PostGIS)
-# and Redis, with an in-cluster Photon for reverse-geocoding.
-# This chart is custom (not common.all) because it ships three deployments;
-# common.* is still used for PVCs, OIDC, VirtualService, the database, and
-# secrets so the wiring matches every other app.
+# Dawarich is a Rails app + Sidekiq worker backed by PostGIS-flavored
+# Postgres and Redis, with an in-cluster Photon for reverse-geocoding.
+# This chart is custom (not common.all) because it ships five deployments;
+# common.* is still used for PVCs, OIDC, VirtualService, secrets, and
+# backups so the wiring matches every other app.
 
 subdomain: dawarich
 
@@ -12,6 +12,17 @@ app:
     repository: freikin/dawarich
     # Renovate will pin the SHA on first run.
     tag: latest
+    pullPolicy: IfNotPresent
+
+# Self-contained PostGIS rather than the shared CNPG cluster — Dawarich
+# requires the postgis extension and PG18 doesn't have a monolithic
+# postgis image (the old cloudnative-pg/postgis repo only publishes up
+# to PG15; PG18 uses ImageVolume + postgis-extension which the platform
+# PostgresDatabase CRD doesn't surface). Data PVC is backed up via VolSync.
+db:
+  image:
+    repository: postgis/postgis
+    tag: 17-3.5-alpine
     pullPolicy: IfNotPresent
 
 redis:
@@ -59,22 +70,9 @@ oidc:
   redirectUris:
     - "/users/auth/openid_connect/callback"
 
-# Database — CNPG provisions a Postgres DB on the shared cluster; secret
-# {release}-connection exposes host/port/database/user/password. The shared
-# cluster runs the CNPG postgis variant so the postgis binaries are
-# available, but `CREATE EXTENSION postgis` still requires superuser
-# (postgis isn't a trusted extension and the per-app DB owner isn't a
-# superuser). The cluster's controller secret lives in `shared` and isn't
-# reflected here, so on first deploy run the bootstrap once manually:
-#
-#   kubectl exec -n shared postgres-cluster-1 -c postgres -- psql -d prod_dawarich \
-#     -c "CREATE EXTENSION IF NOT EXISTS postgis;" \
-#     -c "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
-database:
-  enabled: true
-
 # Generated secrets:
 # - secretKeyBase: Rails SECRET_KEY_BASE (64-byte hex)
+# - dbPassword: Postgres user password, shared between app/sidekiq/db pods
 externalSecrets:
   - name: "{release}-secrets"
     passwords:
@@ -84,8 +82,17 @@ externalSecrets:
         allowRepeat: true
         secretKeys:
           - secretKeyBase
+      - name: db-password
+        length: 32
+        allowRepeat: true
+        secretKeys:
+          - dbPassword
 
 persistentVolumeClaims:
+  - name: db-data
+    size: 10Gi
+    storageClassName: local-path
+    backup: true
   - name: storage
     size: 20Gi
     storageClassName: local-path
