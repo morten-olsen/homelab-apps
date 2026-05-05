@@ -60,15 +60,14 @@ oidc:
     - "/users/auth/openid_connect/callback"
 
 # Database — CNPG provisions a Postgres DB on the shared cluster; secret
-# {release}-connection exposes host/port/database/user/password.
+# {release}-connection exposes host/port/database/user/password. The shared
+# cluster runs the CNPG postgis variant so the postgis binaries are
+# available, but `CREATE EXTENSION postgis` still requires superuser
+# (postgis isn't a trusted extension and the per-app DB owner isn't a
+# superuser). The cluster's controller secret lives in `shared` and isn't
+# reflected here, so on first deploy run the bootstrap once manually:
 #
-# The shared cluster image (ghcr.io/cloudnative-pg/postgresql:18-standard-trixie)
-# is the CNPG "standard" variant which bundles PostGIS, but the postgis
-# extension requires superuser to install. The cluster's controller secret
-# lives in the `shared` namespace and isn't reflected here, so on first
-# deploy the postgis extension must be created manually:
-#
-#   kubectl exec -n shared postgres-cluster-1 -c postgres -- psql -d dawarich \
+#   kubectl exec -n shared postgres-cluster-1 -c postgres -- psql -d prod_dawarich \
 #     -c "CREATE EXTENSION IF NOT EXISTS postgis;" \
 #     -c "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
 database:
