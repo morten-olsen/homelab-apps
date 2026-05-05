@@ -1,0 +1,80 @@
+{{- $fullname := include "common.fullname" . -}}
+{{- $domain := .Values.pages.domain -}}
+---
+# Public listener: read-only surface (GET/HEAD). Anything else returns 404
+# from the gateway — write verbs are only handled by the private VS below,
+# which isn't reachable from the internet.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ $fullname }}-public
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    - shared/public
+  hosts:
+    - {{ $domain | quote }}
+    - {{ printf "*.%s" $domain | quote }}
+  http:
+    - match:
+        - method:
+            regex: "GET|HEAD"
+      route:
+        - destination:
+            host: {{ $fullname }}
+            port:
+              number: 80
+---
+# Private listener (LAN + mesh): full surface. CI pipelines hit the published
+# hostname directly via the mesh — Istio sidecar resolves the hostname to the
+# gateway IP through the ServiceEntry generated below by Kyverno. Auth is
+# enforced by git-pages itself via Forge-Authorization.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ $fullname }}-private
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    - shared/private
+    - mesh
+  hosts:
+    - {{ printf "*.%s" $domain | quote }}
+    - {{ $domain | quote }}
+  http:
+    - route:
+        - destination:
+            host: {{ $fullname }}
+            port:
+              number: 80
+---
+# Apex ServiceEntry — Kyverno's auto-gen picks the first non-mesh host
+# (the wildcard above), which doesn't match the apex. Add it explicitly so
+# in-cluster traffic to the bare domain also resolves to the gateway.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: {{ $fullname }}-apex-mesh
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - {{ $domain | quote }}
+  ports:
+    - number: 80
+      name: http
+      protocol: HTTP
+    - number: 443
+      name: https
+      protocol: HTTPS
+  resolution: STATIC
+  location: MESH_INTERNAL
+  endpoints:
+    - address: {{ .Values.globals.gatewayAddress | quote }}
+      ports:
+        https: 443

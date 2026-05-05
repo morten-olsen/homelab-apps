@@ -1,0 +1,76 @@
+image:
+  repository: codeberg.org/git-pages/git-pages
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Subdomain is unused for hostname assembly here (we route on an external
+# domain), but homelab-common still requires it to be set for the deployment.
+subdomain: pages
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 2
+
+container:
+  ports:
+    - name: http
+      port: 3000
+      protocol: TCP
+    - name: metrics
+      port: 3002
+      protocol: TCP
+  healthProbe:
+    type: tcpSocket
+    port: http
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+service:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+      type: ClusterIP
+    - name: metrics
+      port: 3002
+      targetPort: 3002
+      protocol: TCP
+      serviceName: metrics
+      type: ClusterIP
+
+volumes:
+  - name: data
+    mountPath: /app/data
+    persistentVolumeClaim: data
+  - name: config
+    mountPath: /app/conf
+    configMap: "{release}-config"
+
+persistentVolumeClaims:
+  - name: data
+    size: 10Gi
+    storageClassName: local-path
+    backup: true
+
+# VirtualService is hand-rolled below (templates/virtual-service.yaml) because
+# git-pages uses an external domain (mortenolsen.pro), not subdomain.{domain}
+# style routing. Disable the common helper.
+virtualService:
+  enabled: false
+
+env:
+  PAGES_CONFIG: /app/conf/config.toml
+
+# Domain we publish on. Must be covered by additionalDomains in core/homelab
+# values (wildcard cert) and by Cloudflare DNS (apex + wildcard A records to
+# the public IP).
+pages:
+  domain: mortenolsen.pro
+  forgeUser: morten-olsen
+  forgeUrl: https://code.olsen.cloud
