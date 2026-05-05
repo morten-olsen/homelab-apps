@@ -1,6 +1,6 @@
 image:
   repository: codeberg.org/git-pages/git-pages
-  tag: latest
+  tag: latest@sha256:fef5780028395a4ee7e90e4d3af2003038162bb10dbe24d396c77810cdfaf79b
   pullPolicy: IfNotPresent
 
 # Subdomain is unused for hostname assembly here (we route on an external
