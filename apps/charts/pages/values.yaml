@@ -1,6 +1,6 @@
 image:
   repository: code.olsen.cloud/homelab/pages
-  tag: latest
+  tag: latest@sha256:8ae8993c40c848fdcd7e3bccd32e4814ec835820b0458bc3bc943f41189da0e5
   pullPolicy: IfNotPresent
 
 # subdomain is used for the admin VS hostname (pages-admin.{globals.domain}).
@@ -17,7 +17,7 @@ deployment:
 # before the main container starts.
 initContainers:
   - name: chown-data
-    image: busybox:1.37
+    image: busybox:1.37@sha256:1487d0af5f52b4ba31c7e465126ee2123fe3f2305d638e7827681e7cf6c83d5e
     command: ["sh", "-c", "chown -R 65532:65532 /data"]
     volumeMounts:
       - name: data
