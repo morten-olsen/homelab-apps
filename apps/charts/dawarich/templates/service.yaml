@@ -19,24 +19,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: "{{ .Release.Name }}-db"
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-    app: "{{ .Release.Name }}-db"
-spec:
-  type: ClusterIP
-  ports:
-    - port: 5432
-      targetPort: 5432
-      protocol: TCP
-      name: postgres
-  selector:
-    app: "{{ .Release.Name }}-db"
-
----
-apiVersion: v1
-kind: Service
-metadata:
   name: "{{ .Release.Name }}-redis"
   labels:
     {{- include "common.labels" . | nindent 4 }}
