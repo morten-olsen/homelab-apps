@@ -51,30 +51,8 @@ spec:
             host: {{ $fullname }}
             port:
               number: 80
----
-# Apex ServiceEntry — Kyverno's auto-gen picks the first non-mesh host
-# (the wildcard above), which doesn't match the apex. Add it explicitly so
-# in-cluster traffic to the bare domain also resolves to the gateway.
-apiVersion: networking.istio.io/v1
-kind: ServiceEntry
-metadata:
-  name: {{ $fullname }}-apex-mesh
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-spec:
-  hosts:
-    - {{ $domain | quote }}
-  ports:
-    - number: 80
-      name: http
-      protocol: HTTP
-    - number: 443
-      name: https
-      protocol: HTTPS
-  resolution: STATIC
-  location: MESH_INTERNAL
-  endpoints:
-    - address: {{ .Values.globals.gatewayAddress | quote }}
-      ports:
-        https: 443
+# Apex ServiceEntry intentionally omitted: the per-repo subdomain model
+# never publishes to the bare apex, and Kyverno auto-generates the wildcard
+# ServiceEntry from the private VS. If a future site needs to live at
+# mortenolsen.pro itself, add an explicit ServiceEntry here pointing at
+# .Values.globals.gatewayAddress.
