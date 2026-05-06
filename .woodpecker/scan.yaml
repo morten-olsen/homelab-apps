@@ -4,7 +4,7 @@ when:
 
 steps:
   scan:
-    image: code.olsen.cloud/ci/trivy:latest
+    image: code.olsen.cloud/ci/trivy:latest@sha256:48c43312a49ea4df56f2e9b2c0263590ee02efdb142dcc820b6c67bd36654779
     settings:
       target: fs
       # Advisory while we triage. Flip to 1 once the report is clean.
