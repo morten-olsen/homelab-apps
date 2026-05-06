@@ -10,7 +10,7 @@ dns:
 server:
   image:
     repository: netboxcommunity/netbox
-    tag: v4.5.9@sha256:5e331fb1575c21838af15c4fd59e700488d6253f0f5cacc4b180e422607fa45f
+    tag: v4.6.0@sha256:3ede2e649ac895e7661a41317364dfe84ecadbe849a6d07fc09bef975835572e
     pullPolicy: IfNotPresent
 
 redis:
