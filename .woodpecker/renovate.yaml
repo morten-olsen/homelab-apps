@@ -3,7 +3,7 @@ when:
 
 steps:
   renovate:
-    image: code.olsen.cloud/ci/renovate:latest
+    image: code.olsen.cloud/ci/renovate:latest@sha256:5db5f950cefb466a15312eb993522e1e3024aa0a91de5d765fa9d8eb98590abf
     settings:
       token:
         from_secret: renovate_forgejo_token
