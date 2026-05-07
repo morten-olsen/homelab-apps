@@ -2,7 +2,7 @@ subdomain: wger
 
 image:
   repository: docker.io/wger/server
-  tag: latest@sha256:e1e29e53c8dcc230ad9c6d934d0b61b12d53ed30c1d0fb87ed19bed93aff1ef6
+  tag: latest@sha256:5d8fe1ba66cc5193547aa3230f2ab9fb2e187b6838b1954ac81612cecdb3c0b5
   pullPolicy: IfNotPresent
 
 nginx:
@@ -14,7 +14,7 @@ nginx:
 redis:
   image:
     repository: docker.io/redis
-    tag: alpine@sha256:69f2c586c8a7e9cce4ae1ee9bbaf60bc4bb5f4bb3880e4ed022b1fd758a7cab9
+    tag: alpine@sha256:349d2ec89e75cb3d91a7ff9b5065d5bf0d1147e7c5cc3f3e6e75a1303bc5e0a6
     pullPolicy: IfNotPresent
 
 # Database provisioning via common library
