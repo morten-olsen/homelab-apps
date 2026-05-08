@@ -79,6 +79,28 @@ globals:
     enabled: false
 ```
 
+## NFS subdirectory auto-creation
+
+The NFS server only exports the parent path `/mnt/HDD/k8s/backups`; the
+per-PVC subdirectories under it (`<release>-<pvc>`) must exist before
+the volsync mover pod can mount one. A Kyverno `ClusterPolicy`
+(`backup-nfs-mkdir`, in the core repo) takes care of this on every new
+`ReplicationSource`: it generates a one-shot Job that mounts the parent
+NFS path and runs `mkdir -p` on the missing subdirectory. As a
+PVC author you don't need to do anything — set `backup: true` and the
+directory will be created the first time the source is admitted.
+
+If you ever see a backup mover pod stuck in `Init:0/2` with the kubelet
+event:
+
+```
+mount.nfs: ... failed, reason given by server: No such file or directory
+```
+
+then the policy didn't fire (or the source was created before the policy
+existed). Check `kubectl get jobs -n <ns> -l homelab.mortenolsen.pro/purpose=backup-nfs-mkdir`,
+re-create the RS, or `mkdir` the subdir manually on the NAS.
+
 ## Apps with custom templates
 
 Apps that don't use `common.all` (e.g., immich, jellyfin, home-assistant) need a
