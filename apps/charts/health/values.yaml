@@ -1,6 +1,6 @@
 image:
-  repository: ghcr.io/morten-olsen/health/api
-  tag: latest@sha256:196f7eb390a620b2a592083c12e94babc6243dbc98cb04ae6d86ce41f9dc19e9
+  repository: code.olsen.cloud/incubator/health
+  tag: latest@sha256:7f81321e81905702f3498f7600ae5d52376309e51f14dc700513cfa773c8c715
   pullPolicy: IfNotPresent
 
 subdomain: health
@@ -20,7 +20,7 @@ deployment:
 
 # Container configuration
 container:
-  port: 3007
+  port: 3000
   healthProbe:
     type: httpGet
     path: /healthz
@@ -33,21 +33,50 @@ service:
 probe:
   path: /healthz
 
-# VirtualService configuration
+# VirtualService configuration (private-only — personal health data)
 virtualService:
   enabled: true
   gateways:
     public: false
     private: true
 
-# Database configuration
+# Database configuration (CNPG provisions `{release}-connection` secret)
 database:
   enabled: true
 
+# Generate admin password + JWT signing secret
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: admin-password
+        length: 32
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - admin-password
+      - name: jwt-secret
+        length: 48
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - jwt-secret
+
 # Environment variables
 env:
-  DATABASE_URL:
+  HEALTH_DB_DIALECT: postgres
+  HEALTH_DB_URL:
     valueFrom:
       secretKeyRef:
         name: "{release}-connection"
         key: url
+  ADMIN_USERNAME: morten
+  ADMIN_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: admin-password
+  JWT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: jwt-secret
