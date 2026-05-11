@@ -1,6 +1,6 @@
 image:
   repository: code.olsen.cloud/incubator/health
-  tag: latest@sha256:bafeaf1a7f0c8d3c2fbd0f17afe5e9a0d61f27cff6de19cf22bcdb835709e0cf
+  tag: latest@sha256:f5e9247145739da8a3d48fa0aa92c0656bddcbe3affaaa3b699eed2e6e58619e
   pullPolicy: IfNotPresent
 
 subdomain: health
@@ -23,7 +23,7 @@ container:
   port: 3000
   healthProbe:
     type: httpGet
-    path: /healthz
+    path: /api/health
 
 # Service configuration
 service:
@@ -31,7 +31,7 @@ service:
   type: ClusterIP
 
 probe:
-  path: /healthz
+  path: /api/health
 
 # VirtualService configuration (private-only — personal health data)
 virtualService:
