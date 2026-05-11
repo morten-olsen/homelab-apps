@@ -23,7 +23,7 @@ container:
   port: 3000
   healthProbe:
     type: httpGet
-    path: /healthz
+    path: /api/health
 
 # Service configuration
 service:
@@ -31,7 +31,7 @@ service:
   type: ClusterIP
 
 probe:
-  path: /healthz
+  path: /api/health
 
 # VirtualService configuration (private-only — personal health data)
 virtualService:
