@@ -2,17 +2,17 @@ frontend:
   subdomain: penpot
   image:
     repository: penpotapp/frontend
-    tag: 2.14.5@sha256:f080989219e7f46f286632ca240925dd002ed4ced47a502ad87a6299d160dfb0
+    tag: 2.15.3@sha256:ea3bb808a1439bd27e698f08e3b6d502a0e6cef9acb703b74ce0fb3aae882b72
     pullPolicy: IfNotPresent
 backend:
   image:
     repository: penpotapp/backend
-    tag: 2.14.5@sha256:751999b6a704da881ad1fb36d4b510f59defd8557706a08335a6d81bc1f5f82a
+    tag: 2.15.3@sha256:7f16f70119a17b0f8abb90cd3fe800bbb5bc4472729cc1454775c2eb8d4f4803
     pullPolicy: IfNotPresent
 exporter:
   image:
     repository: penpotapp/exporter
-    tag: 2.14.5@sha256:eca700976133a8446b464dfecf85401f19a5e03ce31aaa48104447d19c28e362
+    tag: 2.15.3@sha256:6c982fd76a1b8ded11ff650eb8abb063e9a37e7eb7b1152f875a8233bdee34b0
     pullPolicy: IfNotPresent
 valkey:
   image:
