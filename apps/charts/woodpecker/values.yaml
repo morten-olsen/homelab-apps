@@ -1,12 +1,12 @@
 image:
   repository: docker.io/woodpeckerci/woodpecker-server
-  tag: v3.14.0@sha256:b79e5f8938bf8c96c307e356506b4ec7f83dd0361f2ea0eac9b8825342b6c976
+  tag: v3.14.1@sha256:a45d030a33b06eb77467df8c202f1bbbc0d0f972560b9872c08f11fbe60ffb5f
   pullPolicy: IfNotPresent
 
 agent:
   image:
     repository: docker.io/woodpeckerci/woodpecker-agent
-    tag: v3.14.0@sha256:f9d97011a988a6b7b09f5333147cdea051e488f3391ba862d0b26f07bc9d879a
+    tag: v3.14.1@sha256:bfd70b063dff208c29eb1169756f7847087a2e7a522d74bab2dd8ae26147736c
     pullPolicy: IfNotPresent
   replicas: 1
   # Concurrent workflows this agent will run in parallel.
