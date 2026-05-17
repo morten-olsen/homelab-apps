@@ -1,6 +1,6 @@
 image:
   repository: code.olsen.cloud/incubator/health
-  tag: latest@sha256:f5e9247145739da8a3d48fa0aa92c0656bddcbe3affaaa3b699eed2e6e58619e
+  tag: latest@sha256:e338039b8ac634f2923047e9318811e53ffccad8d3ee6f522376d3ef55bcfc09
   pullPolicy: IfNotPresent
 
 subdomain: health
