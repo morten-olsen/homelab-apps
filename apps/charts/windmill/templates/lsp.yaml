@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-lsp"
+  labels:
+    app: "{{ .Release.Name }}-lsp"
+spec:
+  replicas: {{ .Values.lsp.replicas | default 1 }}
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-lsp"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-lsp"
+    spec:
+      containers:
+        - name: lsp
+          image: "{{ .Values.lsp.image.repository }}:{{ .Values.lsp.image.tag }}"
+          imagePullPolicy: "{{ .Values.lsp.image.pullPolicy }}"
+          ports:
+            - name: http
+              containerPort: {{ .Values.lsp.port }}
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: http
+          livenessProbe:
+            tcpSocket:
+              port: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-lsp"
+  labels:
+    app: "{{ .Release.Name }}-lsp"
+spec:
+  type: ClusterIP
+  selector:
+    app: "{{ .Release.Name }}-lsp"
+  ports:
+    - name: http
+      port: {{ .Values.lsp.port }}
+      targetPort: http
+      protocol: TCP

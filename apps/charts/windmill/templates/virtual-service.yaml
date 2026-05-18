@@ -1,0 +1,66 @@
+{{- $host := printf "%s.%s" .Values.subdomain .Values.globals.domain -}}
+{{- $svc := .Release.Name -}}
+{{- $lspSvc := printf "%s-lsp" .Release.Name -}}
+{{- $lspPort := .Values.lsp.port -}}
+{{- if .Values.routing.gateways.public }}
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: "{{ .Release.Name }}-public"
+  namespace: {{ .Release.Namespace }}
+spec:
+  gateways:
+    - {{ .Values.globals.istio.gateways.public | quote }}
+    - mesh
+  hosts:
+    - {{ $host | quote }}
+    - mesh
+  http:
+    - name: lsp
+      match:
+        - uri:
+            prefix: /ws/
+      route:
+        - destination:
+            host: {{ $lspSvc | quote }}
+            port:
+              number: {{ $lspPort }}
+    - name: app
+      route:
+        - destination:
+            host: {{ $svc | quote }}
+            port:
+              number: 80
+{{- end }}
+{{- if .Values.routing.gateways.private }}
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: "{{ .Release.Name }}-private"
+  namespace: {{ .Release.Namespace }}
+spec:
+  gateways:
+    - {{ .Values.globals.istio.gateways.private | quote }}
+    - mesh
+  hosts:
+    - {{ $host | quote }}
+    - mesh
+  http:
+    - name: lsp
+      match:
+        - uri:
+            prefix: /ws/
+      route:
+        - destination:
+            host: {{ $lspSvc | quote }}
+            port:
+              number: {{ $lspPort }}
+    - name: app
+      route:
+        - destination:
+            host: {{ $svc | quote }}
+            port:
+              number: 80
+{{- end }}

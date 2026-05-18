@@ -1,0 +1,46 @@
+{{ include "common.deployment" (list . .Values) }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-worker"
+  labels:
+    app: "{{ .Release.Name }}-worker"
+spec:
+  replicas: {{ .Values.worker.replicas | default 1 }}
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-worker"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-worker"
+    spec:
+      containers:
+        - name: worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          env:
+            - name: MODE
+              value: worker
+            - name: WORKER_GROUP
+              value: {{ .Values.worker.workerGroup | default "default" | quote }}
+            - name: RUST_LOG
+              value: info
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-connection"
+                  key: url
+            - name: BASE_INTERNAL_URL
+              value: "http://{{ .Release.Name }}"
+          volumeMounts:
+            - name: worker-cache
+              mountPath: /tmp/windmill
+      volumes:
+        - name: worker-cache
+          emptyDir: {}

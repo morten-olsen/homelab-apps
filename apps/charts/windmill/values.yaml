@@ -1,0 +1,79 @@
+image:
+  repository: ghcr.io/windmill-labs/windmill
+  tag: "1.703.3"
+  pullPolicy: IfNotPresent
+
+lsp:
+  image:
+    repository: ghcr.io/windmill-labs/windmill-lsp
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 3001
+
+worker:
+  replicas: 2
+  workerGroup: default
+
+subdomain: windmill
+
+# Server deployment configuration
+deployment:
+  strategy: RollingUpdate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Server container configuration
+container:
+  port: 8000
+  healthProbe:
+    type: httpGet
+    path: /api/version
+    port: http
+
+# Server service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# VirtualService disabled — we hand-roll the routing in templates/virtual-service.yaml
+# so /ws/* can split to the LSP service while everything else hits the server.
+virtualService:
+  enabled: false
+
+# Public + private routing knobs the custom VirtualService reads.
+routing:
+  gateways:
+    public: true
+    private: true
+
+# OIDC client — windmill OSS configures OIDC in the admin UI (no env contract).
+# We still provision the AuthentikClient so {release}-oidc-credentials exists;
+# admin pastes the values on first sign-in. Redirect URI is the windmill-side
+# callback path for an "authentik" provider name.
+oidc:
+  enabled: true
+  redirectUris:
+    - "/user/login_callback/authentik"
+  subjectMode: user_username
+
+# Database configuration (CNPG provisions `{release}-connection` secret).
+database:
+  enabled: true
+
+# Environment variables — server only. The worker deployment is custom (see
+# templates/deployment.yaml) and defines its own env (MODE=worker, no BASE_URL).
+# `TZ` is auto-injected by common.deployment from globals.timezone — don't
+# duplicate it here.
+env:
+  MODE: server
+  RUST_LOG: info
+  DATABASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url
+  BASE_URL:
+    value: "https://{subdomain}.{domain}"
+  BASE_INTERNAL_URL:
+    value: "http://{release}"
