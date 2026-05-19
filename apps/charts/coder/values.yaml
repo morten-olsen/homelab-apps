@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/coder/coder
-  tag: v2.33.3@sha256:56cced9a62e8d5e7e02a61ca5798f201e0aafe2a75ad1fd63e400eae045d59cd
+  tag: v2.33.4@sha256:af544f4b3a4d27cec6732c5a1d6ae91cdf108a462da5e67b75e0b0ffb2eca81f
   pullPolicy: IfNotPresent
 
 subdomain: coder
