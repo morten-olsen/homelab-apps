@@ -133,7 +133,12 @@ initContainers:
         cd /data
         echo "running motis import..."
         /motis import
+        # Import ran as root; the server runs as the image's `motis` user
+        # (uid 100 / gid 101) and needs RW access to the tile LMDB at runtime.
+        echo "chowning /data to motis user..."
+        chown -R 100:101 /data
         touch /data/.last-import
+        chown 100:101 /data/.last-import
         echo "import complete"
     volumeMounts:
       - name: data
