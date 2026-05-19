@@ -26,10 +26,12 @@ container:
 
 # Override the image's default `/motis server /data`. `motis import` writes its
 # preprocessed artifacts into a `data/` subdir of its working directory, so we
-# end up with /data/data/tt.bin etc. — point the server at that subdir.
+# end up with /data/data/tt.bin etc. — point the server at that subdir explicitly
+# (positional args appear to be ignored; only -d/--data is parsed).
 command:
   - /motis
   - server
+  - -d
   - /data/data
 
 service:
