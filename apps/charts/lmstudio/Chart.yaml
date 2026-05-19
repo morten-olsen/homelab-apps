@@ -1,0 +1,5 @@
+apiVersion: v2
+name: lmstudio
+description: A Helm chart to proxy LM Studio from an external server
+version: 0.1.0
+appVersion: "1.0.0"

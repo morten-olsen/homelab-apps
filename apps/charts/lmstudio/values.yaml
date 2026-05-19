@@ -1,0 +1,11 @@
+subdomain: lmstudio
+# External service configuration
+externalService:
+  ip: 192.168.10.197
+  port: 1234
+
+# Defaults for local linting/testing (overridden by root apps values)
+globals:
+  domain: olsen.cloud
+  istio:
+    gateway: shared/private
