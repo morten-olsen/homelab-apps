@@ -98,9 +98,22 @@ initContainers:
             exit 0
           fi
         fi
+        # Skip `motis config` — its default enables map tile rendering with a
+        # 256 GiB tile DB that we don't need and wouldn't fit. Write a minimal
+        # routing-only config instead.
+        cat > /data/config.yml <<'EOF'
+        osm: osm.pbf
+        timetable:
+          first_day: TODAY
+          num_days: 365
+          datasets:
+            gtfs:
+              path: gtfs.zip
+        street_routing: true
+        geocoding: true
+        reverse_geocoding: true
+        EOF
         cd /data
-        echo "running motis config..."
-        /motis config osm.pbf gtfs.zip
         echo "running motis import..."
         /motis import
         touch /data/.last-import
