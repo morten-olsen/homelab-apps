@@ -108,13 +108,18 @@ initContainers:
             exit 0
           fi
         fi
-        # Skip `motis config` — its default enables map tile rendering with a
-        # 256 GiB tile DB that we don't need and wouldn't fit. Write a minimal
-        # routing-only config instead.
-        # num_days: 30 — we re-import weekly, so a month of forward planning is
-        # plenty. Bigger num_days = bigger graph + more RAM at query time.
+        # Skip `motis config` — its default tile profile is a relative path
+        # that doesn't resolve here, and its 256 GiB db_size cap is overkill.
+        # Hand-write a config with an absolute path to the bundled tile profile
+        # and an 8 GiB db_size cap (LMDB is sparse — actual DK tile data is
+        # well under that). num_days: 30 — we re-import weekly, so a month of
+        # forward planning is plenty.
         cat > /data/config.yml <<'EOF'
         osm: osm.pbf
+        tiles:
+          profile: /tiles-profiles/full.lua
+          db_size: 8589934592
+          flush_threshold: 100000
         timetable:
           first_day: TODAY
           num_days: 30
