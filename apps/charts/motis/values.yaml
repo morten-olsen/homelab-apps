@@ -101,11 +101,13 @@ initContainers:
         # Skip `motis config` — its default enables map tile rendering with a
         # 256 GiB tile DB that we don't need and wouldn't fit. Write a minimal
         # routing-only config instead.
+        # num_days: 30 — we re-import weekly, so a month of forward planning is
+        # plenty. Bigger num_days = bigger graph + more RAM at query time.
         cat > /data/config.yml <<'EOF'
         osm: osm.pbf
         timetable:
           first_day: TODAY
-          num_days: 365
+          num_days: 30
           datasets:
             gtfs:
               path: gtfs.zip
