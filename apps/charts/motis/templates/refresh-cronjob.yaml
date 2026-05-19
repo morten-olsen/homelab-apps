@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: "{{ .Release.Name }}-refresh"
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  # Sundays at 03:00 Europe/Copenhagen — pod's TZ comes from globals.timezone
+  # via the kubectl image's system tz, so cron interprets this in local time.
+  schedule: "0 3 * * 0"
+  timeZone: "{{ .Values.globals.timezone }}"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 86400
+      template:
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: "{{ .Release.Name }}-refresh"
+          containers:
+            - name: refresh
+              image: bitnami/kubectl:1.33.4
+              # `rollout restart` patches the deployment with a timestamp
+              # annotation; the pod is recreated and its init containers re-fetch
+              # + re-import. We don't wait for rollout — failures surface via
+              # normal pod health monitoring.
+              command:
+                - kubectl
+                - rollout
+                - restart
+                - deployment/{{ .Release.Name }}
+                - -n
+                - {{ .Release.Namespace }}
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 64Mi
