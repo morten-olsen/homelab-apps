@@ -1,12 +1,12 @@
 image:
   repository: ghcr.io/windmill-labs/windmill
-  tag: "1.703.3"
+  tag: "1.705.0@sha256:24e5f1dec05531c824400df2b9318dceb6e0157a9d4a7d1b6f18ab59f5bd3f9e"
   pullPolicy: IfNotPresent
 
 lsp:
   image:
     repository: ghcr.io/windmill-labs/windmill-lsp
-    tag: latest
+    tag: latest@sha256:4e76621383915a938b8d45a9fab4bf4b8769068a73c079fccbbbc23be8da092e
     pullPolicy: IfNotPresent
   replicas: 1
   port: 3001
