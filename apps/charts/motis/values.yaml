@@ -2,7 +2,7 @@ image:
   repository: ghcr.io/motis-project/motis
   # Renovate will pin the SHA on first sync. MOTIS doesn't tag releases — `master`
   # is the rolling tag.
-  tag: master
+  tag: master@sha256:eb06634df0460b9bfdcfd9b67790c81493d95094049a478239c3781a3d65d8b7
   pullPolicy: IfNotPresent
 
 subdomain: motis
@@ -60,7 +60,7 @@ persistentVolumeClaims:
 # self-heals.
 initContainers:
   - name: data-fetcher
-    image: curlimages/curl:8.10.1
+    image: curlimages/curl:8.20.0@sha256:b3f1fb2a51d923260350d21b8654bbc607164a987e2f7c84a0ac199a67df812a
     securityContext:
       # local-path PVC starts root-owned; init containers run as root to write
       # without fighting UIDs. Server container runs as the image's `motis` user.
@@ -93,7 +93,7 @@ initContainers:
       - name: data
         mountPath: /data
   - name: data-importer
-    image: ghcr.io/motis-project/motis:master
+    image: ghcr.io/motis-project/motis:master@sha256:eb06634df0460b9bfdcfd9b67790c81493d95094049a478239c3781a3d65d8b7
     securityContext:
       runAsUser: 0
     command: ["/bin/sh", "-c"]
