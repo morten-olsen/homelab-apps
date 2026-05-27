@@ -1,7 +1,7 @@
 image:
   repository: neosmemo/memos
   # Renovate will pin the SHA on first run.
-  tag: stable@sha256:06066de94333c091ee67c2ad5dec5f15bf5f35b31498c90092f9915dd05e9f92
+  tag: stable@sha256:471bd5dab62d59944644e177c366a44a6639584bffa7cacd72ca4d16f53f9a6d
   pullPolicy: IfNotPresent
 
 subdomain: memos
