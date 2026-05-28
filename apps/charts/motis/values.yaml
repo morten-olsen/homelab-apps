@@ -52,8 +52,11 @@ persistentVolumeClaims:
     backup: false
 
 # Two init containers handle the smart-refresh: data-fetcher pulls OSM + GTFS,
-# data-importer runs `motis config` + `motis import`. Both no-op when the
-# `.last-import` marker is younger than REFRESH_INTERVAL_SECONDS.
+# data-importer runs `motis config` + `motis import`. The fetcher no-ops when
+# the `.last-import` marker is fresh; the importer additionally re-runs when
+# the motis binary itself changed (its preprocessed data format is binary-
+# version-specific — running on a binary with a different `nigiri_bin_ver`
+# crashes the server with `binary version mismatch`).
 #
 # The weekly cron (templates/refresh-cronjob.yaml) just kicks `kubectl rollout
 # restart` — staleness check + refresh logic lives here so any pod restart
@@ -101,13 +104,31 @@ initContainers:
       - |
         set -eu
         INTERVAL=604800
-        if [ -f /data/.last-import ]; then
+        # Hash the motis binary about to run the import. If it differs from the
+        # hash stored alongside the imported data, the on-disk preprocessed
+        # artifacts may be in an incompatible format — force re-import regardless
+        # of the 7-day marker. OSM/GTFS inputs from a previous fetch are reused.
+        BIN_HASH=$(sha256sum /motis | cut -d' ' -f1)
+        STORED_HASH=$(cat /data/.motis-binary-hash 2>/dev/null || echo "")
+        REASON=""
+        if [ "$BIN_HASH" != "$STORED_HASH" ]; then
+          REASON="motis binary changed (was=${STORED_HASH:-none}, now=$BIN_HASH)"
+        elif [ ! -f /data/.last-import ]; then
+          REASON="no .last-import marker"
+        else
           AGE=$(($(date +%s) - $(stat -c %Y /data/.last-import)))
-          if [ "$AGE" -lt "$INTERVAL" ]; then
-            echo "data is $((AGE / 86400))d old (<7d), skipping import"
-            exit 0
+          if [ "$AGE" -ge "$INTERVAL" ]; then
+            REASON="data is $((AGE / 86400))d old (>=7d)"
           fi
         fi
+        if [ -z "$REASON" ]; then
+          echo "data is fresh and binary unchanged, skipping import"
+          exit 0
+        fi
+        echo "re-importing: $REASON"
+        # Wipe previous import output so a binary-format change can't leave
+        # stale artifacts behind. Raw OSM/GTFS in /data/* survive.
+        rm -rf /data/data
         # Skip `motis config` — its default tile profile is a relative path
         # that doesn't resolve here, and its 256 GiB db_size cap is overkill.
         # Hand-write a config with an absolute path to the bundled tile profile
@@ -133,6 +154,7 @@ initContainers:
         cd /data
         echo "running motis import..."
         /motis import
+        echo "$BIN_HASH" > /data/.motis-binary-hash
         # Import ran as root; the server runs as the image's `motis` user
         # (uid 100 / gid 101) and needs RW access to the tile LMDB at runtime.
         echo "chowning /data to motis user..."
