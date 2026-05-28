@@ -21,7 +21,7 @@ spec:
           serviceAccountName: "{{ .Release.Name }}-refresh"
           containers:
             - name: refresh
-              image: bitnami/kubectl:1.33.4
+              image: bitnami/kubectl:latest
               # `rollout restart` patches the deployment with a timestamp
               # annotation; the pod is recreated and its init containers re-fetch
               # + re-import. We don't wait for rollout — failures surface via
