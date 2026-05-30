@@ -22,13 +22,13 @@ app:
 db:
   image:
     repository: postgis/postgis
-    tag: 17-3.5-alpine@sha256:6b4f4f2479c2a7ab4ea724fe5f92579678b2858f6b736febdad627eaaba2eb15
+    tag: 17-3.5-alpine@sha256:9607ead1f85e2386fc92cd25277a687e72c26c89a380af1218e830c00c5dcd78
     pullPolicy: IfNotPresent
 
 redis:
   image:
     repository: redis
-    tag: 8.8-alpine@sha256:9156d3e4cab19c9b5507e18d7fcfca90c17762914270a3e34c08397ebdf746ff
+    tag: 8.8-alpine@sha256:09160599abd229764c0fb44cb6be640294e1d360a54b19985ab4843dcf2d90f1
     pullPolicy: IfNotPresent
 
 # Photon does in-cluster reverse-geocoding so we don't ping the public API
