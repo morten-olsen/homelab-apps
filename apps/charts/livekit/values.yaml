@@ -1,0 +1,85 @@
+image:
+  repository: livekit/livekit-server
+  tag: v1.9.12@sha256:2c13cbf2edcbf13ea7b20d05c10b394d04d8fb3fe358269cff845a90b4de9576
+  pullPolicy: IfNotPresent
+
+subdomain: livekit
+
+livekit:
+  # K3s host LAN IP — advertised as ICE candidate so external clients (laptop on
+  # LAN/VPN) reach the hostNetwork pod's UDP media ports directly.
+  nodeIp: 192.168.20.180
+  udpPortRange:
+    start: 50000
+    end: 50100
+
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  # hostNetwork lets the pod bind 7880/tcp, 7881/tcp, and 50000-50100/udp directly
+  # on the K3s host so WebRTC media flows from LAN/VPN clients without a NodePort
+  # range or Istio UDP listener.
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  podAnnotations:
+    reloader.stakater.com/auto: "true"
+
+container:
+  port: 7880
+  healthProbe:
+    type: httpGet
+    path: /
+    port: 7880
+
+service:
+  port: 80
+
+volumes:
+  - name: config
+    mountPath: /etc/livekit
+    configMap: "{release}-config"
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: api-key
+        length: 16
+        encoding: hex
+        secretKeys:
+          - apiKey
+      - name: api-secret
+        length: 32
+        encoding: hex
+        secretKeys:
+          - apiSecret
+
+env:
+  LIVEKIT_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: apiKey
+  LIVEKIT_API_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: apiSecret
+
+command:
+  - sh
+  - -c
+args:
+  - exec /livekit-server --config /etc/livekit/config.yaml --keys "${LIVEKIT_API_KEY}:${LIVEKIT_API_SECRET}"
