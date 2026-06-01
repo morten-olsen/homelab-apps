@@ -25,12 +25,12 @@ service:
   port: 80
 
 volumes:
-  - name: hf-cache
+  - name: data
     mountPath: /home/ubuntu/.cache/huggingface/hub
-    persistentVolumeClaim: hf-cache
+    persistentVolumeClaim: data
 
 persistentVolumeClaims:
-  - name: hf-cache
+  - name: data
     size: 50Gi
     storageClassName: local-path
     backup: false

@@ -67,6 +67,10 @@ externalSecrets:
           - apiSecret
 
 env:
+  # Mask the K8s service-link env var (LIVEKIT_PORT=tcp://<svc-ip>:80) that
+  # auto-injects when the Service is named "livekit". livekit-server's CLI
+  # maps LIVEKIT_PORT → --port and crashes parsing the tcp:// URL as uint.
+  LIVEKIT_PORT: "7880"
   LIVEKIT_API_KEY:
     valueFrom:
       secretKeyRef:
