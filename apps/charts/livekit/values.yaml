@@ -87,4 +87,6 @@ command:
   - -c
 args:
   # The --keys flag requires literal "key: secret" with a space after the colon.
-  - exec /livekit-server --config /etc/livekit/config.yaml --keys "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+  # Block scalar so YAML doesn't parse the embedded ": " as a key/value separator.
+  - |-
+    exec /livekit-server --config /etc/livekit/config.yaml --keys "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
