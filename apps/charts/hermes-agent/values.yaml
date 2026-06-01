@@ -32,11 +32,17 @@ dashboard:
 
   # /init (s6-overlay PID 1) is the image's ENTRYPOINT; the wrapper script
   # takes the hermes subcommand as its args. Don't override command — only args.
+  #
+  # --insecure is required when binding to a non-loopback host: the dashboard's
+  # auth-gate refuses 0.0.0.0 unless a DashboardAuthProvider plugin is registered
+  # (only Nous Portal exists). With Authentik unreachable, --insecure bypasses
+  # the gate and we depend on the private-gateway perimeter for access control.
   args:
     - dashboard
     - --host
     - 0.0.0.0
     - --no-open
+    - --insecure
 
   container:
     port: 9119
