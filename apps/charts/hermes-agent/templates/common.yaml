@@ -1,0 +1,2 @@
+{{ include "common.all" (list . .Values.dashboard) }}
+{{ include "common.all" (list . .Values.gateway) }}
