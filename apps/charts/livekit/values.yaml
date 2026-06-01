@@ -86,4 +86,5 @@ command:
   - sh
   - -c
 args:
-  - exec /livekit-server --config /etc/livekit/config.yaml --keys "${LIVEKIT_API_KEY}:${LIVEKIT_API_SECRET}"
+  # The --keys flag requires literal "key: secret" with a space after the colon.
+  - exec /livekit-server --config /etc/livekit/config.yaml --keys "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
