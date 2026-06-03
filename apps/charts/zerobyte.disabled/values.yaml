@@ -1,5 +1,5 @@
 image:
   repository: ghcr.io/nicotsx/zerobyte
-  tag: v0.37@sha256:092f390e8679bdfc371bce18665f88a999830f95d090eb12bace67900ee216b1
+  tag: v0.38@sha256:ffacaa2117eb7226708d335e4e151bf161b269999c02a5f0248084cc2423e54e
   pullPolicy: IfNotPresent
 subdomain: zerobyte
