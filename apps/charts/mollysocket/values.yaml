@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/mollyim/mollysocket
-  tag: latest@sha256:cc6de15f4b9df56e0a1196fb9068f211e2322708e0051999423e3656634d65ac
+  tag: latest@sha256:d6ecf9a46fb8f9dcda8ee514c4e0c4465704522fac6bf49ca998075572c59d4e
   pullPolicy: IfNotPresent
 
 subdomain: mollysocket
@@ -14,7 +14,7 @@ dns:
 
 initContainers:
   - name: mollysocket-vapid-gentor
-    image: "ghcr.io/mollyim/mollysocket:latest@sha256:cc6de15f4b9df56e0a1196fb9068f211e2322708e0051999423e3656634d65ac"
+    image: "ghcr.io/mollyim/mollysocket:latest@sha256:d6ecf9a46fb8f9dcda8ee514c4e0c4465704522fac6bf49ca998075572c59d4e"
     imagePullPolicy: IfNotPresent
     command: ["sh", "-c"]
     args:
