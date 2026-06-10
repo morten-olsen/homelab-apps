@@ -1,6 +1,6 @@
 image:
   repository: ollama/ollama
-  tag: 0.24.0@sha256:a6149234667efc71d37766d61c1a16f24c33e4cd7a0bf4125c44a7e47e2419c4
+  tag: 0.30.7@sha256:46399ef084d97b381955b5dc585c5d836dbe7ed3f79f170d1c04660fed511e3a
   pullPolicy: IfNotPresent
 
 subdomain: ollama
