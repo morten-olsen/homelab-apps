@@ -1,0 +1,205 @@
+# Agent — internal voice/text assistant from the incubator/agent image.
+#
+# One process tree: a supervisor forks the LiveKit voice worker and the
+# Fastify HTTP server. HTTP+frontend listen on :3000 (/api/* and /app/web).
+#
+# Runtime config (LiveKit URL/keys, LM Studio tiers, STT/TTS, CalDAV,
+# Home Assistant) is provided by the pre-existing `agent-secrets` Secret
+# in the `prod` namespace — not managed by this chart. To add or change
+# env keys, update the Secret and add/remove the matching entry below.
+#
+# Storage layout:
+#   /data   — PGlite database (small, backed up)
+#   /cache  — Hugging Face model cache (regeneratable, not backed up)
+# The image defaults DATABASE_DIR=/data and HF_CACHE_DIR=/data/hf-cache;
+# we override HF_CACHE_DIR to point at the separate /cache volume so the
+# backup window only captures durable state.
+
+image:
+  repository: code.olsen.cloud/incubator/agent
+  tag: latest@sha256:a2294277ea76cf9ec128bdebe05120a41c6abaf9a821bde1ae20e39cd2eed6dc
+  pullPolicy: IfNotPresent
+
+subdomain: agent
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 3000
+  healthProbe:
+    type: httpGet
+    path: /api/health
+    port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 6
+  resources:
+    requests:
+      cpu: 200m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
+service:
+  port: 80
+  type: ClusterIP
+
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+  - name: cache
+    mountPath: /cache
+    # The common library only auto-prefixes the names `config`, `metadata`,
+    # and `data`; any other PVC must be referenced by its full release-
+    # qualified name. Keep this in sync with the PVC's auto-prefixed name.
+    persistentVolumeClaim: agent-cache
+
+persistentVolumeClaims:
+  - name: data
+    size: 5Gi
+    storageClassName: local-path
+    backup: true
+  - name: cache
+    size: 40Gi
+    storageClassName: local-path
+    backup: false
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+env:
+  # Override default so HF models live on the un-backed-up cache volume.
+  HF_CACHE_DIR: "/cache"
+
+  # All operational config is sourced from the pre-existing agent-secrets
+  # Secret. Keep this list in sync with `kubectl get secret agent-secrets`.
+  AGENT_NAME:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: AGENT_NAME
+
+  LIVEKIT_URL:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: LIVEKIT_URL
+  LIVEKIT_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: LIVEKIT_API_KEY
+  LIVEKIT_API_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: LIVEKIT_API_SECRET
+
+  TIER1_BASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TIER1_BASE_URL
+  TIER1_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TIER1_API_KEY
+  TIER1_MODEL:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TIER1_MODEL
+  TIER2_BASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TIER2_BASE_URL
+  TIER2_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TIER2_API_KEY
+  TIER2_MODEL:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TIER2_MODEL
+
+  STT_BASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: STT_BASE_URL
+  STT_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: STT_API_KEY
+  STT_MODEL:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: STT_MODEL
+  STT_LANGUAGE:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: STT_LANGUAGE
+
+  TTS_BASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TTS_BASE_URL
+  TTS_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TTS_API_KEY
+  TTS_MODEL:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TTS_MODEL
+  TTS_VOICE:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TTS_VOICE
+  TTS_SPEED:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: TTS_SPEED
+
+  CALDAV_GOOGLE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: CALDAV_GOOGLE_URL
+  CALDAV_GOOGLE_USERNAME:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: CALDAV_GOOGLE_USERNAME
+  CALDAV_GOOGLE_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: CALDAV_GOOGLE_PASSWORD
+
+  HA_TOKEN:
+    valueFrom:
+      secretKeyRef:
+        name: agent-secrets
+        key: HA_TOKEN
