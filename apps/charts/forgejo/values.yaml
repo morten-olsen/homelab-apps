@@ -154,12 +154,12 @@ actions:
   runner:
     image:
       repository: code.forgejo.org/forgejo/runner
-      tag: "12.10.2@sha256:379b324d6942824b7487706c0a06be4d63e546c17b62bece4ae18c74364a8fae"
+      tag: "12.11.1@sha256:a1a2885261a0b8337d4791dd6949651117206741ba66423c24a57c107a64d4a8"
       pullPolicy: IfNotPresent
     dind:
       image:
         repository: code.forgejo.org/oci/docker
-        tag: dind@sha256:7d85d0eda291f1a7ab6df4a9d1802b5ad4cf9145a088bd11188c78dcb5c7392b
+        tag: dind@sha256:7278248384185bcbb54c7a76b2f0a7d354c4aac920605cc1ab48968d961052fb
         pullPolicy: IfNotPresent
     name: default
     replicas: 1
