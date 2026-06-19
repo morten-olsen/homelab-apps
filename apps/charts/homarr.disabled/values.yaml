@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/homarr-labs/homarr
-  tag: v1.64.0@sha256:fdfb8ee98338feb3a48e6013ce99c048cce129ca8d6b92a7e6e66671aefa9e07
+  tag: v1.66.1@sha256:27bb36eeb392ea2d21fed9d76b0c0b826347a67d0935cf20e9d0a7c26da58e0d
   pullPolicy: IfNotPresent
 
 subdomain: homarr
