@@ -2,13 +2,13 @@ subdomain: wger
 
 image:
   repository: docker.io/wger/server
-  tag: latest@sha256:e84187d24c2d3cb8df65e91e509e7b33fbee2b75e2e0392371c92bb3ba63cbd5
+  tag: latest@sha256:538fa92373567222eb646787d367810092ad337af4bd7fdd1fe5bd1a90ca99c6
   pullPolicy: IfNotPresent
 
 nginx:
   image:
     repository: docker.io/nginx
-    tag: stable-alpine@sha256:5f979dcfed4ce6461873f087e8c980d6e29b084b9e8776d9704a7e989b5f4898
+    tag: stable-alpine@sha256:92cf5e2f488744c90d3df4378dfa3f0842704950cfa1353975d5510c945b072f
     pullPolicy: IfNotPresent
 
 redis:
