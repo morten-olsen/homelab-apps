@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/music-assistant/server
-  tag: 2.9.0@sha256:7e7269b20bafd7fabd1567bc0991fd30e894b05d205dacdaba8a2a3893982722
+  tag: 2.9.3@sha256:fa04f9187e65362d489034d5b4072e94a7bef741c29c47e2b9a36325730605f2
   pullPolicy: IfNotPresent
 
 subdomain: music-assistant
