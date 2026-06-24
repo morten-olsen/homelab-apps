@@ -105,7 +105,7 @@ env:
 redis:
   image:
     repository: redis
-    tag: latest@sha256:aa049e689e141a4358ad1d4562dc49c88a89fbab711fd8fcc33f684c80b26301
+    tag: latest@sha256:6f3d962b7c275df5d1e3bb85aa46ddc7e36924137f11b841d779a1350cda5f80
     pullPolicy: IfNotPresent
 
 # Elasticsearch configuration
