@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/home-assistant/home-assistant
-  tag: 2026.6.2@sha256:b82fab7973fa1ba5eb69a8aaab3a830d56d986d495d894faf0ee969ad27839a6
+  tag: 2026.6.4@sha256:adb3341e31e03e0048e60d8c1cf952e118a381ae258bb921d3da12a3b27bf0c2
   pullPolicy: IfNotPresent
 
 subdomain: home-assistant
@@ -71,7 +71,7 @@ piper:
 whisper:
   image:
     repository: rhasspy/wyoming-whisper
-    tag: latest@sha256:9501d2659eee83b6eead98d53842193e5fed011eda6c5b1c3ad36f3146b28fed
+    tag: latest@sha256:bc63b1eeb9fe100971371c1dd75e67d6fac4ab70eaa14827ba4e453abde50201
     pullPolicy: IfNotPresent
   model: tiny-int8
   language: us
