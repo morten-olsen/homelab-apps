@@ -84,8 +84,10 @@ externalSecrets:
   - name: "{release}-secrets"
     passwords:
       - name: datastore-key
+        # NetBird base64-decodes DataStoreEncryptionKey and requires the decoded
+        # value to be exactly 32 bytes, so generate 32 random bytes as base64.
         length: 32
-        encoding: hex
+        encoding: base64
         secretKeys:
           - datastoreKey
       - name: relay-auth-secret
