@@ -84,7 +84,9 @@ externalSecrets:
   - name: "{release}-secrets"
     passwords:
       - name: datastore-key
-        length: 32
+        # NetBird requires exactly 32 bytes. The generator's hex encoding doubles
+        # the rendered character count, so 16 random bytes produce a 32-byte hex key.
+        length: 16
         encoding: hex
         secretKeys:
           - datastoreKey
