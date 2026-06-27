@@ -62,9 +62,9 @@ spec:
             - name: AUTH_SUPPORTED_SCOPES
               value: "openid profile email offline_access api"
             - name: AUTH_REDIRECT_URI
-              value: /peers
+              value: /nb-auth
             - name: AUTH_SILENT_REDIRECT_URI
-              value: /add-peers
+              value: /nb-silent-auth
             - name: NETBIRD_TOKEN_SOURCE
               value: accessToken
           readinessProbe:

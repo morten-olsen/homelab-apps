@@ -61,13 +61,14 @@ virtualService:
     public: false
     private: true
 
-# Authentik provisions {release}-oidc-credentials. NetBird uses /peers for the
-# dashboard redirect and local loopback ports for CLI PKCE enrollment.
+# Authentik provisions {release}-oidc-credentials. NetBird's dashboard uses
+# /nb-auth and /nb-silent-auth for browser OIDC callbacks; localhost is for
+# CLI PKCE enrollment.
 oidc:
   enabled: true
   redirectUris:
-    - /peers
-    - /add-peers
+    - /nb-auth
+    - /nb-silent-auth
     - http://localhost:53000
 
 persistentVolumeClaims:
@@ -84,8 +85,10 @@ externalSecrets:
   - name: "{release}-secrets"
     passwords:
       - name: datastore-key
+        # NetBird base64-decodes DataStoreEncryptionKey and requires the decoded
+        # value to be exactly 32 bytes, so generate 32 random bytes as base64.
         length: 32
-        encoding: hex
+        encoding: base64
         secretKeys:
           - datastoreKey
       - name: relay-auth-secret
