@@ -1,9 +1,13 @@
 subdomain: netbird
 
-# Private-only NetBird control plane. Web, management, signal, and relay are
-# multiplexed through the private Istio gateway on https://netbird.{domain}.
+# Split NetBird into a private admin UI and a public client endpoint.
+# - dashboardHost stays on the private gateway for interactive administration.
+# - clientHost is safe to put on the public gateway; it exposes only management
+#   API/gRPC, signal, and relay paths required by NetBird clients.
 netbird:
   hostIp: 192.168.20.180
+  dashboardHost: netbird
+  clientHost: netbird-client
   management:
     port: 33073
     dnsDomain: netbird.selfhosted
@@ -16,7 +20,13 @@ netbird:
     port: 33080
     path: /relay
   turn:
-    host: 192.168.20.180
+    # Host advertised to clients in the NetBird management config. Keep this
+    # resolvable internally now; when WAN forwarding is ready, point public DNS
+    # for this name at the WAN IP.
+    host: netbird-client.olsen.cloud
+    # Coturn's external-ip setting. This is the K3s host for internal testing;
+    # switch to the WAN IP when enabling off-network clients through NAT.
+    externalIp: 192.168.20.180
     port: 3478
     minPort: 49152
     maxPort: 49252
@@ -48,8 +58,9 @@ images:
     tag: 1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
     pullPolicy: IfNotPresent
 
-# DNS record for netbird.{domain} is private; TURN uses hostIp directly so
-# 3478/tcp+udp and the relay port range bypass Istio.
+# Private DNS records for dashboardHost and clientHost point LAN/VPN clients at
+# the private Istio gateway. Public DNS for clientHost is expected to be handled
+# by the existing Cloudflare/wildcard setup or a manual DNS record.
 dns:
   enabled: true
   type: A
@@ -58,7 +69,9 @@ dns:
 
 virtualService:
   gateways:
-    public: false
+    # Public gateway exposes only client API/gRPC, signal, and relay on
+    # netbird-client.{domain}. The dashboard remains private-only.
+    public: true
     private: true
 
 # Authentik provisions {release}-oidc-credentials. NetBird's dashboard uses

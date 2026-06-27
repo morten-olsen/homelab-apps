@@ -1,3 +1,4 @@
+{{- $dashboardHost := printf "%s.%s" .Values.netbird.dashboardHost .Values.globals.domain -}}
 {{- if and .Values.oidc.enabled .Values.globals.authentik.ref.name .Values.globals.authentik.ref.namespace }}
 apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
 kind: AuthentikClient
@@ -16,7 +17,7 @@ spec:
     {{- if hasPrefix "http" . }}
     - {{ . | quote }}
     {{- else }}
-    - {{ printf "https://%s.%s%s" $.Values.subdomain $.Values.globals.domain . | quote }}
+    - {{ printf "https://%s%s" $dashboardHost . | quote }}
     {{- end }}
     {{- end }}
   subjectMode: user_username

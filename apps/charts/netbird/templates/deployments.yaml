@@ -1,4 +1,5 @@
-{{- $host := printf "%s.%s" .Values.subdomain .Values.globals.domain -}}
+{{- $dashboardHost := printf "%s.%s" .Values.netbird.dashboardHost .Values.globals.domain -}}
+{{- $clientHost := printf "%s.%s" .Values.netbird.clientHost .Values.globals.domain -}}
 {{- $secret := printf "%s-secrets" .Release.Name -}}
 {{- $oidcSecret := printf "%s-oidc-credentials" .Release.Name -}}
 ---
@@ -34,9 +35,9 @@ spec:
               protocol: TCP
           env:
             - name: NETBIRD_MGMT_API_ENDPOINT
-              value: "https://{{ $host }}"
+              value: "https://{{ $dashboardHost }}"
             - name: NETBIRD_MGMT_GRPC_API_ENDPOINT
-              value: "https://{{ $host }}"
+              value: "https://{{ $clientHost }}"
             - name: AUTH_AUDIENCE
               valueFrom:
                 secretKeyRef:
@@ -120,11 +121,11 @@ spec:
                   "TimeBasedCredentials":false
                 },
                 "Relay": {
-                  "Addresses": ["rels://{{ $host }}:443{{ .Values.netbird.relay.path }}"],
+                  "Addresses": ["rels://{{ $clientHost }}:443{{ .Values.netbird.relay.path }}"],
                   "CredentialsTTL":"24h",
                   "Secret":"${RELAY_AUTH_SECRET}"
                 },
-                "Signal": {"Proto":"https","URI":"{{ $host }}:443","Username":"","Password":null},
+                "Signal": {"Proto":"https","URI":"{{ $clientHost }}:443","Username":"","Password":null},
                 "ReverseProxy": {"TrustedHTTPProxies":[],"TrustedHTTPProxiesCount":0,"TrustedPeers":["0.0.0.0/0"]},
                 "DisableDefaultPolicy": {{ .Values.netbird.management.disableDefaultPolicy }},
                 "Datadir":"/var/lib/netbird",
@@ -313,7 +314,7 @@ spec:
             - name: NB_LISTEN_ADDRESS
               value: ":{{ .Values.netbird.relay.port }}"
             - name: NB_EXPOSED_ADDRESS
-              value: "rels://{{ $host }}:443{{ .Values.netbird.relay.path }}"
+              value: "rels://{{ $clientHost }}:443{{ .Values.netbird.relay.path }}"
             - name: NB_AUTH_SECRET
               valueFrom:
                 secretKeyRef:
@@ -366,7 +367,7 @@ spec:
               listening-port={{ .Values.netbird.turn.port }}
               min-port={{ .Values.netbird.turn.minPort }}
               max-port={{ .Values.netbird.turn.maxPort }}
-              external-ip={{ .Values.netbird.hostIp }}
+              external-ip={{ .Values.netbird.turn.externalIp }}
               fingerprint
               lt-cred-mech
               user={{ .Values.netbird.turn.user }}:${TURN_PASSWORD}

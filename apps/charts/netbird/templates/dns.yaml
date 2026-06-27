@@ -1,0 +1,35 @@
+{{- $dashboardSubdomain := .Values.netbird.dashboardHost -}}
+{{- $clientSubdomain := .Values.netbird.clientHost -}}
+{{- if and .Values.dns.enabled .Values.globals.gatewayAddress }}
+apiVersion: dns.homelab.mortenolsen.pro/v1alpha1
+kind: DNSRecord
+metadata:
+  name: {{ .Release.Name }}-dashboard-private
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  subdomain: {{ $dashboardSubdomain | quote }}
+  domain: {{ .Values.globals.domain | quote }}
+  type: {{ .Values.dns.type | default "A" | quote }}
+  values:
+    - {{ .Values.globals.gatewayAddress | quote }}
+  dnsClassRef:
+    name: {{ .Values.dns.dnsClassRef.name | quote }}
+---
+apiVersion: dns.homelab.mortenolsen.pro/v1alpha1
+kind: DNSRecord
+metadata:
+  name: {{ .Release.Name }}-client-private
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  subdomain: {{ $clientSubdomain | quote }}
+  domain: {{ .Values.globals.domain | quote }}
+  type: {{ .Values.dns.type | default "A" | quote }}
+  values:
+    - {{ .Values.globals.gatewayAddress | quote }}
+  dnsClassRef:
+    name: {{ .Values.dns.dnsClassRef.name | quote }}
+{{- end }}

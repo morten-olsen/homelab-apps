@@ -1,9 +1,10 @@
-{{- $host := printf "%s.%s" .Values.subdomain .Values.globals.domain -}}
+{{- $dashboardHost := printf "%s.%s" .Values.netbird.dashboardHost .Values.globals.domain -}}
+{{- $clientHost := printf "%s.%s" .Values.netbird.clientHost .Values.globals.domain -}}
 {{- if .Values.virtualService.gateways.private }}
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: {{ .Release.Name }}-private
+  name: {{ .Release.Name }}-dashboard-private
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
@@ -12,7 +13,36 @@ spec:
     - {{ .Values.globals.istio.gateways.private | quote }}
     - mesh
   hosts:
-    - {{ $host | quote }}
+    - {{ $dashboardHost | quote }}
+    - mesh
+  http:
+    - match:
+        - uri:
+            prefix: /api
+      route:
+        - destination:
+            host: {{ .Release.Name }}-management
+            port:
+              number: {{ .Values.netbird.management.port }}
+    - route:
+        - destination:
+            host: {{ .Release.Name }}-dashboard
+            port:
+              number: 80
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ .Release.Name }}-client-private
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    - {{ .Values.globals.istio.gateways.private | quote }}
+    - mesh
+  hosts:
+    - {{ $clientHost | quote }}
     - mesh
   http:
     - match:
@@ -47,9 +77,52 @@ spec:
             host: {{ .Release.Name }}-relay
             port:
               number: {{ .Values.netbird.relay.port }}
-    - route:
+{{- end }}
+{{- if .Values.virtualService.gateways.public }}
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ .Release.Name }}-client-public
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    - {{ .Values.globals.istio.gateways.public | quote }}
+  hosts:
+    - {{ $clientHost | quote }}
+  http:
+    - match:
+        - uri:
+            prefix: /api
+      route:
         - destination:
-            host: {{ .Release.Name }}-dashboard
+            host: {{ .Release.Name }}-management
             port:
-              number: 80
+              number: {{ .Values.netbird.management.port }}
+    - match:
+        - uri:
+            prefix: /management.ManagementService/
+      route:
+        - destination:
+            host: {{ .Release.Name }}-management
+            port:
+              number: {{ .Values.netbird.management.port }}
+    - match:
+        - uri:
+            prefix: /signalexchange.SignalExchange/
+      route:
+        - destination:
+            host: {{ .Release.Name }}-signal
+            port:
+              number: {{ .Values.netbird.signal.port }}
+    - match:
+        - uri:
+            prefix: {{ .Values.netbird.relay.path }}
+      route:
+        - destination:
+            host: {{ .Release.Name }}-relay
+            port:
+              number: {{ .Values.netbird.relay.port }}
 {{- end }}
