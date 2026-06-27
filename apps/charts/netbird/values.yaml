@@ -1,0 +1,100 @@
+subdomain: netbird
+
+# Private-only NetBird control plane. Web, management, signal, and relay are
+# multiplexed through the private Istio gateway on https://netbird.{domain}.
+netbird:
+  hostIp: 192.168.20.180
+  management:
+    port: 33073
+    dnsDomain: netbird.selfhosted
+    disableAnonymousMetrics: true
+    disableDefaultPolicy: false
+    singleAccountModeDomain: olsen.cloud
+  signal:
+    port: 80
+  relay:
+    port: 33080
+    path: /relay
+  turn:
+    host: 192.168.20.180
+    port: 3478
+    minPort: 49152
+    maxPort: 49252
+    user: self
+
+images:
+  dashboard:
+    repository: netbirdio/dashboard
+    tag: v2.90.0@sha256:05022a0ab704865678f9299a308747cb0878d4258488c00536c27b23f2bd5921
+    pullPolicy: IfNotPresent
+  management:
+    repository: netbirdio/management
+    tag: 0.73.2@sha256:0f61798edc63fdd541dc93981ce873d778a3fa4ed0adc9511346f67f36f61456
+    pullPolicy: IfNotPresent
+  signal:
+    repository: netbirdio/signal
+    tag: 0.73.2@sha256:22dc936fe9668c457f6df5221eecc376969b3ead19faa36af6768028cd436944
+    pullPolicy: IfNotPresent
+  relay:
+    repository: netbirdio/relay
+    tag: 0.73.2@sha256:c9a8c704c4cfa310d298369a1f9b5261283973f3e2d9e77030e85951cfc5aebb
+    pullPolicy: IfNotPresent
+  coturn:
+    repository: coturn/coturn
+    tag: 4.7.0-r0@sha256:99bf5bf6ab1c119862d0c3d2dfb2bbf805a86a131492cab18c148be64ae7d978
+    pullPolicy: IfNotPresent
+  busybox:
+    repository: docker.io/library/busybox
+    tag: 1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+    pullPolicy: IfNotPresent
+
+# DNS record for netbird.{domain} is private; TURN uses hostIp directly so
+# 3478/tcp+udp and the relay port range bypass Istio.
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+virtualService:
+  gateways:
+    public: false
+    private: true
+
+# Authentik provisions {release}-oidc-credentials. NetBird uses /peers for the
+# dashboard redirect and local loopback ports for CLI PKCE enrollment.
+oidc:
+  enabled: true
+  redirectUris:
+    - /peers
+    - /add-peers
+    - http://localhost:53000
+
+persistentVolumeClaims:
+  - name: management
+    size: 5Gi
+    storageClassName: local-path
+    backup: true
+  - name: signal
+    size: 1Gi
+    storageClassName: local-path
+    backup: true
+
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: datastore-key
+        length: 32
+        encoding: hex
+        secretKeys:
+          - datastoreKey
+      - name: relay-auth-secret
+        length: 32
+        encoding: base64
+        secretKeys:
+          - relayAuthSecret
+      - name: turn-password
+        length: 32
+        encoding: base64
+        secretKeys:
+          - turnPassword

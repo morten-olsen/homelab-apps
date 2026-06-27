@@ -1,0 +1,55 @@
+{{- $host := printf "%s.%s" .Values.subdomain .Values.globals.domain -}}
+{{- if .Values.virtualService.gateways.private }}
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ .Release.Name }}-private
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    - {{ .Values.globals.istio.gateways.private | quote }}
+    - mesh
+  hosts:
+    - {{ $host | quote }}
+    - mesh
+  http:
+    - match:
+        - uri:
+            prefix: /api
+      route:
+        - destination:
+            host: {{ .Release.Name }}-management
+            port:
+              number: {{ .Values.netbird.management.port }}
+    - match:
+        - uri:
+            prefix: /management.ManagementService/
+      route:
+        - destination:
+            host: {{ .Release.Name }}-management
+            port:
+              number: {{ .Values.netbird.management.port }}
+    - match:
+        - uri:
+            prefix: /signalexchange.SignalExchange/
+      route:
+        - destination:
+            host: {{ .Release.Name }}-signal
+            port:
+              number: {{ .Values.netbird.signal.port }}
+    - match:
+        - uri:
+            prefix: {{ .Values.netbird.relay.path }}
+      route:
+        - destination:
+            host: {{ .Release.Name }}-relay
+            port:
+              number: {{ .Values.netbird.relay.port }}
+    - route:
+        - destination:
+            host: {{ .Release.Name }}-dashboard
+            port:
+              number: 80
+{{- end }}

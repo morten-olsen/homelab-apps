@@ -1,0 +1,3 @@
+{{ include "common.pvc" (list . .Values) }}
+{{ include "common.externalSecrets" (list . .Values) }}
+{{ include "common.backup" (list . .Values) }}

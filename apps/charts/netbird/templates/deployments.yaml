@@ -1,0 +1,416 @@
+{{- $host := printf "%s.%s" .Values.subdomain .Values.globals.domain -}}
+{{- $secret := printf "%s-secrets" .Release.Name -}}
+{{- $oidcSecret := printf "%s-oidc-credentials" .Release.Name -}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-dashboard
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dashboard
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: dashboard
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: "{{ .Values.images.dashboard.repository }}:{{ .Values.images.dashboard.tag }}"
+          imagePullPolicy: {{ .Values.images.dashboard.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: NETBIRD_MGMT_API_ENDPOINT
+              value: "https://{{ $host }}"
+            - name: NETBIRD_MGMT_GRPC_API_ENDPOINT
+              value: "https://{{ $host }}"
+            - name: AUTH_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $oidcSecret }}
+                  key: clientId
+            - name: AUTH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $oidcSecret }}
+                  key: clientId
+            - name: AUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $oidcSecret }}
+                  key: clientSecret
+            - name: AUTH_AUTHORITY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $oidcSecret }}
+                  key: issuer
+            - name: USE_AUTH0
+              value: "false"
+            - name: AUTH_SUPPORTED_SCOPES
+              value: "openid profile email offline_access api"
+            - name: AUTH_REDIRECT_URI
+              value: /peers
+            - name: AUTH_SILENT_REDIRECT_URI
+              value: /add-peers
+            - name: NETBIRD_TOKEN_SOURCE
+              value: accessToken
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-management
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: management
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: management
+  template:
+    metadata:
+      annotations:
+        reloader.stakater.com/auto: "true"
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: management
+    spec:
+      initContainers:
+        - name: render-config
+          image: "{{ .Values.images.busybox.repository }}:{{ .Values.images.busybox.tag }}"
+          imagePullPolicy: {{ .Values.images.busybox.pullPolicy }}
+          command: ["sh", "-ec"]
+          args:
+            - |-
+              ISSUER="${OIDC_ISSUER%/}/"
+              cat > /config/management.json <<EOF
+              {
+                "Stuns": [{"Proto":"udp","URI":"stun:{{ .Values.netbird.turn.host }}:{{ .Values.netbird.turn.port }}","Username":"","Password":null}],
+                "TURNConfig": {
+                  "Turns": [{"Proto":"udp","URI":"turn:{{ .Values.netbird.turn.host }}:{{ .Values.netbird.turn.port }}","Username":"{{ .Values.netbird.turn.user }}","Password":"${TURN_PASSWORD}"}],
+                  "CredentialsTTL":"12h",
+                  "Secret":"secret",
+                  "TimeBasedCredentials":false
+                },
+                "Relay": {
+                  "Addresses": ["rels://{{ $host }}:443{{ .Values.netbird.relay.path }}"],
+                  "CredentialsTTL":"24h",
+                  "Secret":"${RELAY_AUTH_SECRET}"
+                },
+                "Signal": {"Proto":"https","URI":"{{ $host }}:443","Username":"","Password":null},
+                "ReverseProxy": {"TrustedHTTPProxies":[],"TrustedHTTPProxiesCount":0,"TrustedPeers":["0.0.0.0/0"]},
+                "DisableDefaultPolicy": {{ .Values.netbird.management.disableDefaultPolicy }},
+                "Datadir":"/var/lib/netbird",
+                "DataStoreEncryptionKey":"${DATASTORE_KEY}",
+                "StoreConfig":{"Engine":"sqlite"},
+                "HttpConfig": {
+                  "Address":"0.0.0.0:{{ .Values.netbird.management.port }}",
+                  "AuthIssuer":"${ISSUER}",
+                  "AuthAudience":"${OIDC_CLIENT_ID}",
+                  "AuthKeysLocation":"${ISSUER}jwks/",
+                  "AuthUserIDClaim":"sub",
+                  "CertFile":"",
+                  "CertKey":"",
+                  "IdpSignKeyRefreshEnabled":false,
+                  "OIDCConfigEndpoint":"${ISSUER}.well-known/openid-configuration"
+                },
+                "IdpManagerConfig": {
+                  "ManagerType":"none",
+                  "ClientConfig":{"Issuer":"${ISSUER}","TokenEndpoint":"${ISSUER}token/","ClientID":"${OIDC_CLIENT_ID}","ClientSecret":"${OIDC_CLIENT_SECRET}","GrantType":"client_credentials"},
+                  "ExtraConfig":{},
+                  "Auth0ClientCredentials":null,
+                  "AzureClientCredentials":null,
+                  "KeycloakClientCredentials":null,
+                  "ZitadelClientCredentials":null
+                },
+                "DeviceAuthorizationFlow": {"Provider":"none","ProviderConfig":{"Audience":"${OIDC_CLIENT_ID}","AuthorizationEndpoint":"","Domain":"","ClientID":"","ClientSecret":"","TokenEndpoint":"${ISSUER}token/","DeviceAuthEndpoint":"","Scope":"openid","UseIDToken":false,"RedirectURLs":null}},
+                "PKCEAuthorizationFlow": {"ProviderConfig":{"Audience":"${OIDC_CLIENT_ID}","ClientID":"${OIDC_CLIENT_ID}","ClientSecret":"${OIDC_CLIENT_SECRET}","Domain":"","AuthorizationEndpoint":"${ISSUER}authorize/","TokenEndpoint":"${ISSUER}token/","Scope":"openid profile email offline_access api","RedirectURLs":["http://localhost:53000"],"UseIDToken":false,"DisablePromptLogin":false,"LoginFlag":0}}
+              }
+              EOF
+          env:
+            - name: DATASTORE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: datastoreKey
+            - name: RELAY_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: relayAuthSecret
+            - name: TURN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: turnPassword
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $oidcSecret }}
+                  key: clientId
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $oidcSecret }}
+                  key: clientSecret
+            - name: OIDC_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $oidcSecret }}
+                  key: issuer
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      containers:
+        - name: management
+          image: "{{ .Values.images.management.repository }}:{{ .Values.images.management.tag }}"
+          imagePullPolicy: {{ .Values.images.management.pullPolicy }}
+          args:
+            - --port
+            - "{{ .Values.netbird.management.port }}"
+            - --log-file
+            - console
+            - --log-level
+            - info
+            - --disable-anonymous-metrics={{ .Values.netbird.management.disableAnonymousMetrics }}
+            - --single-account-mode-domain={{ .Values.netbird.management.singleAccountModeDomain }}
+            - --dns-domain={{ .Values.netbird.management.dnsDomain }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.netbird.management.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/netbird
+            - name: config
+              mountPath: /etc/netbird
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-management
+        - name: config
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-signal
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: signal
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: signal
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: signal
+    spec:
+      containers:
+        - name: signal
+          image: "{{ .Values.images.signal.repository }}:{{ .Values.images.signal.tag }}"
+          imagePullPolicy: {{ .Values.images.signal.pullPolicy }}
+          args:
+            - --log-file
+            - console
+            - --port
+            - "{{ .Values.netbird.signal.port }}"
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.netbird.signal.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/netbird
+          readinessProbe:
+            tcpSocket:
+              port: grpc
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: grpc
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-signal
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-relay
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: relay
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: relay
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: relay
+    spec:
+      containers:
+        - name: relay
+          image: "{{ .Values.images.relay.repository }}:{{ .Values.images.relay.tag }}"
+          imagePullPolicy: {{ .Values.images.relay.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.netbird.relay.port }}
+              protocol: TCP
+          env:
+            - name: NB_LOG_LEVEL
+              value: info
+            - name: NB_LISTEN_ADDRESS
+              value: ":{{ .Values.netbird.relay.port }}"
+            - name: NB_EXPOSED_ADDRESS
+              value: "rels://{{ $host }}:443{{ .Values.netbird.relay.path }}"
+            - name: NB_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: relayAuthSecret
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-coturn
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: coturn
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: coturn
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+        reloader.stakater.com/auto: "true"
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: coturn
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      initContainers:
+        - name: render-config
+          image: "{{ .Values.images.busybox.repository }}:{{ .Values.images.busybox.tag }}"
+          imagePullPolicy: {{ .Values.images.busybox.pullPolicy }}
+          command: ["sh", "-ec"]
+          args:
+            - |-
+              cat > /config/turnserver.conf <<EOF
+              listening-port={{ .Values.netbird.turn.port }}
+              min-port={{ .Values.netbird.turn.minPort }}
+              max-port={{ .Values.netbird.turn.maxPort }}
+              external-ip={{ .Values.netbird.hostIp }}
+              fingerprint
+              lt-cred-mech
+              user={{ .Values.netbird.turn.user }}:${TURN_PASSWORD}
+              realm=netbird.selfhosted
+              no-tls
+              no-dtls
+              log-file=stdout
+              EOF
+          env:
+            - name: TURN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: turnPassword
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      containers:
+        - name: coturn
+          image: "{{ .Values.images.coturn.repository }}:{{ .Values.images.coturn.tag }}"
+          imagePullPolicy: {{ .Values.images.coturn.pullPolicy }}
+          args:
+            - -c
+            - /etc/coturn/turnserver.conf
+          ports:
+            - name: turn-tcp
+              containerPort: {{ .Values.netbird.turn.port }}
+              hostPort: {{ .Values.netbird.turn.port }}
+              protocol: TCP
+            - name: turn-udp
+              containerPort: {{ .Values.netbird.turn.port }}
+              hostPort: {{ .Values.netbird.turn.port }}
+              protocol: UDP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/coturn
+          readinessProbe:
+            tcpSocket:
+              port: turn-tcp
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: turn-tcp
+            periodSeconds: 30
+      volumes:
+        - name: config
+          emptyDir: {}

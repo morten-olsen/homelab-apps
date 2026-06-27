@@ -1,0 +1,23 @@
+{{- if and .Values.oidc.enabled .Values.globals.authentik.ref.name .Values.globals.authentik.ref.namespace }}
+apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
+kind: AuthentikClient
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  serverRef:
+    name: {{ .Values.globals.authentik.ref.name }}
+    namespace: {{ .Values.globals.authentik.ref.namespace }}
+  name: {{ .Release.Name }}
+  redirectUris:
+    {{- range .Values.oidc.redirectUris }}
+    {{- if hasPrefix "http" . }}
+    - {{ . | quote }}
+    {{- else }}
+    - {{ printf "https://%s.%s%s" $.Values.subdomain $.Values.globals.domain . | quote }}
+    {{- end }}
+    {{- end }}
+  subjectMode: user_username
+{{- end }}

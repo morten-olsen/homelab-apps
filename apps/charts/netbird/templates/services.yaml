@@ -1,0 +1,22 @@
+{{- $components := dict "dashboard" 80 "management" .Values.netbird.management.port "signal" .Values.netbird.signal.port "relay" .Values.netbird.relay.port -}}
+{{- range $name, $port := $components }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Release.Name }}-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ $port }}
+      targetPort: {{ if eq $name "signal" }}grpc{{ else }}http{{ end }}
+      protocol: TCP
+  selector:
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/component: {{ $name }}
+{{- end }}
