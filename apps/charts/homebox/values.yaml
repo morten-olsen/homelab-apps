@@ -53,8 +53,24 @@ virtualService:
 database:
   enabled: true
 
+# Auto-generated secrets (pepper for API key signing)
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: api-key-pepper
+        length: 48
+        allowRepeat: true
+        encoding: base64
+        secretKeys:
+          - api-key-pepper
+
 # Environment variables
 env:
+  HBOX_AUTH_API_KEY_PEPPER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: api-key-pepper
   TZ:
     value: "{timezone}"
   HBOX_OPTIONS_ALLOW_REGISTRATION: "false"
