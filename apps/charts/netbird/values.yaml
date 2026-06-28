@@ -24,9 +24,9 @@ netbird:
     # resolvable internally now; when WAN forwarding is ready, point public DNS
     # for this name at the WAN IP.
     host: netbird-client.olsen.cloud
-    # Coturn's external-ip setting. This is the K3s host for internal testing;
-    # switch to the WAN IP when enabling off-network clients through NAT.
-    externalIp: 192.168.20.180
+    # Coturn's external-ip setting. Must be the WAN IP once off-network clients
+    # connect through NAT/port forwarding.
+    externalIp: 185.181.220.204
     port: 3478
     minPort: 49152
     maxPort: 49252
