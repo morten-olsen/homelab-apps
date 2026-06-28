@@ -12,7 +12,7 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - name: http
+    - name: {{ if or (eq $name "management") (eq $name "signal") }}grpc{{ else }}http{{ end }}
       port: {{ $port }}
       targetPort: {{ if eq $name "signal" }}grpc{{ else }}http{{ end }}
       protocol: TCP
