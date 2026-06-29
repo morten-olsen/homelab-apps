@@ -2,7 +2,7 @@ image:
   repository: ghcr.io/motis-project/motis
   # Renovate will pin the SHA on first sync. MOTIS doesn't tag releases — `master`
   # is the rolling tag.
-  tag: master@sha256:44b34f003a3a6f836d9e685ae737658468e217b3b6ba43c765df58a565801ab6
+  tag: master@sha256:c6f0a82d4cbd8d7e74c247e38aa72f9aad34a364c33e8a1861642c19e5fa4b3f
   pullPolicy: IfNotPresent
 
 subdomain: motis
@@ -96,7 +96,7 @@ initContainers:
       - name: data
         mountPath: /data
   - name: data-importer
-    image: ghcr.io/motis-project/motis:master@sha256:44b34f003a3a6f836d9e685ae737658468e217b3b6ba43c765df58a565801ab6
+    image: ghcr.io/motis-project/motis:master@sha256:c6f0a82d4cbd8d7e74c247e38aa72f9aad34a364c33e8a1861642c19e5fa4b3f
     securityContext:
       runAsUser: 0
     command: ["/bin/sh", "-c"]
