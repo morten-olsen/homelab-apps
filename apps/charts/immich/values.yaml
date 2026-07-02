@@ -11,12 +11,12 @@ dns:
 server:
   image:
     repository: ghcr.io/immich-app/immich-server
-    tag: release@sha256:c15bff75068effb03f4355997d03dc7e0fc58720c2b54ad6f7f10d1bc57efaa5
+    tag: release@sha256:685ba5c93337058ff8a189d3ed89f0ba470ef966b1c94d2eace1a3d991f9816e
     pullPolicy: IfNotPresent
 ml:
   image:
     repository: ghcr.io/immich-app/immich-machine-learning
-    tag: release@sha256:a2501141440f10516d329fdfba2c68082e19eb9ba6016c061ac80d23beadf7f3
+    tag: release@sha256:5b480e92a2b77618d9ccae8c8110b0eae144ec9daf86715d246ec6d39cb7a553
     pullPolicy: IfNotPresent
 valkey:
   image:
@@ -26,7 +26,7 @@ valkey:
 postgres:
   image:
     repository: pgvector/pgvector
-    tag: pg16@sha256:131dcf7ff6a900545df8e7e092c270aa8c6db2f2c818e408cb45ec21316b74e6
+    tag: pg16@sha256:ad2e18408bf447f62092a8a5259e7df10505c5a0360bd1a1853ac8b8b0763da2
     pullPolicy: IfNotPresent
 
 # Database configuration
