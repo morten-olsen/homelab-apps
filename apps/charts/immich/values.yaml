@@ -26,7 +26,7 @@ valkey:
 postgres:
   image:
     repository: pgvector/pgvector
-    tag: pg16@sha256:131dcf7ff6a900545df8e7e092c270aa8c6db2f2c818e408cb45ec21316b74e6
+    tag: pg16@sha256:ad2e18408bf447f62092a8a5259e7df10505c5a0360bd1a1853ac8b8b0763da2
     pullPolicy: IfNotPresent
 
 # Database configuration
