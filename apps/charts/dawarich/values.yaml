@@ -22,7 +22,7 @@ app:
 db:
   image:
     repository: postgis/postgis
-    tag: 17-3.5-alpine@sha256:697504b61e8e172a5bc8e1bde7af3ea888a63d5c0af8f15889f0c4202bbc949e
+    tag: 17-3.5-alpine@sha256:fe9821935d163abca5611e3e0a6a7c73c8c547f3412ed2036ec0ed8f789390da
     pullPolicy: IfNotPresent
 
 redis:

@@ -1,6 +1,6 @@
 image:
   repository: b3log/siyuan
-  tag: v3.6.5@sha256:1a316554bfbf0c951ddabc7d3cb0292620152b44c087b6979d5d9b6bae065b1b
+  tag: v3.7.2@sha256:ce658cb9428ea52409c0542a8156b5ed19e2383240daea34b2f044ddd128ac3e
   pullPolicy: IfNotPresent
 
 subdomain: siyuan
