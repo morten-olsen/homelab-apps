@@ -80,3 +80,8 @@ env:
   ENABLE_LOGIN_FORM: "false"
   OPENID_REDIRECT:
     value: "https://{subdomain}.{domain}/oauth/oidc/callback"
+  TERMINAL_SERVER_CONNECTIONS:
+    valueFrom:
+      secretKeyRef:
+        name: open-terminal-secrets
+        key: terminalServerConnections

@@ -1,0 +1,55 @@
+image:
+  repository: ghcr.io/open-webui/open-terminal
+  tag: 0.10.2@sha256:b85a0368d8e0bd9b80dcb2585118cab1e30dd1b7f98b6ccfe853e08b1ebd5234
+  pullPolicy: IfNotPresent
+
+subdomain: open-terminal
+
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 8000
+  healthProbe:
+    type: httpGet
+    path: /health
+
+service:
+  port: 80
+  type: ClusterIP
+
+probe:
+  path: /health
+
+volumes:
+  - name: data
+    mountPath: /home/user
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 10Gi
+    storageClassName: local-path
+    backup: true
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+env:
+  OPEN_TERMINAL_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: open-terminal-secrets
+        key: apiKey
+  OPEN_TERMINAL_CORS_ALLOWED_ORIGINS: "https://openwebui.{domain}"
