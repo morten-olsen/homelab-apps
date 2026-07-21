@@ -11,7 +11,7 @@ app:
   image:
     repository: freikin/dawarich
     # Renovate will pin the SHA on first run.
-    tag: latest@sha256:c8413c39fd17bc801d9823507ae5ac08cf4333c6de5cd110922dbca31d097372
+    tag: latest@sha256:405f7daaaf9cf5f94fd2114311ad5967c78745691d618780bbbf8ebe74fd8e30
     pullPolicy: IfNotPresent
 
 # Self-contained PostGIS rather than the shared CNPG cluster — Dawarich
@@ -22,7 +22,7 @@ app:
 db:
   image:
     repository: postgis/postgis
-    tag: 17-3.5-alpine@sha256:fe9821935d163abca5611e3e0a6a7c73c8c547f3412ed2036ec0ed8f789390da
+    tag: 17-3.5-alpine@sha256:bcab61c139a9644dcf0bb00b0cff8ab84e36b3b6f74983cf229ddb4ea0c22897
     pullPolicy: IfNotPresent
 
 redis:
@@ -37,7 +37,7 @@ redis:
 photon:
   image:
     repository: ghcr.io/rtuszik/photon-docker
-    tag: latest@sha256:827cedf9fa3337e657611d62ada669def75dff61c56b51ae55056155d1a9b236
+    tag: latest@sha256:729f883612bde3215c156111b421d8e0a27b1eb411b92ef4a24bd587b8259b04
     pullPolicy: IfNotPresent
   # europe (~60GB) covers our use case; switch to `planet` (~90GB) for
   # full coverage or a smaller country code (e.g. `dk`) to shrink the PVC.
