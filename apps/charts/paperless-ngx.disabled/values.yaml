@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/paperless-ngx/paperless-ngx
-  tag: latest@sha256:6c86cad803970ea782683a8e80e7403444c5bf3cf70de63b4d3c8e87500db92f
+  tag: latest@sha256:fef384c955d2ec2acf1bd0882ffc195ecc170266c803dfe28b79df6deabb3569
   pullPolicy: IfNotPresent
 
 subdomain: paperless
@@ -151,7 +151,7 @@ env:
 valkey:
   image:
     repository: valkey/valkey
-    tag: latest@sha256:4963247afc4cd33c7d3b2d2816b9f7f8eeebab148d29056c2ca4d7cbc966f2d9
+    tag: latest@sha256:3acc0687f2a2e1091fae6450d7842dd658c941338cf0a873ddd9e14b9e4ea4dd
     pullPolicy: IfNotPresent
   storage:
     size: 1Gi
