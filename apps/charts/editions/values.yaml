@@ -38,8 +38,23 @@ initContainers:
         mountPath: /data
     securityContext:
       runAsUser: 0
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: jwt-secret
+        length: 48
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - jwt-secret
+
 env:
   EDITIONS_PORT: "3007"
+  EDITIONS_JWT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: jwt-secret
 
 volumes:
   - name: data
