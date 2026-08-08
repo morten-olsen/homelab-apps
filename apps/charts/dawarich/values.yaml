@@ -11,7 +11,7 @@ app:
   image:
     repository: freikin/dawarich
     # Renovate will pin the SHA on first run.
-    tag: latest@sha256:d7457e7b27a9992f2fdd367fe22a515b1b44fc6e0cfb7a68f3c69c439c465a6b
+    tag: latest@sha256:4e3c55c4cd572373624e75c9e02075ff436c83a3ea952595ae0d4ffc4c7ae52b
     pullPolicy: IfNotPresent
 
 # Self-contained PostGIS rather than the shared CNPG cluster — Dawarich
@@ -22,13 +22,13 @@ app:
 db:
   image:
     repository: postgis/postgis
-    tag: 17-3.5-alpine@sha256:2db2d29dbde9379103076851c39f50f4fd9c7ee4297251ed006ed94d586df958
+    tag: 17-3.5-alpine@sha256:978a2e6671c956d650d1f240dba7c73b8519a5f5af8685165fca616cc4ae3568
     pullPolicy: IfNotPresent
 
 redis:
   image:
     repository: redis
-    tag: 8.10-alpine@sha256:5cca2f8a01ef2264c52dac86f14ec6a5abe973a93331e1b62522cfc5e63e4691
+    tag: 8.10-alpine@sha256:978f0e01593e65eed801f2402944efcd936d43b5027e4908a7897baf88ed6241
     pullPolicy: IfNotPresent
 
 # Photon does in-cluster reverse-geocoding so we don't ping the public API
