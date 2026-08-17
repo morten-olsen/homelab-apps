@@ -15,15 +15,15 @@
 # DATABASE_URL takes precedence over DATABASE_DIR and switches the app to a
 # real Postgres pool (one schema per plugin).
 #
-# Storage layout:
-#   /cache  — Hugging Face model cache (regeneratable, not backed up)
-# The image defaults HF_CACHE_DIR=/data/hf-cache; we override it to the
-# /cache volume so the only persistent volume here is throwaway. There is
-# no /data volume — nothing durable is written to the filesystem.
+# No volumes at all. Nothing durable is written to the filesystem: state is in
+# Postgres, and speech (STT and TTS) is served by speaches over HTTP. TTS used
+# to run in-process from a Hugging Face model on a 40Gi /cache PVC, but under
+# this container's 2-core quota synthesis took 7.8s for a 3.2s clip versus
+# ~620ms from speaches, so the model — and its volume — are gone.
 
 image:
   repository: code.olsen.cloud/incubator/agent
-  tag: latest@sha256:a758aacacd4c9b8939b130e3037a67533f9815c8d47b686b4911365dd4f7f094
+  tag: latest@sha256:e2f84ee93a37a1b1c831a221c385848fb9cca1304b331c7381983f8d2f1a74ca
   pullPolicy: IfNotPresent
 
 subdomain: agent
@@ -55,20 +55,6 @@ service:
   port: 80
   type: ClusterIP
 
-volumes:
-  - name: cache
-    mountPath: /cache
-    # The common library only auto-prefixes the names `config`, `metadata`,
-    # and `data`; any other PVC must be referenced by its full release-
-    # qualified name. Keep this in sync with the PVC's auto-prefixed name.
-    persistentVolumeClaim: agent-cache
-
-persistentVolumeClaims:
-  - name: cache
-    size: 40Gi
-    storageClassName: local-path
-    backup: false
-
 virtualService:
   enabled: true
   gateways:
@@ -79,18 +65,16 @@ virtualService:
 # on the shared CNPG cluster and publishes `{release}-connection`.
 #
 # The app runs `CREATE EXTENSION IF NOT EXISTS vector` at boot so plugins can
-# declare pgvector columns. pgvector ships in the cluster's `18-standard`
-# image but is not installed per-database, and the provisioned role is not a
-# superuser — so the extension must exist in `prod_agent` before first boot
-# (`CREATE EXTENSION` is a no-op for a non-superuser once it is present).
+# declare pgvector columns. pgvector ships in the cluster's `18-standard` image
+# but is not installed per-database, and the provisioned role is not a superuser
+# — that used to crash-loop the pod, and is now logged and tolerated. It is
+# already installed in `prod_agent` (done by hand, as superuser); only plugins
+# that actually declare vector(N) columns need it.
 # See tickets/open/2026-08-17-agent-postgres-cutover.md.
 database:
   enabled: true
 
 env:
-  # Override default so HF models live on the un-backed-up cache volume.
-  HF_CACHE_DIR: "/cache"
-
   # Takes precedence over the image's DATABASE_DIR, switching the app off
   # embedded PGlite and onto the shared CNPG cluster.
   DATABASE_URL:
