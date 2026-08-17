@@ -23,7 +23,7 @@
 
 image:
   repository: code.olsen.cloud/incubator/agent
-  tag: latest@sha256:8191eb7d3085d1c685bfd8e0e9ad90cccb480edc229106b1e94598dfb7621c17
+  tag: latest@sha256:a758aacacd4c9b8939b130e3037a67533f9815c8d47b686b4911365dd4f7f094
   pullPolicy: IfNotPresent
 
 subdomain: agent
