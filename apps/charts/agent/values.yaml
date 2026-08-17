@@ -8,12 +8,18 @@
 # in the `prod` namespace — not managed by this chart. To add or change
 # env keys, update the Secret and add/remove the matching entry below.
 #
+# State lives in the shared CNPG cluster, not on disk. The image can fall
+# back to embedded PGlite under DATABASE_DIR, but that path can't serve this
+# app — the supervisor opens several concurrent connections and PGlite is
+# single-connection, which corrupted the on-disk database. Setting
+# DATABASE_URL takes precedence over DATABASE_DIR and switches the app to a
+# real Postgres pool (one schema per plugin).
+#
 # Storage layout:
-#   /data   — PGlite database (small, backed up)
 #   /cache  — Hugging Face model cache (regeneratable, not backed up)
-# The image defaults DATABASE_DIR=/data and HF_CACHE_DIR=/data/hf-cache;
-# we override HF_CACHE_DIR to point at the separate /cache volume so the
-# backup window only captures durable state.
+# The image defaults HF_CACHE_DIR=/data/hf-cache; we override it to the
+# /cache volume so the only persistent volume here is throwaway. There is
+# no /data volume — nothing durable is written to the filesystem.
 
 image:
   repository: code.olsen.cloud/incubator/agent
@@ -50,9 +56,6 @@ service:
   type: ClusterIP
 
 volumes:
-  - name: data
-    mountPath: /data
-    persistentVolumeClaim: data
   - name: cache
     mountPath: /cache
     # The common library only auto-prefixes the names `config`, `metadata`,
@@ -61,10 +64,6 @@ volumes:
     persistentVolumeClaim: agent-cache
 
 persistentVolumeClaims:
-  - name: data
-    size: 5Gi
-    storageClassName: local-path
-    backup: true
   - name: cache
     size: 40Gi
     storageClassName: local-path
@@ -76,9 +75,29 @@ virtualService:
     public: false
     private: true
 
+# Database — the platform operator provisions a `prod_agent` database and role
+# on the shared CNPG cluster and publishes `{release}-connection`.
+#
+# The app runs `CREATE EXTENSION IF NOT EXISTS vector` at boot so plugins can
+# declare pgvector columns. pgvector ships in the cluster's `18-standard`
+# image but is not installed per-database, and the provisioned role is not a
+# superuser — so the extension must exist in `prod_agent` before first boot
+# (`CREATE EXTENSION` is a no-op for a non-superuser once it is present).
+# See tickets/open/2026-08-17-agent-postgres-cutover.md.
+database:
+  enabled: true
+
 env:
   # Override default so HF models live on the un-backed-up cache volume.
   HF_CACHE_DIR: "/cache"
+
+  # Takes precedence over the image's DATABASE_DIR, switching the app off
+  # embedded PGlite and onto the shared CNPG cluster.
+  DATABASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url
 
   # All operational config is sourced from the pre-existing agent-secrets
   # Secret. Keep this list in sync with `kubectl get secret agent-secrets`.
