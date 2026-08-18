@@ -1,0 +1,267 @@
+# Open Notebook — self-hosted NotebookLM (sources → notes → chat → podcast).
+#
+# Two deployments in one chart. Open Notebook stores everything (documents, chunks,
+# vectors, full-text indexes, graph relations) in SurrealDB; there is no Postgres
+# backend, so the shared CNPG cluster can't serve this app and SurrealDB ships
+# alongside it. `templates/common.yaml` renders `common.all` twice, once per values
+# block, which is the multi-app pattern the common library documents.
+#
+# Models come from the homelab inference stack, reached over cluster DNS rather than
+# the public hostnames (no gateway hairpin, no TLS to terminate):
+#
+#   language    → llama-swap  (gemma-4-26b-a4b, qwen3.6-35b-a3b, ornith-35b, …)
+#   embedding   → llama-swap  (NOT YET PRESENT — see the ticket's Blockers section)
+#   TTS         → llama-swap  (vibevoice: multi-speaker, built for podcast output)
+#   STT         → speaches    (faster-whisper)
+#
+# Cloud providers (OpenRouter, OpenCode) are deliberately absent from git: their keys
+# go in Settings → API Keys, which stores them encrypted in SurrealDB under
+# OPEN_NOTEBOOK_ENCRYPTION_KEY.
+#
+# See tickets/open/2026-08-18-add-open-notebook.md.
+
+app:
+  image:
+    repository: lfnovo/open_notebook
+    # The `-single` tag variant bundles SurrealDB into one container, but upstream
+    # marks that layout deprecated — hence the separate surrealdb deployment below.
+    tag: 1.14.0@sha256:e53f90d6153fcf4a64604d9a0c12cb0428a32cfb8dbcbb72e81ab12c013ee330
+    pullPolicy: IfNotPresent
+
+  subdomain: notebook
+
+  dns:
+    enabled: true
+    type: A
+    dnsClassRef:
+      name: private-dns
+
+  # RWO PVC plus a single SurrealDB writer — never run two pods at once.
+  deployment:
+    strategy: Recreate
+    replicas: 1
+    revisionHistoryLimit: 0
+
+  # Only the Next.js frontend is exposed. The FastAPI backend on 5055 stays pod-local:
+  # Next.js proxies /api/* to it over localhost, so nothing needs to route there.
+  container:
+    port: 8502
+    healthProbe:
+      type: tcpSocket
+      port: http
+      # First boot runs schema migrations against a cold SurrealDB.
+      initialDelaySeconds: 60
+      periodSeconds: 15
+      timeoutSeconds: 5
+      failureThreshold: 6
+    resources:
+      requests:
+        cpu: 200m
+        memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+
+  service:
+    port: 80
+    type: ClusterIP
+
+  # Uploaded source files, generated audio, and the image's cache dirs — UV_CACHE_DIR,
+  # PLAYWRIGHT_BROWSERS_PATH and HF_HOME all resolve under /app/data/.cache. Those stay
+  # near-empty while Docling and Crawl4AI are disabled.
+  volumes:
+    - name: data
+      mountPath: /app/data
+      persistentVolumeClaim: data
+
+  persistentVolumeClaims:
+    - name: data
+      size: 20Gi
+      storageClassName: local-path
+      backup: true
+
+  # Private only. Open Notebook has no OIDC/SSO — just one shared password — so there is
+  # no AuthentikClient and nothing worth putting behind the public gateway.
+  virtualService:
+    enabled: true
+    gateways:
+      public: false
+      private: true
+
+  externalSecrets:
+    - name: "{release}-secrets"
+      passwords:
+        # Load-bearing: decrypts every provider credential stored in SurrealDB. The
+        # ExternalSecret is rendered with refreshInterval "0", so this is generated once
+        # and never rotated. Losing it means re-entering every API key.
+        - name: encryption-key
+          length: 48
+          encoding: hex
+          allowRepeat: true
+          secretKeys:
+            - encryption-key
+        # The single shared login password. Read it with:
+        #   kubectl get secret open-notebook-secrets -n prod \
+        #     -o jsonpath='{.data.app-password}' | base64 -d
+        - name: app-password
+          length: 32
+          encoding: hex
+          allowRepeat: true
+          secretKeys:
+            - app-password
+        # SurrealDB root password. Consumed by both deployments. SurrealDB seeds its root
+        # user from this on FIRST START ONLY — changing it locks the app out of an
+        # existing database.
+        - name: surreal-password
+          length: 32
+          encoding: hex
+          allowRepeat: true
+          secretKeys:
+            - surreal-password
+
+  env:
+    OPEN_NOTEBOOK_ENCRYPTION_KEY:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-secrets"
+          key: encryption-key
+    OPEN_NOTEBOOK_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-secrets"
+          key: app-password
+
+    # {release}-surrealdb is common.fullname for the surrealdb block below.
+    SURREAL_URL: "ws://{release}-surrealdb.{namespace}.svc.cluster.local:8000/rpc"
+    SURREAL_USER: root
+    SURREAL_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-secrets"
+          key: surreal-password
+    SURREAL_NAMESPACE: open_notebook
+    SURREAL_DATABASE: open_notebook
+
+    # Auto-detection behind a mesh gateway is unreliable; upstream recommends pinning
+    # both explicitly. API_URL must NOT carry an /api suffix — the app appends it.
+    API_URL: "https://{subdomain}.{domain}"
+    CORS_ORIGINS: "https://{subdomain}.{domain}"
+    FRONTEND_BIND_HOST: 0.0.0.0
+    API_HOST: 0.0.0.0
+
+    OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB: "200"
+
+    # llama-swap serves one model at a time and unloads idle ones. Concurrent background
+    # tasks would thrash model loading, and a cold swap plus generation blows well past
+    # the 60s/300s upstream defaults.
+    OPEN_NOTEBOOK_WORKER_MAX_TASKS: "1"
+    ESPERANTO_LLM_TIMEOUT: "300"
+    ESPERANTO_TTS_TIMEOUT: "600"
+    OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE: "8"
+
+    # Bootstrap only. Upstream deprecated these in favour of Settings → API Keys, and
+    # anything configured there wins over env. They exist so the local stack is wired up
+    # on first login without hand-typing four base URLs. Neither backend requires auth,
+    # but esperanto insists on a non-empty key.
+    OPENAI_COMPATIBLE_BASE_URL: "http://llama-swap.{namespace}.svc.cluster.local:8090/v1"
+    OPENAI_COMPATIBLE_API_KEY: not-required
+    OPENAI_COMPATIBLE_BASE_URL_EMBEDDING: "http://llama-swap.{namespace}.svc.cluster.local:8090/v1"
+    OPENAI_COMPATIBLE_API_KEY_EMBEDDING: not-required
+    OPENAI_COMPATIBLE_BASE_URL_TTS: "http://llama-swap.{namespace}.svc.cluster.local:8090/v1"
+    OPENAI_COMPATIBLE_API_KEY_TTS: not-required
+    OPENAI_COMPATIBLE_BASE_URL_STT: "http://speaches.{namespace}.svc.cluster.local/v1"
+    OPENAI_COMPATIBLE_API_KEY_STT: not-required
+
+surrealdb:
+  # Renders as {release}-surrealdb: deployment, service and PVC.
+  nameOverride: surrealdb
+
+  # Not exposed — cluster-internal only. Set explicitly because common.env substitutes
+  # {subdomain} into every env value and errors on a missing key.
+  subdomain: ""
+
+  image:
+    repository: surrealdb/surrealdb
+    # Upstream's compose pins the v2 stream. v3.x exists but Open Notebook does not
+    # document compatibility — Renovate must not jump major unattended.
+    tag: v2.6.5@sha256:d653f6c8a89e81f865ee31cd2f587c50f50ace922175e04150b1e385d2f86011
+    pullPolicy: IfNotPresent
+
+  deployment:
+    strategy: Recreate
+    replicas: 1
+    revisionHistoryLimit: 0
+
+  # The image entrypoint is /surreal with no default command, so the storage backend has
+  # to be passed as args. Credentials come from env instead of --user/--pass flags so the
+  # password can be sourced from a Secret. SURREAL_BIND=0.0.0.0:8000 is baked into the
+  # image already.
+  args:
+    - start
+    - rocksdb:/data/db
+
+  # Named `tcp` rather than `http` so Envoy keeps this in TCP passthrough instead of
+  # applying an L7 filter to SurrealDB's RPC websocket.
+  container:
+    ports:
+      - name: tcp
+        port: 8000
+        protocol: TCP
+    healthProbe:
+      type: tcpSocket
+      port: tcp
+      initialDelaySeconds: 15
+      periodSeconds: 15
+      timeoutSeconds: 5
+      failureThreshold: 6
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+
+  service:
+    port: 8000
+    portName: tcp
+    type: ClusterIP
+
+  # Blackbox http_2xx probing a TCP-passthrough RPC port would only ever report down.
+  probe:
+    enabled: false
+
+  # The image runs as uid 65532 and cannot chown its own data dir.
+  initContainers:
+    - name: fix-permissions
+      image: busybox@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
+      command: ["sh", "-c", "mkdir -p /data && chown -R 65532:65532 /data"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+      securityContext:
+        runAsUser: 0
+
+  # Referenced by full name: the common library only auto-prefixes the release name for
+  # PVCs literally named data/config/metadata.
+  volumes:
+    - name: data
+      mountPath: /data
+      persistentVolumeClaim: open-notebook-surrealdb-data
+
+  # The real state — notebooks, notes, sources, chunks, vectors, chat history.
+  persistentVolumeClaims:
+    - name: surrealdb-data
+      size: 10Gi
+      storageClassName: local-path
+      backup: true
+
+  env:
+    SURREAL_USER: root
+    SURREAL_PASS:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-secrets"
+          key: surreal-password
+    SURREAL_LOG: info
+    SURREAL_EXPERIMENTAL_GRAPHQL: "true"
