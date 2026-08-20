@@ -1,0 +1,51 @@
+image:
+  repository: code.olsen.cloud/incubator/intel
+  tag: latest@sha256:545a64e1ff6eff1c0a9a55dfe859f4127755bac1936ca74cabada65ed05ead26
+  pullPolicy: IfNotPresent
+
+subdomain: agent
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 3800
+  healthProbe:
+    type: httpGet
+    path: /api/health
+    port: 3800
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 6
+  resources:
+    requests:
+      cpu: 200m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
+service:
+  port: 80
+  type: ClusterIP
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+env:
+  HA_URL:
+    valueFrom:
+      secretKeyRef:
+        name: grundlag-secrets
+        key: HA_URL
+  HA_TOKEN:
+    valueFrom:
+      secretKeyRef:
+        name: grundlag-secrets
+        key: HA_TOKEN

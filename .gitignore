@@ -9,3 +9,4 @@ __pycache__/
 **/Chart.lock
 
 *-local-secret.yaml
+/secrets/
