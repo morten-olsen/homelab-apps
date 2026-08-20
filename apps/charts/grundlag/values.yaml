@@ -1,6 +1,6 @@
 image:
-  repository: code.olsen.cloud/incubator/intel
-  tag: latest@sha256:545a64e1ff6eff1c0a9a55dfe859f4127755bac1936ca74cabada65ed05ead26
+  repository: code.olsen.cloud/incubator/grundlag
+  tag: latest@sha256:312e3edee9e1f1a70800670c487e4766988eca9037be57bd59060a5caccee7eb
   pullPolicy: IfNotPresent
 
 subdomain: agent
