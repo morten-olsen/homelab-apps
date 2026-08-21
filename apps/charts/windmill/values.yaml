@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/windmill-labs/windmill
-  tag: "1.790.0@sha256:786dee61fcb81a1d9d12aa935c18fcc5b2d10b3c6ceb13d536803218b31dc785"
+  tag: "1.793.0@sha256:658ac0e5af142f8805cd4a23eceaab981c963a33afb3b4a909df3c7df1d430a9"
   pullPolicy: IfNotPresent
 
 lsp:
