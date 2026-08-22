@@ -184,7 +184,7 @@ surrealdb:
     repository: surrealdb/surrealdb
     # Upstream's compose pins the v2 stream. v3.x exists but Open Notebook does not
     # document compatibility — Renovate must not jump major unattended.
-    tag: v2.6.5@sha256:d653f6c8a89e81f865ee31cd2f587c50f50ace922175e04150b1e385d2f86011
+    tag: v3.2.4@sha256:51baed8709f57f67dcf04b30e3177db846803fa9342dae2be58c6fa5f8d59843
     pullPolicy: IfNotPresent
 
   deployment:
