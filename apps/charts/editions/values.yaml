@@ -1,6 +1,6 @@
 image:
   repository: code.olsen.cloud/incubator/editions
-  tag: latest@sha256:8d4ba43ebdc919f0c687038e43777c0ed4c6e5e1ef1b6ace832e89be675ef351
+  tag: latest@sha256:b06581ee63e9fbfd4c7c8b95ccf63e5390474bb8499c272a9bab090b5c49c0b0
   pullPolicy: Always
 
 subdomain: editions
