@@ -71,5 +71,5 @@ persistentVolumeClaims:
 virtualService:
   enabled: true
   gateways:
-    public: false
+    public: true
     private: true
