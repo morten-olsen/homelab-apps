@@ -1,0 +1,64 @@
+image:
+  repository: docker.io/deluan/navidrome
+  # Renovate will pin the SHA on first run.
+  tag: latest
+  pullPolicy: IfNotPresent
+
+subdomain: navidrome
+
+# DNS configuration
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+# Single local database/cache/config PVC; use Recreate to avoid two pods
+# racing on the same Navidrome data directory during rollouts.
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+# Container configuration
+container:
+  port: 4533
+  healthProbe:
+    type: tcpSocket
+    port: http # Use named port
+
+# Service configuration
+service:
+  port: 80
+  targetPort: 4533
+  type: ClusterIP
+
+# Volume configuration. The music PVC is external/shared with Jellyfin and is
+# intentionally not created by this chart.
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+  - name: music
+    mountPath: /music
+    persistentVolumeClaim: music # External PVC (not prefixed)
+
+persistentVolumeClaims:
+  - name: data
+    size: 5Gi
+    storageClassName: local-path
+    backup: true
+
+# Navidrome has its own user management; keep this private-only unless/until
+# an external auth strategy is added.
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+# Environment variables
+env:
+  ND_DATAFOLDER: /data
+  ND_MUSICFOLDER: /music
+  ND_PORT: "4533"
