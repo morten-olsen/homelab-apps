@@ -2,7 +2,7 @@ subdomain: wger
 
 image:
   repository: docker.io/wger/server
-  tag: latest@sha256:c3dba7003e7143afac35caf498d22d89c82c100713fed33f6acfeb444db8a06f
+  tag: latest@sha256:3b0c6a3da3dfd5d0c663afefc1993d67c5cdb8b77c4fb27575f2b327838b41cd
   pullPolicy: IfNotPresent
 
 nginx:

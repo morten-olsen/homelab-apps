@@ -11,7 +11,7 @@ app:
   image:
     repository: freikin/dawarich
     # Renovate will pin the SHA on first run.
-    tag: latest@sha256:751afca44dcd312419cd1d385a4f6607a21ed281d95f88ceb8d7374a794c0d3f
+    tag: latest@sha256:f251f08d6330a9b22506c862407e53b0b4aec620a63953a446e19cd610d7d476
     pullPolicy: IfNotPresent
 
 # Self-contained PostGIS rather than the shared CNPG cluster — Dawarich
@@ -22,7 +22,7 @@ app:
 db:
   image:
     repository: postgis/postgis
-    tag: 17-3.5-alpine@sha256:fae81f3e8da88b8e684c58c8a8616aadda72e6fc1affcb050b490891ecb3db1c
+    tag: 17-3.5-alpine@sha256:08f4b1e1f4a571008c60272ceb9e0d1f9f8f643792d006b74a35b1bec44c2218
     pullPolicy: IfNotPresent
 
 redis:
