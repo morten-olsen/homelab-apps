@@ -10,13 +10,13 @@ dns:
 server:
   image:
     repository: netboxcommunity/netbox
-    tag: v4.6.9@sha256:b1639229a0cf67052a2d53d7f7df004c840f49c9959a321bf310b6373df7240c
+    tag: v4.7.0@sha256:a2cdf00fab61d2ae37e4f987adaa403fad5c4049a63bc960768b7bbf804e2cb6
     pullPolicy: IfNotPresent
 
 redis:
   image:
     repository: valkey/valkey
-    tag: 9-alpine@sha256:de31910896150d5e754a07d57d227cfdde4e258ddd0d1aa4607f2d2f95843715
+    tag: 9-alpine@sha256:a174b894902bd3367e330d47cc2054367dc4917701776aaf336f41d83b65ec7a
     pullPolicy: IfNotPresent
 
 database:
