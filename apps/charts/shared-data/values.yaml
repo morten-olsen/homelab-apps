@@ -1,0 +1,5 @@
+# Database-only application for general-purpose relational data storage.
+# The platform operator provisions the database, role, and connection Secret
+# on the shared CloudNativePG cluster.
+database:
+  enabled: true
