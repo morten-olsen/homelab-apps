@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-native-worker"
+  labels:
+    app: "{{ .Release.Name }}-native-worker"
+spec:
+  replicas: {{ .Values.nativeWorker.replicas | default 1 }}
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-native-worker"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-native-worker"
+    spec:
+      containers:
+        - name: native-worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          env:
+            - name: MODE
+              value: worker
+            - name: WORKER_GROUP
+              value: {{ .Values.nativeWorker.workerGroup | default "native" | quote }}
+            - name: NATIVE_MODE
+              value: "true"
+            - name: RUST_LOG
+              value: info
+            - name: TZ
+              value: "{{ .Values.globals.timezone }}"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-connection"
+                  key: url
+            - name: BASE_INTERNAL_URL
+              value: "http://{{ .Release.Name }}"

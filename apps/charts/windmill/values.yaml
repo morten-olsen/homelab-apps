@@ -15,6 +15,13 @@ worker:
   replicas: 2
   workerGroup: default
 
+# Native TypeScript jobs use the dedicated `nativets` queue tag. Native mode
+# registers that capability and runs jobs in-process with lightweight
+# subworkers; default workers intentionally do not consume this queue.
+nativeWorker:
+  replicas: 1
+  workerGroup: native
+
 subdomain: windmill
 
 # Server deployment configuration
