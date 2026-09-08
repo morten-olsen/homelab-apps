@@ -1,0 +1,66 @@
+image:
+  repository: docker.io/decolua/9router
+  tag: 0.5.69@sha256:47c17576ad49f0918d1a455dd412ae4509ee8bc742f17ba0b3327ddc70f35a40
+  pullPolicy: IfNotPresent
+
+subdomain: 9router
+
+# Deployment configuration
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+# Container configuration
+container:
+  ports:
+    - name: http
+      port: 20128
+      protocol: TCP
+  healthProbe:
+    type: httpGet
+    path: /health
+    port: 20128
+
+# Service configuration
+service:
+  port: 80
+  type: ClusterIP
+
+# Volume configuration
+volumes:
+  - name: data
+    mountPath: /app/data
+    persistentVolumeClaim: data
+
+# Persistent volume claims
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+    storageClassName: local-path
+    backup: true
+
+# VirtualService configuration — holds provider API keys, private only
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+# Generated secrets
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: initial-password
+        length: 32
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - initial-password
+
+# Environment variables
+env:
+  INITIAL_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: initial-password
