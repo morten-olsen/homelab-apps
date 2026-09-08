@@ -5,6 +5,10 @@ image:
 
 subdomain: 9router
 
+# Service names must be DNS-1035 labels (cannot start with a digit),
+# so k8s resources are named "ninerouter" while the app/URL stays 9router
+fullnameOverride: ninerouter
+
 # Deployment configuration
 deployment:
   strategy: Recreate
