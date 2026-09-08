@@ -18,7 +18,7 @@ container:
       protocol: TCP
   healthProbe:
     type: httpGet
-    path: /health
+    path: /api/health
     port: 20128
 
 # Service configuration
