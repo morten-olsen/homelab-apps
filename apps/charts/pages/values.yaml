@@ -48,6 +48,11 @@ container:
       # up further or if the server gains streaming-extraction support.
       memory: 1Gi
 
+# The public server intentionally returns 404 while no site is published. A
+# chart-local Probe uses the platform's http_2xx_or_404 module instead.
+probe:
+  enabled: false
+
 service:
   ports:
     - name: public
