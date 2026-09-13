@@ -33,7 +33,7 @@ container:
       memory: 1Gi
     limits:
       # Prometheus recorded a real 11.66 GiB peak in the last 30 days.
-      memory: 16Gi
+      memory: 24Gi
 
 # Service configuration
 service:

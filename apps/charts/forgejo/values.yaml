@@ -31,7 +31,7 @@ container:
       memory: 512Mi
     limits:
       # Prometheus recorded 5.9 GiB and several hours above 5 GiB.
-      memory: 8Gi
+      memory: 12Gi
 
 # DNS configuration
 dns:
