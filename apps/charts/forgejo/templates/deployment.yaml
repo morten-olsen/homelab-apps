@@ -55,6 +55,10 @@ spec:
           volumeMounts:
 {{ include "common.volumeMounts" . | indent 12 }}
           {{- end }}
+          {{- if .Values.container.resources }}
+          resources:
+{{ toYaml .Values.container.resources | indent 12 }}
+          {{- end }}
           {{- if or .Values.env .Values.globals.timezone }}
           env:
 {{ include "common.env" . | indent 12 }}
