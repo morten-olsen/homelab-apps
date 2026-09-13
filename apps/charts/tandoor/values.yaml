@@ -18,6 +18,12 @@ deployment:
 
 container:
   port: 80
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
 
 service:
   port: 80

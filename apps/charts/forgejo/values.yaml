@@ -25,6 +25,12 @@ container:
   healthProbe:
     type: tcpSocket
     port: http # Use named port
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
 
 # DNS configuration
 dns:

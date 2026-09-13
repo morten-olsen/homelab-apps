@@ -16,6 +16,12 @@ container:
   healthProbe:
     type: tcpSocket
     port: http # Use named port
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      memory: 4Gi
 
 # Service configuration
 service:
@@ -35,6 +41,8 @@ database:
 
 # Environment variables
 env:
+  # Leave roughly 1 GiB below the container limit for native/JVM overhead.
+  JAVA_TOOL_OPTIONS: "-Xmx3g"
   MB_DB_TYPE: postgres
   MB_DB_DBNAME:
     valueFrom:

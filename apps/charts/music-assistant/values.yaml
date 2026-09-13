@@ -28,6 +28,12 @@ container:
       add:
         - SYS_ADMIN
         - DAC_READ_SEARCH
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
 
 service:
   port: 80
