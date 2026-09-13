@@ -30,9 +30,10 @@ container:
   resources:
     requests:
       cpu: 100m
-      memory: 512Mi
+      memory: 1Gi
     limits:
-      memory: 2Gi
+      # Prometheus recorded a real 11.66 GiB peak in the last 30 days.
+      memory: 16Gi
 
 # Service configuration
 service:
