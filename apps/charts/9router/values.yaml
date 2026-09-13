@@ -1,6 +1,6 @@
 image:
   repository: docker.io/decolua/9router
-  tag: 0.5.69@sha256:47c17576ad49f0918d1a455dd412ae4509ee8bc742f17ba0b3327ddc70f35a40
+  tag: 0.5.75@sha256:7c893bc2c27ecea2ae337abd5eacfec9e5763091b3a3b7862fc0625b770bb156
   pullPolicy: IfNotPresent
 
 subdomain: 9router
