@@ -1,0 +1,112 @@
+image:
+  repository: docker.io/rustfs/rustfs
+  tag: 1.0.0-beta.1@sha256:3c2d55977829620284ece8593901bf776bcfc0fc9972784352de4dcffdb92416
+  pullPolicy: IfNotPresent
+
+subdomain: rustfs
+consoleSubdomain: rustfs-console
+
+deployment:
+  # A single NFS-backed data directory must not be mounted by overlapping pods.
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+command:
+  - /usr/bin/rustfs
+
+container:
+  ports:
+    - name: endpoint
+      port: 9000
+      protocol: TCP
+    - name: console
+      port: 9001
+      protocol: TCP
+  healthProbe:
+    type: httpGet
+    path: /health
+    port: endpoint
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    runAsGroup: 10001
+    runAsNonRoot: true
+    runAsUser: 10001
+
+service:
+  ports:
+    - name: endpoint
+      port: 9000
+      targetPort: 9000
+      type: ClusterIP
+    - name: console
+      port: 9001
+      targetPort: 9001
+      serviceName: console
+      type: ClusterIP
+
+# Probe the unauthenticated S3 health endpoint instead of the authenticated
+# bucket-listing root.
+probe:
+  path: /health
+
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: s2
+  - name: logs
+    mountPath: /logs
+    emptyDir: true
+
+# The API and console require separate hostnames and backend ports, so routing
+# is rendered by templates/virtual-service.yaml instead of homelab-common.
+virtualService:
+  enabled: false
+
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: access-key
+        length: 20
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - access-key
+      - name: secret-key
+        length: 32
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - secret-key
+
+env:
+  RUSTFS_ACCESS_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: access-key
+  RUSTFS_SECRET_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: secret-key
+  RUSTFS_VOLUMES: /data
+  RUSTFS_ADDRESS: ":9000"
+  RUSTFS_CONSOLE_ADDRESS: ":9001"
+  RUSTFS_CONSOLE_ENABLE: "true"
+  RUSTFS_OBS_LOGGER_LEVEL: error
+  RUSTFS_OBS_LOG_DIRECTORY: /logs

@@ -28,3 +28,5 @@ shares:
     path: /mnt/HDD/Kids/YouTube
   comics:
     path: /mnt/HDD/Comics
+  s2:
+    path: /mnt/HDD/k8s/s2

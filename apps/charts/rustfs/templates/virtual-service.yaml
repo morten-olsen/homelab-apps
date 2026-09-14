@@ -1,0 +1,43 @@
+{{- $fullname := include "common.fullname" . -}}
+{{- $apiHost := printf "%s.%s" .Values.subdomain .Values.globals.domain -}}
+{{- $consoleHost := printf "%s.%s" .Values.consoleSubdomain .Values.globals.domain -}}
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ $fullname }}-endpoint
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    - shared/private
+    - mesh
+  hosts:
+    - {{ $apiHost | quote }}
+  http:
+    - route:
+        - destination:
+            host: {{ $fullname }}
+            port:
+              number: 9000
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ $fullname }}-console
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    - shared/private
+    - mesh
+  hosts:
+    - {{ $consoleHost | quote }}
+  http:
+    - route:
+        - destination:
+            host: {{ $fullname }}-console
+            port:
+              number: 9001
