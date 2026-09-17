@@ -78,7 +78,7 @@ piper:
 whisper:
   image:
     repository: rhasspy/wyoming-whisper
-    tag: latest@sha256:c3c6a1bca0b72ad8df0fbb00d315ff58f349270d3c40b9611b8a7f6ae28fd58f
+    tag: latest@sha256:ba6fcb6056ebe237d15a325381763a80af2fc8fcedaa04f6a714a7375eb20d80
     pullPolicy: IfNotPresent
   model: tiny-int8
   language: us
