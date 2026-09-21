@@ -8,13 +8,13 @@ image:
 nginx:
   image:
     repository: docker.io/nginx
-    tag: stable-alpine@sha256:73c75df4075c918f91017fdda46ad81e55e5af77ba3a64ca3d5014bd9244fe7f
+    tag: stable-alpine@sha256:ef8676b33d681f272ba429b27658bdd7e640963279714c96bddf1dc76307f7b6
     pullPolicy: IfNotPresent
 
 redis:
   image:
     repository: docker.io/redis
-    tag: alpine@sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576
+    tag: alpine@sha256:bd999b5cfee25fb24b8320a31fddbd69f462df44c8138c66e369582937beebc0
     pullPolicy: IfNotPresent
 
 # Database provisioning via common library
