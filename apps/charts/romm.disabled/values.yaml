@@ -15,13 +15,13 @@ image:
 mariadb:
   image:
     repository: mariadb
-    tag: latest@sha256:349b42626b076146b4fa15571fccc5293fe03ed4cfcdf7ad8bb49ba13ec77585
+    tag: latest@sha256:d4fdec0510ad498e4f3127da30a99df3745bd6d5e611ae6ac5f76403d9284a8d
     pullPolicy: IfNotPresent
 
 redis:
   image:
     repository: redis
-    tag: alpine@sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576
+    tag: alpine@sha256:ef216d85ec44f4fdf7c0e6df2d1757a4734ed32fbb278cabd3181b5a27353b79
     pullPolicy: IfNotPresent
 
 persistentVolumeClaims:
