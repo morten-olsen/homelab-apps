@@ -9,7 +9,7 @@ dns:
 
 image:
   repository: rommapp/romm
-  tag: latest@sha256:3512f2ca455782f90247271bed23116e6bc675bc74e379be2c41696e607ab11e
+  tag: latest@sha256:dc586cb3a2c7316fcffb3dc273171b1964523f0f409e989295d26d2199df1d4e
   pullPolicy: IfNotPresent
 
 mariadb:
@@ -21,7 +21,7 @@ mariadb:
 redis:
   image:
     repository: redis
-    tag: alpine@sha256:bd999b5cfee25fb24b8320a31fddbd69f462df44c8138c66e369582937beebc0
+    tag: alpine@sha256:ef216d85ec44f4fdf7c0e6df2d1757a4734ed32fbb278cabd3181b5a27353b79
     pullPolicy: IfNotPresent
 
 persistentVolumeClaims:
