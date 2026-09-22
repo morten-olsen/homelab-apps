@@ -35,6 +35,15 @@ oidc:
   enabled: true
   redirectUris:
     - "/api/v2/users/oidc/callback"
+  scopes:
+    - openid
+    - profile
+    - email
+    - offline_access
+  grantTypes:
+    - authorization_code
+    - refresh_token
+  signingKeyName: authentik Self-signed Certificate
 
 # Volume configuration
 volumes:
