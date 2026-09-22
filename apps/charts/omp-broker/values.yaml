@@ -1,0 +1,102 @@
+# omp auth-broker: the single owner of AI provider credentials for Coder
+# workspaces.
+#
+# Workspaces hold no credentials of their own. They point here with
+# OMP_AUTH_BROKER_URL plus a bearer token, and this service performs OAuth token
+# refresh centrally. Its SQLite vault holds refresh leases, so exactly one
+# writer must own it — hence replicas: 1 and strategy: Recreate. Sharing that
+# database between workspaces instead (via an RWX volume) would race the
+# refreshes and risk corrupting it.
+image:
+  repository: code.olsen.cloud/envs/coder
+  tag: latest
+  pullPolicy: Always
+
+subdomain: omp-broker
+
+# Cluster-internal only: this service hands out every AI credential the account
+# owns, so it gets no DNS record and no gateway route. Reachable solely as
+# omp-broker.prod.svc.cluster.local.
+dns:
+  enabled: false
+
+virtualService:
+  enabled: false
+
+oidc:
+  enabled: false
+
+# Every broker endpoint requires the bearer token — "/" included — so a blackbox
+# probe can only ever observe 401. The platform defines just http_2xx and
+# http_2xx_or_404, neither of which accepts it, so no meaningful service-level
+# probe is possible here. Container liveness is still covered by the tcpSocket
+# healthProbe above. If a 401-accepting module is ever added to the
+# blackbox-exporter config, re-enable this with that module.
+probe:
+  enabled: false
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  ports:
+    - name: http
+      port: 9847
+      protocol: TCP
+  healthProbe:
+    type: tcpSocket
+    port: http
+  securityContext:
+    runAsUser: 1000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Reuses the Coder workspace image, which already pins omp via mise — so the
+# broker and the workspaces that call it are always the same omp version.
+command:
+  - /opt/mise/shims/omp
+args:
+  - auth-broker
+  - serve
+  - --bind
+  - 0.0.0.0:9847
+
+# local-path volumes mount root-owned and homelab-common exposes no fsGroup, so
+# chown before the unprivileged container starts.
+initContainers:
+  - name: fix-permissions
+    image: code.olsen.cloud/envs/coder:latest
+    command: ["sh", "-c", "chown -R 1000:1000 /home/coder/.omp"]
+    volumeMounts:
+      - name: omp
+        mountPath: /home/coder/.omp
+    securityContext:
+      runAsUser: 0
+
+service:
+  port: 9847
+  type: ClusterIP
+
+# The claim must be called "data": homelab-common 0.1.8 only prefixes the
+# release name onto claims named config/metadata/data, while the PVC resource is
+# always created as {release}-{name}. Any other name renders an unmountable
+# claimName.
+volumes:
+  - name: omp
+    mountPath: /home/coder/.omp
+    persistentVolumeClaim: data
+
+# Holds the credential vault (agent.db) and the broker bearer token. Losing it
+# means re-running the OAuth logins.
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+    storageClassName: local-path
+    backup: true
