@@ -14,14 +14,20 @@ image:
 
 subdomain: omp-broker
 
-# Cluster-internal only: this service hands out every AI credential the account
-# owns, so it gets no DNS record and no gateway route. Reachable solely as
-# omp-broker.prod.svc.cluster.local.
+# Private gateway only. This service hands out every AI credential the account
+# owns, so it must never be reachable publicly — `public: false` is the
+# load-bearing line here.
 dns:
-  enabled: false
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
 
 virtualService:
-  enabled: false
+  enabled: true
+  gateways:
+    public: false
+    private: true
 
 oidc:
   enabled: false
