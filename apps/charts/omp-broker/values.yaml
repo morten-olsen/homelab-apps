@@ -9,7 +9,7 @@
 # refreshes and risk corrupting it.
 image:
   repository: code.olsen.cloud/envs/coder
-  tag: latest
+  tag: latest@sha256:9f56f2ab778ea6744757e01a7a1a7fb95995c6bbcc9d3829fa654aa828868778
   pullPolicy: Always
 
 subdomain: omp-broker
@@ -79,7 +79,7 @@ args:
 # chown before the unprivileged container starts.
 initContainers:
   - name: fix-permissions
-    image: code.olsen.cloud/envs/coder:latest
+    image: code.olsen.cloud/envs/coder:latest@sha256:9f56f2ab778ea6744757e01a7a1a7fb95995c6bbcc9d3829fa654aa828868778
     command: ["sh", "-c", "chown -R 1000:1000 /home/coder/.omp"]
     volumeMounts:
       - name: omp
