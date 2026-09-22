@@ -50,13 +50,14 @@ container:
     port: http
   securityContext:
     runAsUser: 1000
+  # omp is a Bun binary and was OOMKilled at 512Mi before it finished booting.
   resources:
     requests:
       cpu: 50m
-      memory: 128Mi
+      memory: 256Mi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 1000m
+      memory: 2Gi
 
 # Reuses the Coder workspace image, which already pins omp via mise — so the
 # broker and the workspaces that call it are always the same omp version.
