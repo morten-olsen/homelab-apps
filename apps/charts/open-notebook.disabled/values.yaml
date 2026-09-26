@@ -184,7 +184,7 @@ surrealdb:
     repository: surrealdb/surrealdb
     # Upstream's compose pins the v2 stream. v3.x exists but Open Notebook does not
     # document compatibility — Renovate must not jump major unattended.
-    tag: v3.2.4@sha256:51baed8709f57f67dcf04b30e3177db846803fa9342dae2be58c6fa5f8d59843
+    tag: v3.3.0@sha256:681c6c22c287421b5c7d99e0fde79b6e0d32c36c1ddeaab2762a1661cb04cd20
     pullPolicy: IfNotPresent
 
   deployment:
@@ -234,7 +234,7 @@ surrealdb:
   # The image runs as uid 65532 and cannot chown its own data dir.
   initContainers:
     - name: fix-permissions
-      image: busybox@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
+      image: busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
       command: ["sh", "-c", "mkdir -p /data && chown -R 65532:65532 /data"]
       volumeMounts:
         - name: data
