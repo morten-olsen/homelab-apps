@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/open-webui/open-terminal
-  tag: 0.13.0@sha256:3ebbc7304e8b8b5a019acbd27c88b438a5e3641641cb596df111e3299a96bfa3
+  tag: 0.14.0@sha256:81a5394b3cd4ae32adb600f2135f09ee124de37f26b0a780e2f5692472c0fc5c
   pullPolicy: IfNotPresent
 
 subdomain: open-terminal
