@@ -59,7 +59,7 @@ assert "VolSync ReplicationSource for the claim" "[.[] | select(.kind == \"Repli
 vs='.[] | select(.kind == "VirtualService")'
 assert "exactly one VirtualService, on the private gateway only" "([$vs] | length == 1) and ([$vs | select(.metadata.name == \"mission-control-private\" and (.spec.gateways | index(\"shared/private\")) and (.spec.gateways | index(\"shared/public\") | not))] | length == 1)"
 assert "host mission-control.olsen.cloud" "[$vs | select(.spec.hosts | index(\"mission-control.olsen.cloud\"))] | length == 1"
-assert "streaming-friendly: no route timeout, no retries" "[$vs | .spec.http[] | select(.timeout == \"0s\" and .retries.attempts == 0)] | length == 1"
+assert "streaming-friendly: no route timeout, no retries" "[$vs | .spec.http[] | select(has(\"timeout\") | not) | select(.retries.attempts == 0)] | length == 1"
 assert "no hand-made ServiceEntry or DNSRecord (Kyverno generates them)" "[.[] | select(.kind == \"ServiceEntry\" or .kind == \"DNSRecord\")] | length == 0"
 assert "no Authentik client" "[.[] | select(.kind == \"AuthentikClient\")] | length == 0"
 assert "Service on 7420" "[.[] | select(.kind == \"Service\" and .metadata.name == \"mission-control\" and .spec.ports[0].port == 7420)] | length == 1"
