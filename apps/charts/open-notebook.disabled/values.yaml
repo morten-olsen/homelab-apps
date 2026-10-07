@@ -25,7 +25,7 @@ app:
     repository: lfnovo/open_notebook
     # The `-single` tag variant bundles SurrealDB into one container, but upstream
     # marks that layout deprecated — hence the separate surrealdb deployment below.
-    tag: 1.14.0@sha256:e53f90d6153fcf4a64604d9a0c12cb0428a32cfb8dbcbb72e81ab12c013ee330
+    tag: 1.15.0@sha256:54b2025a4a4853c188f74b9b8246eca8c5480e5dd1babfa92db1038ff2f30212
     pullPolicy: IfNotPresent
 
   subdomain: notebook

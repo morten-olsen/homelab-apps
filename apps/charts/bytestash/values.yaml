@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/jordan-dalby/bytestash
-  tag: 1.5.13@sha256:0decae44290a92aaee18bf3b027e756656462758c3a9afe436505b738c38e64a
+  tag: 1.5.14@sha256:b684e4df3214594035f45c8f202cf9602ac80e4d2dc5c938a73cfcc0a0bb5d3f
   pullPolicy: IfNotPresent
 
 subdomain: bytestash
