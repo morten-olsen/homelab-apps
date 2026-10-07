@@ -70,8 +70,8 @@ spec:
             - { name: MC_PUBLIC_URL, value: {{ include "common.url" . | quote }} }
             - { name: MC_SERVER_REGISTRATION, value: {{ .Values.config.registration | quote }} }
             - { name: MC_RUN_LAUNCHER, value: kubernetes }
-            # The server is a Bun executable, whose TLS ignores the CA the Kubernetes client hands its agent, so
-            # the API server's certificate fails as self-signed. Bun reads extra roots from here at start.
+            # The cluster CA as an extra root. Needed by 0.6.2, a Bun executable whose TLS ignored the CA the
+            # Kubernetes client passes; from 0.6.3 the server runs on Node, which uses it either way.
             - { name: NODE_EXTRA_CA_CERTS, value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt }
             - { name: MC_RUN_MAX_ACTIVE, value: {{ .Values.config.maxActiveRuns | quote }} }
             - { name: MC_AGENT_IMAGE, value: {{ include "mission-control.agentImage" . | quote }} }
