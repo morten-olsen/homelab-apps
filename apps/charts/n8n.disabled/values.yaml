@@ -1,12 +1,12 @@
 image:
   repository: n8nio/n8n
-  tag: 2.42.2@sha256:4867554ea7e90d996debeed6cdcdae676e66d949dbd0a05176b87792843d59f5
+  tag: 2.43.1@sha256:096332e76b93fb697163cb4efade7b5ae42f08c379311674f45594366e74f678
   pullPolicy: IfNotPresent
 
 runner:
   image:
     repository: n8nio/runners
-    tag: 2.42.2@sha256:7c99d650ff125780ba1bd293bd95c8cf537bea77f16eb085bf79bca3a5e36ab5
+    tag: 2.43.1@sha256:39406ccf59bf98bc1089650115da19448c368f231a8d1e80b1a82da5f0116286
     pullPolicy: IfNotPresent
 
 subdomain: n8n
