@@ -13,7 +13,7 @@ datapath=/var/lib/rancher/k3s/storage/pvc-0_prod_mission-control-data
 render() { helm template mission-control "$chart" --namespace prod "${globals[@]}" "$@" | yq -o=json -I=0 '.' | jq -s '.'; }
 json="$(render --set agents.dataPath=$datapath "$@")"
 # Before the server's volume exists, agents.dataPath is empty.
-nodata="$(render "$@")"
+nodata="$(render --set agents.dataPath= "$@")"
 
 failures=0
 # assert <description> <jq expression over the array of rendered objects that must be true>

@@ -7,7 +7,7 @@
 # volume, and a claim of the same name in the agents namespace binds to it, so pods there mount the same files.
 # Agents still mount only their own subPaths (ADR 0021). `type: Directory`: a wrong path fails the pod instead of
 # creating an empty directory. Retain: deleting this volume or its claim never deletes data.
-# Set `agents.dataPath` after the first start, from `kubectl get pv <the server claim's volume> -o jsonpath='{.spec.hostPath.path}'`.
+# Set `agents.dataPath` after the first start, from `kubectl get pv <the server claim's volume> -o jsonpath='{.spec.local.path}'`.
 apiVersion: v1
 kind: PersistentVolume
 metadata:

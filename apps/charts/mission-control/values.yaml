@@ -63,9 +63,9 @@ networkPolicy:
 # Where agent pods run, and what fences them in.
 agents:
   namespace: mission-control-agents
-  # The host directory of the server's data volume, for agent pods' claim (templates/agents-data.yaml). Empty until
-  # the server's local-path volume exists; agent pods cannot start without it.
-  dataPath: ""
+  # The host directory of the server's data volume (pvc-12f6c36d…, made 2026-10-07), for agent pods' claim
+  # (templates/agents-data.yaml). If the server's claim is ever recreated, this must follow its new directory.
+  dataPath: /var/lib/rancher/k3s/storage/pvc-12f6c36d-d4ef-4927-be81-deac67c406d7_prod_mission-control-data
   serviceAccount: mission-control-agent
   priorityClass: mission-control-agent
   quota:

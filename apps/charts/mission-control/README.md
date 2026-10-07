@@ -32,7 +32,7 @@ Agent pods mount the server's data claim, but a claim belongs to one namespace. 
 volume on the host directory of the server's volume, and a claim of the same name in `mission-control-agents`. The
 directory exists only once local-path has provisioned the server's claim, so:
 
-1. Read it: `kubectl get pv "$(kubectl -n prod get pvc mission-control-data -o jsonpath='{.spec.volumeName}')" -o jsonpath='{.spec.hostPath.path}'`
+1. Read it: `kubectl get pv "$(kubectl -n prod get pvc mission-control-data -o jsonpath='{.spec.volumeName}')" -o jsonpath='{.spec.local.path}'` (local-path makes `local` volumes)
 2. Keep the server's volume on deletion of its claim (local-path's default is Delete):
    `kubectl patch pv <that volume> -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'`
 3. Set `agents.dataPath` to the path in a pull request. Until then agent pods cannot start (their claim is missing).
