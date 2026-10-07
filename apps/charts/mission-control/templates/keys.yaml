@@ -1,6 +1,8 @@
 # The server's keys are generated in the cluster, once, and never appear in Git or in a chat. The Secret is
 # deliberately orphaned from the ExternalSecret: deleting or pruning the ExternalSecret must not delete the keys,
-# because what the server encrypted with them is unreadable without them.
+# because what the server encrypted with them is unreadable without them. The server needs MC_SERVER_SECRET_KEY to
+# decode from base64 to exactly 32 bytes: 32 generated characters, base64-encoded, are that (64 would be 64 bytes, and
+# the server refuses to start). Both objects sync before the Deployment (wave -1), so it never starts without them.
 ---
 apiVersion: generators.external-secrets.io/v1alpha1
 kind: Password
@@ -9,10 +11,12 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
-  length: 64
+  length: 32
   allowRepeat: true
-  encoding: base64url
+  encoding: base64
   secretKeys:
     - MC_SERVER_SECRET_KEY
     - MC_SERVER_JWT_SECRET
@@ -26,6 +30,7 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
   annotations:
     argocd.argoproj.io/sync-options: Delete=false
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   refreshInterval: "0"
   target:

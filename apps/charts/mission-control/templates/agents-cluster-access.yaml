@@ -1,0 +1,101 @@
+{{- $a := .Values.agents }}
+{{- $r := $a.clusterAccess }}
+{{- if $r.roles }}
+{{- $read := printf "%s-cluster-read" (include "common.fullname" .) }}
+# Cluster access for chosen roles' agent pods (the Kubernetes runner spec, "Read-only cluster access", widened by
+# Morten after the move retro). Which role gets which account is server configuration (MC_K8S_ROLE_ACCESS from
+# agents.clusterAccess.roles), not organization data. A mapped role's pod runs as its account with its token mounted
+# and the label cluster-access=read (the launcher's name for any mapped account), which also opens egress to the API
+# server and the private gateway. The read tier: no Secrets, ConfigMaps, logs, exec or writes; plain env values in
+# pod specs are readable.
+{{- range $account, $clusterRole := $r.accounts }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $account }}
+  namespace: {{ $a.namespace }}
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $account }}
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $account }}
+    namespace: {{ $a.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ if eq $clusterRole "read" }}{{ $read }}{{ else }}{{ $clusterRole }}{{ end }}
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $read }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [nodes, namespaces, pods, services, endpoints, events, persistentvolumeclaims, persistentvolumes, resourcequotas, limitranges, serviceaccounts]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [deployments, statefulsets, daemonsets, replicasets]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses, networkpolicies]
+    verbs: [get, list, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - apiGroups: [autoscaling]
+    resources: [horizontalpodautoscalers]
+    verbs: [get, list, watch]
+  - apiGroups: [storage.k8s.io]
+    resources: [storageclasses]
+    verbs: [get, list, watch]
+  - apiGroups: [argoproj.io]
+    resources: [applications, applicationsets, appprojects]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.istio.io]
+    resources: [virtualservices, gateways, serviceentries, destinationrules]
+    verbs: [get, list, watch]
+  - apiGroups: [volsync.backube]
+    resources: [replicationsources, replicationdestinations]
+    verbs: [get, list, watch]
+  - apiGroups: [metrics.k8s.io]
+    resources: [pods, nodes]
+    verbs: [get, list]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-cluster-read
+  namespace: {{ $a.namespace }}
+spec:
+  podSelector:
+    matchLabels: { mission-control.olsen.cloud/cluster-access: read }
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock: { cidr: {{ $r.apiServer.cidr }} }
+      ports:
+        - { protocol: TCP, port: {{ $r.apiServer.port }} }
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: {{ $r.gateway.namespace }} }
+          podSelector:
+            matchLabels:
+              {{- toYaml $r.gateway.podLabels | nindent 14 }}
+      ports:
+        - { protocol: TCP, port: {{ $r.gateway.port }} }
+{{- end }}

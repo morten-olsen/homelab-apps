@@ -1,0 +1,48 @@
+{{- $a := .Values.agents }}
+{{- with $a.dataPath }}
+{{- $claim := printf "%s-data" $.Release.Name }}
+{{- $size := (index $.Values.persistentVolumeClaims 0).size }}
+# Agent pods mount the server's data claim (MC_K8S_DATA_CLAIM), but a claim belongs to one namespace, and the
+# server's is in the release namespace. This volume points at the host directory of the server's local-path
+# volume, and a claim of the same name in the agents namespace binds to it, so pods there mount the same files.
+# Agents still mount only their own subPaths (ADR 0021). `type: Directory`: a wrong path fails the pod instead of
+# creating an empty directory. Retain: deleting this volume or its claim never deletes data.
+# Set `agents.dataPath` after the first start, from `kubectl get pv <the server claim's volume> -o jsonpath='{.spec.local.path}'`.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $a.namespace }}-data
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  capacity:
+    storage: {{ $size }}
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: {{ $a.namespace }}
+    name: {{ $claim }}
+  hostPath:
+    path: {{ . }}
+    type: Directory
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $claim }}
+  namespace: {{ $a.namespace }}
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ""
+  volumeName: {{ $a.namespace }}-data
+  resources:
+    requests:
+      storage: {{ $size }}
+{{- end }}

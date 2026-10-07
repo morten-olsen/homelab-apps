@@ -1,5 +1,6 @@
 # Private gateway only. Kyverno generates the ServiceEntry and the DNS record from this object.
-# Run transcripts stream as server-sent events: no route timeout and no retries, so a quiet stream is not cut.
+# Run transcripts stream as server-sent events: no route timeout and no retries, so a quiet stream is not cut. Istio
+# has no route timeout unless one is set, and refuses `0s` (it must be over 1ms), so `timeout` is left out.
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
@@ -13,8 +14,7 @@ spec:
     - {{ include "common.domain" . }}
     - mesh
   http:
-    - timeout: 0s
-      retries:
+    - retries:
         attempts: 0
       route:
         - destination:
