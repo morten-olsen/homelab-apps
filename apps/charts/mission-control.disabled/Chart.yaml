@@ -1,0 +1,7 @@
+apiVersion: v2
+version: 0.1.0
+name: mission-control
+dependencies:
+  - name: homelab-common
+    version: 0.1.10
+    repository: https://mortenolsen.pro/homelab-core/

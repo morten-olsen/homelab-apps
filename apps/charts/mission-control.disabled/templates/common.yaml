@@ -1,0 +1,6 @@
+{{- /* The Deployment and the VirtualService are written out below: the library has no pod security context,
+       no startup probe, no grace period and no route timeout. */ -}}
+{{ include "common.service" (list . .Values) }}
+{{ include "common.pvc" (list . .Values) }}
+{{ include "common.backup" (list . .Values) }}
+{{ include "common.probe" (list . .Values) }}

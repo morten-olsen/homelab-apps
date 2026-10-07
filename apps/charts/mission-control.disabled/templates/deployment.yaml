@@ -1,0 +1,98 @@
+{{- $c := .Values.container }}
+{{- $keys := .Values.config.keysSecret }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: {{ .Values.deployment.strategy }}
+  replicas: {{ .Values.deployment.replicas }}
+  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        # The agents' namespace is outside the mesh, so its plain-text calls would be refused by the
+        # ns-isolation policy at an injected pod. The gateway reaches a pod with no sidecar in plain text.
+        sidecar.istio.io/inject: "false"
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "common.fullname" . }}
+      automountServiceAccountToken: true
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.deployment.uid }}
+        runAsGroup: {{ .Values.deployment.gid }}
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $c.port }}
+              protocol: TCP
+          startupProbe:
+            httpGet: { path: {{ $c.startupProbe.path }}, port: http }
+            periodSeconds: {{ $c.startupProbe.periodSeconds }}
+            failureThreshold: {{ $c.startupProbe.failureThreshold }}
+          readinessProbe:
+            httpGet: { path: {{ $c.readinessProbe.path }}, port: http }
+            periodSeconds: {{ $c.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ $c.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ $c.readinessProbe.failureThreshold }}
+          livenessProbe:
+            httpGet: { path: {{ $c.livenessProbe.path }}, port: http }
+            periodSeconds: {{ $c.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ $c.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ $c.livenessProbe.failureThreshold }}
+          resources:
+            {{- toYaml $c.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          env:
+            - { name: PORT, value: {{ $c.port | quote }} }
+            - { name: MC_DATA, value: /data }
+            - { name: TZ, value: {{ .Values.globals.timezone | default "UTC" | quote }} }
+            - { name: MC_PUBLIC_URL, value: {{ include "common.url" . | quote }} }
+            - { name: MC_SERVER_REGISTRATION, value: {{ .Values.config.registration | quote }} }
+            - { name: MC_RUN_LAUNCHER, value: kubernetes }
+            - { name: MC_RUN_MAX_ACTIVE, value: {{ .Values.config.maxActiveRuns | quote }} }
+            - { name: MC_AGENT_IMAGE, value: {{ include "mission-control.agentImage" . | quote }} }
+            - { name: MC_K8S_NAMESPACE, value: {{ .Values.agents.namespace | quote }} }
+            - { name: MC_K8S_DATA_CLAIM, value: "{{ .Release.Name }}-data" }
+            - { name: MC_K8S_API_HOST, value: "{{ include "common.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}" }
+            - { name: MC_K8S_SERVICE_ACCOUNT, value: {{ .Values.agents.serviceAccount | quote }} }
+            - { name: MC_K8S_PRIORITY_CLASS, value: {{ .Values.agents.priorityClass | quote }} }
+            - { name: MC_K8S_UID, value: {{ .Values.deployment.uid | quote }} }
+            - { name: MC_K8S_GID, value: {{ .Values.deployment.gid | quote }} }
+            - name: MC_SERVER_SECRET_KEY
+              valueFrom:
+                secretKeyRef: { name: {{ $keys }}, key: MC_SERVER_SECRET_KEY }
+            - name: MC_SERVER_JWT_SECRET
+              valueFrom:
+                secretKeyRef: { name: {{ $keys }}, key: MC_SERVER_JWT_SECRET }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+            - { name: tmp, mountPath: /tmp }
+            - { name: home, mountPath: /home/mission-control }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data
+        - name: tmp
+          emptyDir: { sizeLimit: 1Gi }
+        - name: home
+          emptyDir: { sizeLimit: 256Mi }

@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# Renders the chart and asserts what the design requires of it (ADR 0021, the capacity assessment).
+# Needs helm, yq and jq. Run from anywhere: tests/render.sh
+set -euo pipefail
+
+chart="$(cd "$(dirname "$0")/.." && pwd)"
+helm dependency update "$chart" >/dev/null
+rendered="$(helm template mission-control "$chart" --namespace prod \
+  --set globals.domain=olsen.cloud --set globals.istio.gateways.private=shared/private \
+  --set globals.istio.gateways.public=shared/public \
+  --set globals.backup.enabled=true --set globals.backup.nfs.server=192.168.20.106 \
+  --set globals.backup.nfs.path=/mnt/HDD/k8s/backups --set globals.backup.retain.daily=7 \
+  --set agentImage=code.olsen.cloud/ai/mission-control-agent:0.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000 \
+  "$@")"
+json="$(printf '%s' "$rendered" | yq -o=json -I=0 '.' | jq -s '.')"
+
+failures=0
+# assert <description> <jq expression over the array of rendered objects that must be true>
+assert() {
+  if [ "$(printf '%s' "$json" | jq -r "$2")" = "true" ]; then
+    printf 'ok   %s\n' "$1"
+  else
+    printf 'FAIL %s\n' "$1"
+    failures=$((failures + 1))
+  fi
+}
+one() { echo "[.[] | select(.kind == \"$1\" and .metadata.name == \"$2\" $3)] | length == 1"; }
+ns() { echo "and .metadata.namespace == \"$1\""; }
+
+dep='.[] | select(.kind == "Deployment" and .metadata.name == "mission-control")'
+ctr="$dep | .spec.template.spec.containers[0]"
+agents=mission-control-agents
+
+# Server
+assert "one replica, Recreate" "[$dep | select(.spec.replicas == 1 and .spec.strategy.type == \"Recreate\")] | length == 1"
+assert "image pinned by tag and digest" "[$ctr | select(.image | test(\":[0-9a-f]{8}@sha256:[0-9a-f]{64}\$\"))] | length == 1"
+assert "requests and limits set" "[$ctr | select(.resources.requests.cpu == \"100m\" and .resources.requests.memory == \"256Mi\" and .resources.limits.cpu == \"1\" and .resources.limits.memory == \"1Gi\" and .resources.requests[\"ephemeral-storage\"] == \"1Gi\" and .resources.limits[\"ephemeral-storage\"] == \"5Gi\")] | length == 1"
+assert "startup, readiness and liveness probes on /api/health" "[$ctr | select(.startupProbe.httpGet.path == \"/api/health\" and .readinessProbe.httpGet.path == \"/api/health\" and .livenessProbe.httpGet.path == \"/api/health\" and .startupProbe.failureThreshold == 24)] | length == 1"
+assert "grace period above the run stop grace" "[$dep | select(.spec.template.spec.terminationGracePeriodSeconds >= 60)] | length == 1"
+assert "non-root, no privilege escalation, no capabilities, read-only root" "[$dep | select(.spec.template.spec.securityContext.runAsNonRoot == true and .spec.template.spec.securityContext.runAsUser == 10001 and .spec.template.spec.securityContext.seccompProfile.type == \"RuntimeDefault\" and .spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation == false and .spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem == true and (.spec.template.spec.containers[0].securityContext.capabilities.drop | index(\"ALL\")))] | length == 1"
+assert "no mesh sidecar on the server (agents are outside the mesh)" "[$dep | select(.spec.template.metadata.annotations[\"sidecar.istio.io/inject\"] == \"false\")] | length == 1"
+assert "kubernetes launcher with 4 active runs" "([$ctr | .env[] | select(.name == \"MC_RUN_LAUNCHER\" and .value == \"kubernetes\")] | length == 1) and ([$ctr | .env[] | select(.name == \"MC_RUN_MAX_ACTIVE\" and .value == \"4\")] | length == 1)"
+assert "agents reach the server's Service on 7420" "[$ctr | .env[] | select(.name == \"MC_K8S_API_HOST\" and .value == \"mission-control.prod.svc.cluster.local:7420\")] | length == 1"
+assert "data claim named for the mounted claim" "([$ctr | .env[] | select(.name == \"MC_K8S_DATA_CLAIM\" and .value == \"mission-control-data\")] | length == 1) and ([$dep | .spec.template.spec.volumes[] | select(.persistentVolumeClaim.claimName == \"mission-control-data\")] | length == 1)"
+assert "keys come from the Secret mission-control-keys, never as a value" "([$ctr | .env[] | select(.name == \"MC_SERVER_SECRET_KEY\" and .valueFrom.secretKeyRef.name == \"mission-control-keys\" and .valueFrom.secretKeyRef.key == \"MC_SERVER_SECRET_KEY\")] | length == 1) and ([$ctr | .env[] | select(.name == \"MC_SERVER_JWT_SECRET\" and .valueFrom.secretKeyRef.name == \"mission-control-keys\" and .valueFrom.secretKeyRef.key == \"MC_SERVER_JWT_SECRET\")] | length == 1)"
+assert "no Secret object is rendered" "[.[] | select(.kind == \"Secret\")] | length == 0"
+assert "sign-up closed" "[$ctr | .env[] | select(.name == \"MC_SERVER_REGISTRATION\" and .value == \"closed\")] | length == 1"
+assert "public URL is the internal host" "[$ctr | .env[] | select(.name == \"MC_PUBLIC_URL\" and .value == \"https://mission-control.olsen.cloud\")] | length == 1"
+
+# Storage and backup
+assert "PVC on local-path, 30Gi, kept on prune" "[.[] | select(.kind == \"PersistentVolumeClaim\" and .metadata.name == \"mission-control-data\" and .spec.storageClassName == \"local-path\" and .spec.resources.requests.storage == \"30Gi\" and .metadata.annotations[\"argocd.argoproj.io/sync-options\"] == \"Delete=false\")] | length == 1"
+assert "VolSync ReplicationSource for the claim" "[.[] | select(.kind == \"ReplicationSource\" and .spec.sourcePVC == \"mission-control-data\" and (.spec.restic.moverVolumes[0].volumeSource.nfs.path | endswith(\"/mission-control-data\")))] | length == 1"
+
+# Exposure
+vs='.[] | select(.kind == "VirtualService")'
+assert "exactly one VirtualService, on the private gateway only" "([$vs] | length == 1) and ([$vs | select(.metadata.name == \"mission-control-private\" and (.spec.gateways | index(\"shared/private\")) and (.spec.gateways | index(\"shared/public\") | not))] | length == 1)"
+assert "host mission-control.olsen.cloud" "[$vs | select(.spec.hosts | index(\"mission-control.olsen.cloud\"))] | length == 1"
+assert "streaming-friendly: no route timeout, no retries" "[$vs | .spec.http[] | select(.timeout == \"0s\" and .retries.attempts == 0)] | length == 1"
+assert "no hand-made ServiceEntry or DNSRecord (Kyverno generates them)" "[.[] | select(.kind == \"ServiceEntry\" or .kind == \"DNSRecord\")] | length == 0"
+assert "no Authentik client" "[.[] | select(.kind == \"AuthentikClient\")] | length == 0"
+assert "Service on 7420" "[.[] | select(.kind == \"Service\" and .metadata.name == \"mission-control\" and .spec.ports[0].port == 7420)] | length == 1"
+
+# Server identity and its rights
+assert "server ServiceAccount exists and mounts its token" "[.[] | select(.kind == \"ServiceAccount\" and .metadata.name == \"mission-control\" and .automountServiceAccountToken == true)] | length == 1"
+role="[.[] | select(.kind == \"Role\" and .metadata.name == \"mission-control-agents\" and .metadata.namespace == \"$agents\")]"
+assert "one Role in the agents namespace; no ClusterRole grants the server anything" "($role | length == 1) and ([.[] | select(.kind == \"ClusterRoleBinding\" or (.kind == \"ClusterRole\" and .metadata.name != \"kyverno:mission-control-cleanup\"))] | length == 0)"
+assert "Role: pods create/get/list/watch/delete" "[$role | .[0].rules[] | select(.resources == [\"pods\"] and (.verbs | sort) == [\"create\",\"delete\",\"get\",\"list\",\"watch\"])] | length == 1"
+assert "Role: attach get/create, secrets create only" "([$role | .[0].rules[] | select(.resources == [\"pods/attach\"] and (.verbs | sort) == [\"create\",\"get\"])] | length == 1) and ([$role | .[0].rules[] | select(.resources == [\"secrets\"] and .verbs == [\"create\"])] | length == 1) and ($role | .[0].rules | length == 3)"
+assert "RoleBinding binds the server's account" "[.[] | select(.kind == \"RoleBinding\" and .metadata.namespace == \"$agents\" and .subjects[0].name == \"mission-control\" and .subjects[0].namespace == \"prod\" and .roleRef.name == \"mission-control-agents\")] | length == 1"
+assert "every namespaced object of the agents namespace stays in it" "[.[] | select(.kind != \"Namespace\" and .kind != \"ClusterRole\" and .kind != \"PriorityClass\" and .kind != \"Deployment\" and .kind != \"Service\" and .kind != \"PersistentVolumeClaim\" and .kind != \"VirtualService\" and .kind != \"ReplicationSource\" and .kind != \"Probe\" and .kind != \"ServiceAccount\" and .metadata.namespace != \"$agents\" and .metadata.namespace != null)] | length == 0"
+
+# The agents namespace
+assert "namespace enforces Pod Security restricted" "[.[] | select(.kind == \"Namespace\" and .metadata.name == \"$agents\" and .metadata.labels[\"pod-security.kubernetes.io/enforce\"] == \"restricted\" and .metadata.labels[\"istio-injection\"] == null)] | length == 1"
+assert "ResourceQuota from the design" "[.[] | select(.kind == \"ResourceQuota\" and .metadata.namespace == \"$agents\" and .spec.hard.pods == \"6\" and .spec.hard[\"requests.cpu\"] == \"2500m\" and .spec.hard[\"limits.cpu\"] == \"10\" and .spec.hard[\"requests.memory\"] == \"8Gi\" and .spec.hard[\"limits.memory\"] == \"20Gi\" and .spec.hard[\"requests.ephemeral-storage\"] == \"20Gi\" and .spec.hard[\"limits.ephemeral-storage\"] == \"60Gi\")] | length == 1"
+assert "LimitRange: defaults and maxima, so no pod is BestEffort" "[.[] | select(.kind == \"LimitRange\" and .metadata.namespace == \"$agents\" and .spec.limits[0].defaultRequest.cpu == \"250m\" and .spec.limits[0].defaultRequest.memory == \"512Mi\" and .spec.limits[0].default.cpu == \"2\" and .spec.limits[0].default.memory == \"4Gi\" and .spec.limits[0].max.cpu == \"4\" and .spec.limits[0].max.memory == \"6Gi\")] | length == 1"
+assert "PriorityClass -100, never preempts" "[.[] | select(.kind == \"PriorityClass\" and .metadata.name == \"mission-control-agent\" and .value == -100 and .preemptionPolicy == \"Never\" and (.globalDefault // false) == false)] | length == 1"
+assert "agent ServiceAccount has no token and no bindings" "([.[] | select(.kind == \"ServiceAccount\" and .metadata.name == \"mission-control-agent\" and .metadata.namespace == \"$agents\" and .automountServiceAccountToken == false)] | length == 1) and ([.[] | select(.kind == \"RoleBinding\" and .subjects[0].name == \"mission-control-agent\")] | length == 0)"
+
+np="[.[] | select(.kind == \"NetworkPolicy\" and .metadata.namespace == \"$agents\")]"
+assert "default-deny for ingress and egress on all pods" "[$np | .[] | select(.metadata.name == \"default-deny\" and .spec.podSelector == {} and (.spec.policyTypes | sort) == [\"Egress\",\"Ingress\"] and .spec.ingress == null and .spec.egress == null)] | length == 1"
+assert "egress: DNS to kube-dns on 53" "[$np | .[] | select(.metadata.name == \"allow-dns\" and .spec.egress[0].to[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"kube-system\" and (.spec.egress[0].ports | map(.port) | unique) == [53])] | length == 1"
+assert "egress: the server's pods on 7420 only" "[$np | .[] | select(.metadata.name == \"allow-mission-control\" and .spec.egress[0].to[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"prod\" and .spec.egress[0].to[0].podSelector.matchLabels[\"app.kubernetes.io/name\"] == \"mission-control\" and (.spec.egress[0].ports | length == 1) and .spec.egress[0].ports[0].port == 7420)] | length == 1"
+assert "egress: internet except every private range" "[$np | .[] | select(.metadata.name == \"allow-internet\" and .spec.egress[0].to[0].ipBlock.cidr == \"0.0.0.0/0\" and ([\"10.0.0.0/8\",\"172.16.0.0/12\",\"192.168.0.0/16\",\"100.64.0.0/10\",\"169.254.0.0/16\",\"0.0.0.0/8\",\"198.18.0.0/15\",\"192.0.0.0/24\",\"224.0.0.0/4\"] - .spec.egress[0].to[0].ipBlock.except | length == 0))] | length == 1"
+assert "no ingress rule anywhere, no IPv6 egress" "([$np | .[] | select(.spec.ingress != null)] | length == 0) and ([$np | .[].spec.egress // [] | .[].to[]?.ipBlock.cidr | select(. != null and contains(\":\"))] | length == 0)"
+assert "four network policies, no others" "$np | length == 4"
+assert "Kyverno cleanup: terminated pods after 1h, any pod after 24h, in the agents namespace only" "([.[] | select(.kind == \"CleanupPolicy\" and .metadata.namespace == \"$agents\")] | length == 2) and ([.[] | select(.kind == \"CleanupPolicy\" and .metadata.name == \"agent-pods-terminated\" and (.spec.conditions.all[1].value == \"1h\"))] | length == 1) and ([.[] | select(.kind == \"CleanupPolicy\" and .metadata.name == \"agent-pods-overdue\" and (.spec.conditions.all[0].value == \"24h\"))] | length == 1)"
+
+# Settings the launcher reads
+envs="[$ctr | .env[] | select(.name | startswith(\"MC_K8S_\"))]"
+assert "launcher is told the agents namespace, class and account" "[$envs | .[] | select((.name == \"MC_K8S_NAMESPACE\" and .value == \"$agents\") or (.name == \"MC_K8S_PRIORITY_CLASS\" and .value == \"mission-control-agent\") or (.name == \"MC_K8S_SERVICE_ACCOUNT\" and .value == \"mission-control-agent\"))] | length == 3"
+assert "agent image is pinned by digest" "[$ctr | .env[] | select(.name == \"MC_AGENT_IMAGE\" and (.value | test(\"@sha256:[0-9a-f]{64}\$\")))] | length == 1"
+assert "no cluster read access for any role" "[$envs | .[] | select(.name == \"MC_K8S_ROLE_ACCESS\")] | length == 0"
+
+if [ "$failures" -ne 0 ]; then
+  printf '%s assertion(s) failed\n' "$failures" >&2
+  exit 1
+fi
+printf 'all assertions passed\n'

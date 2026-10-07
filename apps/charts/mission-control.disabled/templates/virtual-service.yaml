@@ -1,0 +1,23 @@
+# Private gateway only. Kyverno generates the ServiceEntry and the DNS record from this object.
+# Run transcripts stream as server-sent events: no route timeout and no retries, so a quiet stream is not cut.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ include "common.fullname" . }}-private
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    {{- include "common.virtualServiceGatewaysPrivate" . | nindent 4 }}
+  hosts:
+    - {{ include "common.domain" . }}
+    - mesh
+  http:
+    - timeout: 0s
+      retries:
+        attempts: 0
+      route:
+        - destination:
+            host: {{ include "common.fullname" . }}
+            port:
+              number: {{ .Values.service.port }}

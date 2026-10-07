@@ -1,0 +1,87 @@
+# Mission Control server, in the cluster (ADR 0021, docs/spec/kubernetes-runner.md in the Mission Control repo).
+# This folder is `.disabled`: ArgoCD ignores it. Enabling is `git mv mission-control.disabled mission-control`,
+# after the checklist in the pull request that added it.
+image:
+  repository: code.olsen.cloud/ai/mission-control
+  # Pinned by tag and digest; the registry's tags move.
+  tag: 586a11dc@sha256:1f9ac009a62f6334ba494d24f1dba27cf398cdd75a66876289ba017fcfbce7b3
+  pullPolicy: IfNotPresent
+
+# Private gateway only: https://mission-control.<domain>, LAN and VPN. Mission Control has its own login.
+subdomain: mission-control
+
+# The agent image agents run in, pinned by digest (`code.olsen.cloud/ai/mission-control-agent:<tag>@sha256:...`).
+# No default on purpose: the image is not in the registry yet, so the chart refuses to render without it.
+agentImage: ""
+
+deployment:
+  strategy: Recreate # SQLite on one ReadWriteOnce claim: never two writers
+  replicas: 1
+  revisionHistoryLimit: 2
+  # MC_RUN_STOP_GRACE_SECONDS (30) plus 30.
+  terminationGracePeriodSeconds: 60
+  uid: 10001
+  gid: 10001
+
+container:
+  port: 7420
+  resources:
+    requests: { cpu: 100m, memory: 256Mi, ephemeral-storage: 1Gi }
+    limits: { cpu: "1", memory: 1Gi, ephemeral-storage: 5Gi }
+  # /api/health proves the event loop answers, not that the database or /data work.
+  startupProbe: { path: /api/health, periodSeconds: 5, failureThreshold: 24 }
+  readinessProbe: { path: /api/health, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
+  livenessProbe: { path: /api/health, periodSeconds: 20, timeoutSeconds: 3, failureThreshold: 3 }
+
+service:
+  port: 7420
+
+probe:
+  path: /api/health
+
+persistentVolumeClaims:
+  - name: data
+    size: 30Gi
+    # local-path: the only class in the cluster. Not expandable, size not enforced, reclaim Delete.
+    storageClassName: local-path
+    backup: true
+
+# Settings of the server (docs/reference/configuration.md). The keys come from a Secret that is not in Git.
+config:
+  maxActiveRuns: 4
+  registration: closed
+  # Created by Morten, never by this chart: keys MC_SERVER_SECRET_KEY and MC_SERVER_JWT_SECRET.
+  keysSecret: mission-control-keys
+
+# Where agent pods run, and what fences them in.
+agents:
+  namespace: mission-control-agents
+  serviceAccount: mission-control-agent
+  priorityClass: mission-control-agent
+  quota:
+    pods: "6"
+    requests.cpu: 2500m
+    limits.cpu: "10"
+    requests.memory: 8Gi
+    limits.memory: 20Gi
+    requests.ephemeral-storage: 20Gi
+    limits.ephemeral-storage: 60Gi
+  limitRange:
+    defaultRequest: { cpu: 250m, memory: 512Mi, ephemeral-storage: 1Gi }
+    default: { cpu: "2", memory: 4Gi, ephemeral-storage: 10Gi }
+    max: { cpu: "4", memory: 6Gi }
+  # Everything private, link-local, CGNAT and multicast is denied to agents (the node and the LAN sit in them).
+  egressExcept:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+    - 100.64.0.0/10
+    - 169.254.0.0/16
+    - 0.0.0.0/8
+    - 198.18.0.0/15
+    - 192.0.0.0/24
+    - 224.0.0.0/4
+  cleanup:
+    schedule: "*/15 * * * *"
+    terminatedAfter: 1h
+    runningAfter: 24h

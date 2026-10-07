@@ -1,0 +1,200 @@
+{{- $a := .Values.agents }}
+{{- $ns := $a.namespace }}
+# The namespace agent pods run in (ADR 0021): restricted Pod Security, outside the mesh, fenced by a
+# quota, limits, a default-deny network policy and a cleanup of pods that outlive their run.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $ns }}
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: {{ $a.priorityClass }}
+description: Mission Control agent pods. Below every ordinary pod (priority 0) so agents are evicted first, and never preempting.
+value: -100
+preemptionPolicy: Never
+globalDefault: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $a.serviceAccount }}
+  namespace: {{ $ns }}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: agents
+  namespace: {{ $ns }}
+spec:
+  hard:
+    {{- range $k, $v := $a.quota }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: agents
+  namespace: {{ $ns }}
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        {{- toYaml $a.limitRange.defaultRequest | nindent 8 }}
+      default:
+        {{- toYaml $a.limitRange.default | nindent 8 }}
+      max:
+        {{- toYaml $a.limitRange.max | nindent 8 }}
+---
+# The server may run pods here, and attach to them, and write their Secrets. It can read no Secret back,
+# exec, read logs, or touch another namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "common.fullname" . }}-agents
+  namespace: {{ $ns }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/attach"]
+    verbs: ["get", "create"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "common.fullname" . }}-agents
+  namespace: {{ $ns }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "common.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "common.fullname" . }}-agents
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: {{ $ns }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: {{ $ns }}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+          podSelector:
+            matchLabels: { k8s-app: kube-dns }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-mission-control
+  namespace: {{ $ns }}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: {{ .Release.Namespace }} }
+          podSelector:
+            matchLabels:
+              {{- include "common.selectorLabels" . | nindent 14 }}
+      ports:
+        - { protocol: TCP, port: {{ .Values.container.port }} }
+---
+# NetworkPolicy cannot name hosts, so "the public internet" is every address outside the private ranges.
+# No IPv6 rule: the cluster is single-stack and default-deny covers the rest.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internet
+  namespace: {{ $ns }}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              {{- toYaml $a.egressExcept | nindent 14 }}
+---
+# Pods whose run ended, or that ran for a day, hold quota and a Secret with credentials in it. A server that
+# was killed leaves them behind until its next start; these two policies do not wait for it.
+# The cleanup controller may delete pods only where a policy says so; this grants it the verbs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kyverno:{{ include "common.fullname" . }}-cleanup
+  labels:
+    rbac.kyverno.io/aggregate-to-cleanup-controller: "true"
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "delete"]
+---
+apiVersion: kyverno.io/v2
+kind: CleanupPolicy
+metadata:
+  name: agent-pods-terminated
+  namespace: {{ $ns }}
+spec:
+  schedule: {{ $a.cleanup.schedule | quote }}
+  match:
+    any:
+      - resources:
+          kinds: [Pod]
+  conditions:
+    all:
+      - key: "{{`{{ target.status.phase }}`}}"
+        operator: AnyIn
+        value: [Succeeded, Failed]
+      - key: "{{`{{ time_since('', '{{ target.status.containerStatuses[0].state.terminated.finishedAt || target.metadata.creationTimestamp }}', '') }}`}}"
+        operator: GreaterThan
+        value: {{ $a.cleanup.terminatedAfter | quote }}
+---
+apiVersion: kyverno.io/v2
+kind: CleanupPolicy
+metadata:
+  name: agent-pods-overdue
+  namespace: {{ $ns }}
+spec:
+  schedule: {{ $a.cleanup.schedule | quote }}
+  match:
+    any:
+      - resources:
+          kinds: [Pod]
+  conditions:
+    all:
+      - key: "{{`{{ time_since('', '{{ target.metadata.creationTimestamp }}', '') }}`}}"
+        operator: GreaterThan
+        value: {{ $a.cleanup.runningAfter | quote }}
