@@ -68,7 +68,7 @@ assert "Service on 7420" "[.[] | select(.kind == \"Service\" and .metadata.name 
 # Server identity and its rights
 assert "server ServiceAccount exists and mounts its token" "[.[] | select(.kind == \"ServiceAccount\" and .metadata.name == \"mission-control\" and .automountServiceAccountToken == true)] | length == 1"
 role="[.[] | select(.kind == \"Role\" and .metadata.name == \"mission-control-agents\" and .metadata.namespace == \"$agents\")]"
-assert "one Role in the agents namespace; no ClusterRole grants the server anything" "($role | length == 1) and ([.[] | select(.kind == \"ClusterRoleBinding\" or (.kind == \"ClusterRole\" and .metadata.name != \"kyverno:mission-control-cleanup\"))] | length == 0)"
+assert "one Role in the agents namespace; no ClusterRole grants the server anything" "($role | length == 1) and ([.[] | select(.kind == \"ClusterRole\" and .metadata.name != \"kyverno:mission-control-cleanup\" and .metadata.name != \"mission-control-cluster-read\")] | length == 0) and ([.[] | select(.kind == \"ClusterRoleBinding\" and ((.subjects | length != 1) or .subjects[0].name != \"mission-control-cluster-read\" or .subjects[0].namespace != \"$agents\"))] | length == 0)"
 assert "Role: pods create/get/list/watch/delete" "[$role | .[0].rules[] | select(.resources == [\"pods\"] and (.verbs | sort) == [\"create\",\"delete\",\"get\",\"list\",\"watch\"])] | length == 1"
 assert "Role: attach get/create, secrets create only" "([$role | .[0].rules[] | select(.resources == [\"pods/attach\"] and (.verbs | sort) == [\"create\",\"get\"])] | length == 1) and ([$role | .[0].rules[] | select(.resources == [\"secrets\"] and .verbs == [\"create\"])] | length == 1) and ($role | .[0].rules | length == 3)"
 assert "RoleBinding binds the server's account" "[.[] | select(.kind == \"RoleBinding\" and .metadata.namespace == \"$agents\" and .subjects[0].name == \"mission-control\" and .subjects[0].namespace == \"prod\" and .roleRef.name == \"mission-control-agents\")] | length == 1"
@@ -87,7 +87,7 @@ assert "egress: DNS to kube-dns on 53" "[$np | .[] | select(.metadata.name == \"
 assert "egress: the server's pods on 7420 only" "[$np | .[] | select(.metadata.name == \"allow-mission-control\" and .spec.egress[0].to[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"prod\" and .spec.egress[0].to[0].podSelector.matchLabels[\"app.kubernetes.io/name\"] == \"mission-control\" and (.spec.egress[0].ports | length == 1) and .spec.egress[0].ports[0].port == 7420)] | length == 1"
 assert "egress: internet except every private range" "[$np | .[] | select(.metadata.name == \"allow-internet\" and .spec.egress[0].to[0].ipBlock.cidr == \"0.0.0.0/0\" and ([\"10.0.0.0/8\",\"172.16.0.0/12\",\"192.168.0.0/16\",\"100.64.0.0/10\",\"169.254.0.0/16\",\"0.0.0.0/8\",\"198.18.0.0/15\",\"192.0.0.0/24\",\"224.0.0.0/4\"] - .spec.egress[0].to[0].ipBlock.except | length == 0))] | length == 1"
 assert "no ingress rule anywhere, no IPv6 egress" "([$np | .[] | select(.spec.ingress != null)] | length == 0) and ([$np | .[].spec.egress // [] | .[].to[]?.ipBlock.cidr | select(. != null and contains(\":\"))] | length == 0)"
-assert "four network policies, no others" "$np | length == 4"
+assert "four network policies for every agent pod, and the read tier's" "($np | map(.metadata.name) | sort) == [\"allow-cluster-read\",\"allow-dns\",\"allow-internet\",\"allow-mission-control\",\"default-deny\"]"
 
 # The server, which has no sidecar, takes connections only from agents, the ingress gateway and the probe
 snp='[.[] | select(.kind == "NetworkPolicy" and .metadata.namespace == "prod")]'
@@ -109,7 +109,18 @@ assert "Kyverno cleanup: terminated pods after 1h, any pod after 24h, in the age
 envs="[$ctr | .env[] | select(.name | startswith(\"MC_K8S_\"))]"
 assert "launcher is told the agents namespace, class and account" "[$envs | .[] | select((.name == \"MC_K8S_NAMESPACE\" and .value == \"$agents\") or (.name == \"MC_K8S_PRIORITY_CLASS\" and .value == \"mission-control-agent\") or (.name == \"MC_K8S_SERVICE_ACCOUNT\" and .value == \"mission-control-agent\"))] | length == 3"
 assert "agent image is pinned by tag and digest" "[$ctr | .env[] | select(.name == \"MC_AGENT_IMAGE\" and (.value | test(\"mission-control-agent:[0-9]+\\\\.[0-9]+\\\\.[0-9]+@sha256:[0-9a-f]{64}\$\")))] | length == 1"
-assert "no cluster read access for any role" "[$envs | .[] | select(.name == \"MC_K8S_ROLE_ACCESS\")] | length == 0"
+assert "read access mapped for the Software Engineer only" "[$envs | .[] | select(.name == \"MC_K8S_ROLE_ACCESS\") | .value | fromjson] == [{\"ef11b6ea-d46b-4dc7-8957-24e4d9a3f154\":\"mission-control-cluster-read\"}]"
+cr='[.[] | select(.kind == "ClusterRole" and .metadata.name == "mission-control-cluster-read")]'
+assert "read tier: get, list and watch only" "($cr | length == 1) and ([$cr | .[0].rules[].verbs[] | select(. != \"get\" and . != \"list\" and . != \"watch\")] | length == 0)"
+assert "read tier: no secrets, configmaps, logs, exec, attach, port-forward or tokens, no wildcards" "[$cr | .[0].rules[] | (.resources[], .apiGroups[]) | select(. == \"secrets\" or . == \"configmaps\" or . == \"pods/log\" or . == \"pods/exec\" or . == \"pods/attach\" or . == \"pods/portforward\" or . == \"serviceaccounts/token\" or . == \"*\")] | length == 0"
+assert "read tier account mounts no token by itself" "[.[] | select(.kind == \"ServiceAccount\" and .metadata.name == \"mission-control-cluster-read\" and .metadata.namespace == \"$agents\" and .automountServiceAccountToken == false)] | length == 1"
+crp='[.[] | select(.kind == "NetworkPolicy" and .metadata.name == "allow-cluster-read")]'
+assert "read tier egress: only labelled pods, only the API server and the private gateway" "($crp | .[0].spec.podSelector.matchLabels == {\"mission-control.olsen.cloud/cluster-access\":\"read\"}) and ($crp | .[0].spec.egress | length == 2) and ($crp | .[0].spec.egress[0].to == [{\"ipBlock\":{\"cidr\":\"192.168.20.180/32\"}}] and .[0].spec.egress[0].ports == [{\"protocol\":\"TCP\",\"port\":6443}]) and ($crp | .[0].spec.egress[1].to[0].namespaceSelector.matchLabels == {\"kubernetes.io/metadata.name\":\"istio-ingress\"} and .[0].spec.egress[1].to[0].podSelector.matchLabels == {\"istio\":\"gateway\"} and .[0].spec.egress[1].ports == [{\"protocol\":\"TCP\",\"port\":443}])"
+if [ "$(printf '%s' "$(render --set agents.clusterRead.roles=null "$@")" | jq '[.[] | select(.metadata.name == "mission-control-cluster-read" or .metadata.name == "allow-cluster-read" or ((.spec.template.spec.containers[0].env // []) | map(.name) | index("MC_K8S_ROLE_ACCESS")))] | length')" = 0 ]; then
+  printf 'ok   %s\n' "no read tier when no role is mapped"
+else
+  printf 'FAIL %s\n' "no read tier when no role is mapped"; failures=$((failures + 1))
+fi
 
 if [ "$failures" -ne 0 ]; then
   printf '%s assertion(s) failed\n' "$failures" >&2

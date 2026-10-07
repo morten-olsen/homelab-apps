@@ -70,6 +70,14 @@ spec:
             - { name: MC_PUBLIC_URL, value: {{ include "common.url" . | quote }} }
             - { name: MC_SERVER_REGISTRATION, value: {{ .Values.config.registration | quote }} }
             - { name: MC_RUN_LAUNCHER, value: kubernetes }
+            {{- with .Values.agents.clusterRead }}
+            {{- if .roles }}
+            {{- $sa := .serviceAccount }}
+            {{- $map := dict }}
+            {{- range .roles }}{{- $_ := set $map . $sa }}{{- end }}
+            - { name: MC_K8S_ROLE_ACCESS, value: {{ $map | toJson | quote }} }
+            {{- end }}
+            {{- end }}
             # The cluster CA as an extra root. Needed by 0.6.2, a Bun executable whose TLS ignored the CA the
             # Kubernetes client passes; from 0.6.3 the server runs on Node, which uses it either way.
             - { name: NODE_EXTRA_CA_CERTS, value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt }

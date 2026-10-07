@@ -80,6 +80,14 @@ agents:
     defaultRequest: { cpu: 250m, memory: 512Mi, ephemeral-storage: 1Gi }
     default: { cpu: "2", memory: 4Gi, ephemeral-storage: 10Gi }
     max: { cpu: "4", memory: 6Gi }
+  # Roles whose agent pods get read-only cluster access and reach the forge and CI (templates/agents-cluster-read.yaml).
+  # Decided by Morten in the Mission Control move retro (2026-10-07): the Software Engineer owns changes end to end.
+  clusterRead:
+    serviceAccount: mission-control-cluster-read
+    roles:
+      - ef11b6ea-d46b-4dc7-8957-24e4d9a3f154 # Home IT: Software Engineer
+    apiServer: { cidr: 192.168.20.180/32, port: 6443 }
+    gateway: { namespace: istio-ingress, podLabels: { istio: gateway }, port: 443 }
   # Everything private, link-local, CGNAT and multicast is denied to agents (the node and the LAN sit in them).
   egressExcept:
     - 10.0.0.0/8
