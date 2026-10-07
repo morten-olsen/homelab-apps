@@ -25,7 +25,7 @@ app:
     repository: lfnovo/open_notebook
     # The `-single` tag variant bundles SurrealDB into one container, but upstream
     # marks that layout deprecated — hence the separate surrealdb deployment below.
-    tag: 1.14.0@sha256:e53f90d6153fcf4a64604d9a0c12cb0428a32cfb8dbcbb72e81ab12c013ee330
+    tag: 1.15.0@sha256:54b2025a4a4853c188f74b9b8246eca8c5480e5dd1babfa92db1038ff2f30212
     pullPolicy: IfNotPresent
 
   subdomain: notebook
@@ -184,7 +184,7 @@ surrealdb:
     repository: surrealdb/surrealdb
     # Upstream's compose pins the v2 stream. v3.x exists but Open Notebook does not
     # document compatibility — Renovate must not jump major unattended.
-    tag: v3.3.0@sha256:681c6c22c287421b5c7d99e0fde79b6e0d32c36c1ddeaab2762a1661cb04cd20
+    tag: v3.3.1@sha256:a02aff74cee6fefe34d634896c2dfcb0d77bdb73110c6eabbadc0532f6d38e54
     pullPolicy: IfNotPresent
 
   deployment:
