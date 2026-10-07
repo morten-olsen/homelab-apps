@@ -1,0 +1,14 @@
+# Renders and checks every chart on pull requests: helm lint with the ApplicationSet's
+# globals, helm template + kubeconform (CRDs skipped), and each chart's tests/render.sh.
+# All logic lives in scripts/ci/validate-charts.sh so it runs the same locally:
+#   mise install && scripts/ci/validate-charts.sh [chart-dir...]
+# Tool versions are pinned in mise.toml; the image is pinned by digest (Renovate bumps it).
+when:
+  - event: [pull_request, manual]
+
+steps:
+  charts:
+    image: code.olsen.cloud/ci/mise:74db91eb@sha256:7594352040e249ee8a75b2478e8373572f133022f2be9f7d882941b84dae9dd6
+    commands:
+      - mise install
+      - scripts/ci/validate-charts.sh

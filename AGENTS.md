@@ -77,3 +77,11 @@ subdomain: my-app
 
 See ./apps/common/README.md for guide on writing charts
 
+
+## Pull-request validation
+
+Every pull request runs `.woodpecker/charts.yaml`, which calls `scripts/ci/validate-charts.sh`:
+`helm lint` with the ApplicationSet's globals (`apps/root/values.yaml`), `helm template` through
+kubeconform (CRDs have no schema and are skipped), and each chart's `tests/render.sh` if it has one.
+Run it locally with `mise install && scripts/ci/validate-charts.sh [chart-dir...]`. Tools are pinned
+in `mise.toml`; a chart with a `tests/render.sh` must keep it passing.
