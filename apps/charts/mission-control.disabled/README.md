@@ -17,7 +17,8 @@ The forge token is entered in the web app after the first start; the chart holds
 
 ## Before it is enabled
 
-1. The `apps` AppProject must allow the destination namespace `mission-control-agents` (today only `prod`).
+1. The `apps` AppProject allows the destination namespace `mission-control-agents` (done 2026-10-07). It comes from
+   `apps/root`, the hand-installed `argocd-apps` release: a change there needs `helm upgrade argocd-apps ./apps/root -n argocd`.
 2. `agentImage` and `image.tag` are pinned by digest (0.6.2 today); bump both together. The chart refuses to render an agent image without a digest.
 3. The data is copied into the claim (the migration runbook).
 4. The decisions and cluster checks of the pull request (secrets encryption, `podPidsLimit`, mesh policy, CNI).
