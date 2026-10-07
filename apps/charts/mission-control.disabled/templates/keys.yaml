@@ -1,0 +1,39 @@
+# The server's keys are generated in the cluster, once, and never appear in Git or in a chat. The Secret is
+# deliberately orphaned from the ExternalSecret: deleting or pruning the ExternalSecret must not delete the keys,
+# because what the server encrypted with them is unreadable without them.
+---
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: {{ .Release.Name }}-keys-generator
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  length: 64
+  allowRepeat: true
+  encoding: base64url
+  secretKeys:
+    - MC_SERVER_SECRET_KEY
+    - MC_SERVER_JWT_SECRET
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ .Values.config.keysSecret }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  refreshInterval: "0"
+  target:
+    name: {{ .Values.config.keysSecret }}
+    creationPolicy: Orphan
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: {{ .Release.Name }}-keys-generator

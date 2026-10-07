@@ -6,24 +6,20 @@ private gateway only, with Mission Control's own login (no Authentik client). Ag
 
 The folder is `.disabled`, so the ApplicationSet ignores it. **Nothing runs from it until it is renamed.**
 
-## The Secret Morten creates (not in Git)
+## The keys Secret (generated, not in Git)
 
-`mission-control-keys` in namespace **`prod`** (where the ApplicationSet deploys the release), with exactly two keys,
-named like the variables the server reads. Both keys must be the laptop's, or stored secrets become unreadable.
-Follow "Before you start" in the Mission Control guide `move-to-another-machine` (`--from-file`, so values stay out of
-shell history and `ps`), but in `prod`, not `mission-control`:
-
-```bash
-kubectl create secret generic mission-control-keys -n prod --from-file="$KEYS"   # $KEYS holds files MC_SERVER_SECRET_KEY and MC_SERVER_JWT_SECRET
-```
+`mission-control-keys` in namespace `prod` holds `MC_SERVER_SECRET_KEY` and `MC_SERVER_JWT_SECRET`. External Secrets
+generates them once (`templates/keys.yaml`, refresh `0`) and the Secret is orphaned from the ExternalSecret, so
+pruning or reverting the chart leaves it. Never delete it: what the server encrypted with it becomes unreadable.
+A plain copy of the laptop's database needs the laptop's keys; this empty first rollout does not (see the migration task).
 
 The forge token is entered in the web app after the first start; the chart holds none.
 
 ## Before it is enabled
 
 1. The `apps` AppProject must allow the destination namespace `mission-control-agents` (today only `prod`).
-2. `agentImage` set to a digest-pinned reference. The chart refuses to render without it.
-3. The Secret above exists, and the data is copied into the claim (the migration runbook).
+2. `agentImage` and `image.tag` are pinned by digest (0.6.2 today); bump both together. The chart refuses to render an agent image without a digest.
+3. The data is copied into the claim (the migration runbook).
 4. The decisions and cluster checks of the pull request (secrets encryption, `podPidsLimit`, mesh policy, CNI).
 
 Then `git mv mission-control.disabled mission-control`.

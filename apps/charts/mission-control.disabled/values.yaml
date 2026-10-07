@@ -4,15 +4,15 @@
 image:
   repository: code.olsen.cloud/ai/mission-control
   # Pinned by tag and digest; the registry's tags move.
-  tag: 586a11dc@sha256:1f9ac009a62f6334ba494d24f1dba27cf398cdd75a66876289ba017fcfbce7b3
+  tag: 0.6.2@sha256:91a6f78e7f2254ab3e06b016cec50db3acb9d52dcd376ed6c1782659f4f69625
   pullPolicy: IfNotPresent
 
 # Private gateway only: https://mission-control.<domain>, LAN and VPN. Mission Control has its own login.
 subdomain: mission-control
 
 # The agent image agents run in, pinned by digest (`code.olsen.cloud/ai/mission-control-agent:<tag>@sha256:...`).
-# No default on purpose: the image is not in the registry yet, so the chart refuses to render without it.
-agentImage: ""
+# The chart refuses to render without a digest-pinned reference.
+agentImage: code.olsen.cloud/ai/mission-control-agent:0.6.2@sha256:a8b77fa763bbbf6522014c7a88ee0943d539c1e7dabc0bf52d177e45a5c6fc8f
 
 deployment:
   strategy: Recreate # SQLite on one ReadWriteOnce claim: never two writers
@@ -46,11 +46,11 @@ persistentVolumeClaims:
     storageClassName: local-path
     backup: true
 
-# Settings of the server (docs/reference/configuration.md). The keys come from a Secret that is not in Git.
+# Settings of the server (docs/reference/configuration.md). The keys are generated in the cluster (templates/keys.yaml).
 config:
   maxActiveRuns: 4
   registration: closed
-  # Created by Morten, never by this chart: keys MC_SERVER_SECRET_KEY and MC_SERVER_JWT_SECRET.
+  # Generated once by External Secrets, never rotated by the chart: keys MC_SERVER_SECRET_KEY and MC_SERVER_JWT_SECRET.
   keysSecret: mission-control-keys
 
 # Where agent pods run, and what fences them in.
