@@ -4,7 +4,7 @@ The Mission Control server (one replica, SQLite on one claim) at `https://missio
 private gateway only, with Mission Control's own login (no Authentik client). Agents run as pods in
 `mission-control-agents`. Design: ADR 0021 and `docs/spec/kubernetes-runner.md` in the Mission Control repository.
 
-The folder is `.disabled`, so the ApplicationSet ignores it. **Nothing runs from it until it is renamed.**
+Enabled on 2026-10-07: the ApplicationSet `homelab-apps` deploys it to `prod` as Application `mission-control`.
 
 ## The keys Secret (generated, not in Git)
 
@@ -16,14 +16,14 @@ A copied database keeps these keys: its secrets are re-encrypted to them with `m
 
 The forge token is entered in the web app after the first start; the chart holds none.
 
-## Before it is enabled
+## Before it was enabled
 
 1. The `apps` AppProject allows the destination namespace `mission-control-agents` (done 2026-10-07). It comes from
    `apps/root`, the hand-installed `argocd-apps` release: a change there needs `helm upgrade argocd-apps ./apps/root -n argocd`.
 2. `agentImage` and `image.tag` are pinned by digest (0.6.2 today); bump both together. The chart refuses to render an agent image without a digest.
 3. The decisions and cluster checks of the pull request (secrets encryption, `podPidsLimit`, mesh policy, CNI).
 
-Then `git mv mission-control.disabled mission-control`. The first start is an empty instance; the laptop's data is
+It was enabled with `git mv mission-control.disabled mission-control`. The first start is an empty instance; the laptop's data is
 copied in later (the migration runbook).
 
 ## After the first start: the agents' claim

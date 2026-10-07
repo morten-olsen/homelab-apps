@@ -1,6 +1,5 @@
 # Mission Control server, in the cluster (ADR 0021, docs/spec/kubernetes-runner.md in the Mission Control repo).
-# This folder is `.disabled`: ArgoCD ignores it. Enabling is `git mv mission-control.disabled mission-control`,
-# after the checklist in the pull request that added it.
+# Deployed by the ApplicationSet homelab-apps as Application mission-control (enabled 2026-10-07).
 image:
   repository: code.olsen.cloud/ai/mission-control
   # Pinned by tag and digest; the registry's tags move.
