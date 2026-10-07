@@ -10,6 +10,8 @@ spec:
   destinations:
   - namespace: prod
     server: https://kubernetes.default.svc
+  - namespace: mission-control-agents
+    server: https://kubernetes.default.svc
   clusterResourceWhitelist:
   - group: '*'
     kind: '*'
