@@ -1,6 +1,6 @@
 image:
   repository: livekit/livekit-server
-  tag: v1.13.7@sha256:6fd3b7088874c4d119160dd688798dfec852bc014786d392caad15f6f63912a3
+  tag: v1.13.9@sha256:98816456a5366b12d4a9fcf18a52b6f1daf4ab1b9d93e74410cf3c4c22b672f3
   pullPolicy: IfNotPresent
 
 subdomain: livekit
