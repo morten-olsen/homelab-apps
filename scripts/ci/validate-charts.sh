@@ -38,7 +38,7 @@ for chart in "${charts[@]}"; do
   if [ "$ok" = 1 ]; then
     step "helm lint" helm lint "$chart" --values "$chart/values.yaml" --values "$tmp/globals.yaml"
     if helm template "${name%.disabled}" "$chart" --namespace prod --values "$tmp/globals.yaml" >"$tmp/rendered.yaml" 2>"$tmp/out"; then
-      step "kubeconform" kubeconform -strict -ignore-missing-schemas -summary "$tmp/rendered.yaml"
+      step "kubeconform" kubeconform -strict -kubernetes-version 1.33.4 -ignore-missing-schemas -summary "$tmp/rendered.yaml"
     else
       echo "FAIL $name: helm template"
       sed 's/^/    /' "$tmp/out"
