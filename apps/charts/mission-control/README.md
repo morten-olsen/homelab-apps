@@ -47,3 +47,11 @@ admits only agent pods, the ingress gateway and the blackbox probe, on 7420.
 ## Test
 
 `tests/render.sh` renders the chart and asserts the design (needs `helm`, `yq`, `jq`). Extra arguments go to `helm template`.
+
+## Cluster access for roles
+
+`agents.clusterAccess` maps Mission Control roles to service accounts in the agents namespace (`MC_K8S_ROLE_ACCESS`):
+the Software Engineer runs as `mission-control-operator` (bound to `cluster-admin`: it operates the homelab like
+Morten, trusted until there is a reason not to), the SRE and Security Engineer as `mission-control-cluster-read`
+(get/list/watch; no Secrets, ConfigMaps, logs or exec). Mapped pods may also reach the API server and the private
+gateway (Forgejo, Woodpecker). To take access back, remove the role from `roles`.

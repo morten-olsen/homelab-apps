@@ -1,24 +1,44 @@
 {{- $a := .Values.agents }}
-{{- $r := $a.clusterRead }}
+{{- $r := $a.clusterAccess }}
 {{- if $r.roles }}
-# Read-only cluster access for chosen roles' agent pods (the Kubernetes runner spec, "Read-only cluster access").
-# Which role gets it is server configuration (MC_K8S_ROLE_ACCESS from agents.clusterRead.roles), not organization
-# data. A mapped role's pod runs as this account with its token mounted and the label cluster-access=read, which
-# also opens egress to the API server and to the private gateway (the forge and CI behind it). No Secrets, no
-# ConfigMaps, no logs, no exec, nothing that writes. Pods and workloads can carry plain env values: those are readable.
+{{- $read := printf "%s-cluster-read" (include "common.fullname" .) }}
+# Cluster access for chosen roles' agent pods (the Kubernetes runner spec, "Read-only cluster access", widened by
+# Morten after the move retro). Which role gets which account is server configuration (MC_K8S_ROLE_ACCESS from
+# agents.clusterAccess.roles), not organization data. A mapped role's pod runs as its account with its token mounted
+# and the label cluster-access=read (the launcher's name for any mapped account), which also opens egress to the API
+# server and the private gateway. The read tier: no Secrets, ConfigMaps, logs, exec or writes; plain env values in
+# pod specs are readable.
+{{- range $account, $clusterRole := $r.accounts }}
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ $r.serviceAccount }}
+  name: {{ $account }}
   namespace: {{ $a.namespace }}
   labels:
-    {{- include "common.labels" . | nindent 4 }}
+    {{- include "common.labels" $ | nindent 4 }}
 automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $account }}
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $account }}
+    namespace: {{ $a.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ if eq $clusterRole "read" }}{{ $read }}{{ else }}{{ $clusterRole }}{{ end }}
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "common.fullname" . }}-cluster-read
+  name: {{ $read }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
 rules:
@@ -55,21 +75,6 @@ rules:
   - apiGroups: [metrics.k8s.io]
     resources: [pods, nodes]
     verbs: [get, list]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: {{ include "common.fullname" . }}-cluster-read
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-subjects:
-  - kind: ServiceAccount
-    name: {{ $r.serviceAccount }}
-    namespace: {{ $a.namespace }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: {{ include "common.fullname" . }}-cluster-read
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
