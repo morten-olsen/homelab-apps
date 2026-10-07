@@ -53,9 +53,20 @@ config:
   # Generated once by External Secrets, never rotated by the chart: keys MC_SERVER_SECRET_KEY and MC_SERVER_JWT_SECRET.
   keysSecret: mission-control-keys
 
+# Who may connect to the server besides agent pods (templates/server-network-policy.yaml).
+networkPolicy:
+  ingressFrom:
+    - namespace: istio-ingress # the gateway serving shared/private
+      podLabels: { istio: gateway }
+    - namespace: monitoring # the blackbox Probe
+      podLabels: { app.kubernetes.io/name: prometheus-blackbox-exporter }
+
 # Where agent pods run, and what fences them in.
 agents:
   namespace: mission-control-agents
+  # The host directory of the server's data volume, for agent pods' claim (templates/agents-data.yaml). Empty until
+  # the server's local-path volume exists; agent pods cannot start without it.
+  dataPath: ""
   serviceAccount: mission-control-agent
   priorityClass: mission-control-agent
   quota:

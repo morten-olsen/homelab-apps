@@ -5,13 +5,15 @@ set -euo pipefail
 
 chart="$(cd "$(dirname "$0")/.." && pwd)"
 helm dependency update "$chart" >/dev/null
-rendered="$(helm template mission-control "$chart" --namespace prod \
-  --set globals.domain=olsen.cloud --set globals.istio.gateways.private=shared/private \
-  --set globals.istio.gateways.public=shared/public \
-  --set globals.backup.enabled=true --set globals.backup.nfs.server=192.168.20.106 \
-  --set globals.backup.nfs.path=/mnt/HDD/k8s/backups --set globals.backup.retain.daily=7 \
-  "$@")"
-json="$(printf '%s' "$rendered" | yq -o=json -I=0 '.' | jq -s '.')"
+globals=(--set globals.domain=olsen.cloud --set globals.istio.gateways.private=shared/private
+  --set globals.istio.gateways.public=shared/public
+  --set globals.backup.enabled=true --set globals.backup.nfs.server=192.168.20.106
+  --set globals.backup.nfs.path=/mnt/HDD/k8s/backups --set globals.backup.retain.daily=7)
+datapath=/var/lib/rancher/k3s/storage/pvc-0_prod_mission-control-data
+render() { helm template mission-control "$chart" --namespace prod "${globals[@]}" "$@" | yq -o=json -I=0 '.' | jq -s '.'; }
+json="$(render --set agents.dataPath=$datapath "$@")"
+# Before the server's volume exists, agents.dataPath is empty.
+nodata="$(render "$@")"
 
 failures=0
 # assert <description> <jq expression over the array of rendered objects that must be true>
@@ -69,7 +71,7 @@ assert "one Role in the agents namespace; no ClusterRole grants the server anyth
 assert "Role: pods create/get/list/watch/delete" "[$role | .[0].rules[] | select(.resources == [\"pods\"] and (.verbs | sort) == [\"create\",\"delete\",\"get\",\"list\",\"watch\"])] | length == 1"
 assert "Role: attach get/create, secrets create only" "([$role | .[0].rules[] | select(.resources == [\"pods/attach\"] and (.verbs | sort) == [\"create\",\"get\"])] | length == 1) and ([$role | .[0].rules[] | select(.resources == [\"secrets\"] and .verbs == [\"create\"])] | length == 1) and ($role | .[0].rules | length == 3)"
 assert "RoleBinding binds the server's account" "[.[] | select(.kind == \"RoleBinding\" and .metadata.namespace == \"$agents\" and .subjects[0].name == \"mission-control\" and .subjects[0].namespace == \"prod\" and .roleRef.name == \"mission-control-agents\")] | length == 1"
-assert "every namespaced object of the agents namespace stays in it" "[.[] | select(.kind != \"Namespace\" and .kind != \"ClusterRole\" and .kind != \"PriorityClass\" and .kind != \"Deployment\" and .kind != \"Service\" and .kind != \"PersistentVolumeClaim\" and .kind != \"VirtualService\" and .kind != \"ReplicationSource\" and .kind != \"Probe\" and .kind != \"Password\" and .kind != \"ExternalSecret\" and .kind != \"ServiceAccount\" and .metadata.namespace != \"$agents\" and .metadata.namespace != null)] | length == 0"
+assert "every namespaced object of the agents namespace stays in it" "[.[] | select((.kind == \"NetworkPolicy\" and .metadata.name == \"mission-control\") | not) | select(.kind != \"Namespace\" and .kind != \"ClusterRole\" and .kind != \"PriorityClass\" and .kind != \"Deployment\" and .kind != \"Service\" and .kind != \"PersistentVolumeClaim\" and .kind != \"VirtualService\" and .kind != \"ReplicationSource\" and .kind != \"Probe\" and .kind != \"Password\" and .kind != \"ExternalSecret\" and .kind != \"ServiceAccount\" and .metadata.namespace != \"$agents\" and .metadata.namespace != null)] | length == 0"
 
 # The agents namespace
 assert "namespace enforces Pod Security restricted" "[.[] | select(.kind == \"Namespace\" and .metadata.name == \"$agents\" and .metadata.labels[\"pod-security.kubernetes.io/enforce\"] == \"restricted\" and .metadata.labels[\"istio-injection\"] == null)] | length == 1"
@@ -85,6 +87,21 @@ assert "egress: the server's pods on 7420 only" "[$np | .[] | select(.metadata.n
 assert "egress: internet except every private range" "[$np | .[] | select(.metadata.name == \"allow-internet\" and .spec.egress[0].to[0].ipBlock.cidr == \"0.0.0.0/0\" and ([\"10.0.0.0/8\",\"172.16.0.0/12\",\"192.168.0.0/16\",\"100.64.0.0/10\",\"169.254.0.0/16\",\"0.0.0.0/8\",\"198.18.0.0/15\",\"192.0.0.0/24\",\"224.0.0.0/4\"] - .spec.egress[0].to[0].ipBlock.except | length == 0))] | length == 1"
 assert "no ingress rule anywhere, no IPv6 egress" "([$np | .[] | select(.spec.ingress != null)] | length == 0) and ([$np | .[].spec.egress // [] | .[].to[]?.ipBlock.cidr | select(. != null and contains(\":\"))] | length == 0)"
 assert "four network policies, no others" "$np | length == 4"
+
+# The server, which has no sidecar, takes connections only from agents, the ingress gateway and the probe
+snp='[.[] | select(.kind == "NetworkPolicy" and .metadata.namespace == "prod")]'
+assert "one network policy in the release namespace, on the server only" "($snp | length == 1) and ($snp | .[0].spec.podSelector.matchLabels == {\"app.kubernetes.io/name\":\"mission-control\",\"app.kubernetes.io/instance\":\"mission-control\"}) and ($snp | .[0].spec.policyTypes == [\"Ingress\"])"
+assert "server ingress: agents namespace, gateway pods, blackbox pods, on 7420 only" "($snp | .[0].spec.ingress | length == 1) and ($snp | .[0].spec.ingress[0].ports == [{\"protocol\":\"TCP\",\"port\":7420}]) and ($snp | [.[0].spec.ingress[0].from[] | [.namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"], (.podSelector.matchLabels // {} | to_entries | map(.key + \"=\" + .value) | join(\",\"))]] == [[\"$agents\",\"\"],[\"istio-ingress\",\"istio=gateway\"],[\"monitoring\",\"app.kubernetes.io/name=prometheus-blackbox-exporter\"]])"
+
+# Agent pods' claim: the same host directory as the server's volume, kept on prune and on deletion
+pv='[.[] | select(.kind == "PersistentVolume")]'
+assert "agents volume: the server's host directory, which must exist, Retain, bound to the agents' claim" "($pv | length == 1) and ($pv | .[0] | .spec.hostPath.path == \"$datapath\" and .spec.hostPath.type == \"Directory\" and .spec.persistentVolumeReclaimPolicy == \"Retain\" and .spec.storageClassName == \"\" and .spec.claimRef.namespace == \"$agents\" and .spec.claimRef.name == \"mission-control-data\" and .spec.capacity.storage == \"30Gi\" and .metadata.annotations[\"argocd.argoproj.io/sync-options\"] == \"Delete=false\")"
+assert "agents claim: named as MC_K8S_DATA_CLAIM, bound to that volume, kept on prune" "[.[] | select(.kind == \"PersistentVolumeClaim\" and .metadata.namespace == \"$agents\" and .metadata.name == \"mission-control-data\" and .spec.volumeName == \"$agents-data\" and .spec.storageClassName == \"\" and .metadata.annotations[\"argocd.argoproj.io/sync-options\"] == \"Delete=false\")] | length == 1"
+if [ "$(printf '%s' "$nodata" | jq '[.[] | select(.kind == "PersistentVolume" or (.kind == "PersistentVolumeClaim" and .metadata.namespace == "mission-control-agents"))] | length')" = 0 ]; then
+  printf 'ok   %s\n' "no agents volume until agents.dataPath is set"
+else
+  printf 'FAIL %s\n' "no agents volume until agents.dataPath is set"; failures=$((failures + 1))
+fi
 assert "Kyverno cleanup: terminated pods after 1h, any pod after 24h, in the agents namespace only" "([.[] | select(.kind == \"CleanupPolicy\" and .metadata.namespace == \"$agents\")] | length == 2) and ([.[] | select(.kind == \"CleanupPolicy\" and .metadata.name == \"agent-pods-terminated\" and (.spec.conditions.all[1].value == \"1h\"))] | length == 1) and ([.[] | select(.kind == \"CleanupPolicy\" and .metadata.name == \"agent-pods-overdue\" and (.spec.conditions.all[0].value == \"24h\"))] | length == 1)"
 
 # Settings the launcher reads
