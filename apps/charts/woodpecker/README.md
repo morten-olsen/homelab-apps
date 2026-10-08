@@ -2,7 +2,7 @@
 
 Woodpecker CI server + agent (Kubernetes backend) integrated with Forgejo as the forge.
 
-The agent runs pipeline steps as ephemeral Pods in the `prod` namespace — no DinD, no privileged containers. Istio sidecar injection is disabled on workflow Pods so they terminate cleanly when steps finish.
+The agent runs pipeline steps as ephemeral Pods in the `woodpecker-ci` namespace — no DinD, no privileged containers. A LimitRange there gives steps without their own `resources` default limits (`agent.pipelineLimits`), and reflector mirrors `woodpecker-pull-secret` from `prod` into it. Istio sidecar injection is disabled on workflow Pods so they terminate cleanly when steps finish.
 
 ## Pipeline patterns
 
