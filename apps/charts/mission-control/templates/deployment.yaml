@@ -91,6 +91,11 @@ spec:
             - name: MC_SERVER_JWT_SECRET
               valueFrom:
                 secretKeyRef: { name: {{ $keys }}, key: MC_SERVER_JWT_SECRET }
+            {{- if .Values.config.forgeWebhook.enabled }}
+            - name: MC_FORGE_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.config.forgeWebhook.secretName }}, key: MC_FORGE_WEBHOOK_SECRET }
+            {{- end }}
           volumeMounts:
             - { name: data, mountPath: /data }
             - { name: tmp, mountPath: /tmp }

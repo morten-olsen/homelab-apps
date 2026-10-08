@@ -55,3 +55,36 @@ the Software Engineer runs as `mission-control-operator` (bound to `cluster-admi
 Morten, trusted until there is a reason not to), the SRE and Security Engineer as `mission-control-cluster-read`
 (get/list/watch; no Secrets, ConfigMaps, logs or exec). Mapped pods may also reach the API server and the private
 gateway (Forgejo, Woodpecker). To take access back, remove the role from `roles`.
+
+## Forge webhooks
+
+`config.forgeWebhook.enabled` wires `MC_FORGE_WEBHOOK_SECRET` from the dedicated
+`mission-control-forge-webhook` Secret. External Secrets generates a 64-character password,
+base64-encoded, once (`refreshInterval: "0"`); the target is immutable and orphaned. Generator resources stay declared even when hooks are disabled.
+The existing encryption and JWT keys are unaffected. Disabling the option removes the
+webhook environment reference only; normal polling/refresh continues.
+The retained immutable key is not deleted or rotated by this rollback or re-enabling.
+Intentional key replacement requires a separately approved credential rotation; do not delete the Secret. Enabling or disabling restarts
+the single Recreate server briefly.
+
+Use Forgejo's Site Administration → Webhooks → Add System Webhook (Forgejo type),
+not Default Webhooks, which are copied only to newly created repositories. Target
+`https://mission-control.olsen.cloud/api/hooks/forges/8c5dde3f-1af2-4e0d-afec-9da9d4a34f08`,
+POST, application/json, active, TLS verification enabled, push and all pull-request event
+categories (including synchronization, comments and reviews). No Authorization header.
+An administrator must transfer the generated key locally into the Secret field without
+printing it, storing it in Git or task comments, or sharing it with the agent. For example,
+on a trusted Linux workstation with cluster access and `wl-copy`:
+
+```sh
+kubectl -n prod get secret mission-control-forge-webhook -o jsonpath='{.data.MC_FORGE_WEBHOOK_SECRET}' | base64 --decode | wl-copy
+```
+
+Paste into Forgejo, then clear the clipboard with `wl-copy --clear` (disable clipboard
+history before copying). This uses the decoded Kubernetes value verbatim; do not decode
+the generated password a second time. Keep the route private. Test a signed delivery
+(202), then a real event for a linked open PR. Record only delivery ID, time and status.
+Unsigned requests return 404; a test ping alone does not prove PR refresh. Build status
+still polls the current head independently of hooks.
+
+Forgejo v16 reference: https://forgejo.org/docs/v16.0/user/repository/webhooks/

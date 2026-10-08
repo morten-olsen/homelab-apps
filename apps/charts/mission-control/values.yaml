@@ -51,6 +51,10 @@ config:
   registration: closed
   # Generated once by External Secrets, never rotated by the chart: keys MC_SERVER_SECRET_KEY and MC_SERVER_JWT_SECRET.
   keysSecret: mission-control-keys
+  # Optional forge event delivery; disabling retains polling/refresh. Dedicated key, generated once.
+  forgeWebhook:
+    enabled: true
+    secretName: mission-control-forge-webhook
 
 # Who may connect to the server besides agent pods (templates/server-network-policy.yaml).
 networkPolicy:

@@ -1,0 +1,40 @@
+# Dedicated webhook key, generated once; never changes the server encryption or JWT keys.
+---
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: {{ .Release.Name }}-forge-webhook-generator
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  length: 64
+  allowRepeat: true
+  encoding: base64
+  secretKeys:
+    - MC_FORGE_WEBHOOK_SECRET
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ .Values.config.forgeWebhook.secretName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  refreshInterval: "0"
+  target:
+    name: {{ .Values.config.forgeWebhook.secretName }}
+    creationPolicy: Orphan
+    immutable: true
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: {{ .Release.Name }}-forge-webhook-generator
