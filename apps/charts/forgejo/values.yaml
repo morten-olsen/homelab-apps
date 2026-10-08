@@ -133,31 +133,12 @@ env:
       secretKeyRef:
         name: "{release}-connection"
         key: password
-  # Actions configuration
-  FORGEJO__actions__ENABLED: "true"
-  FORGEJO__actions__ENABLED_FOR_REPOSITORIES: "true"
-  FORGEJO__actions__ENABLED_FOR_DEFAULT_BRANCH: "true"
-  FORGEJO__actions__SHARED_SECRET:
-    valueFrom:
-      secretKeyRef:
-        name: "{release}-runner-secrets"
-        key: shared-secret
+  # Actions is off: all CI runs on Woodpecker.
+  FORGEJO__actions__ENABLED: "false"
 
-# External Secrets configuration for Actions runner
-externalSecrets:
-  - name: "{release}-runner-secrets"
-    passwords:
-      - name: shared-secret
-        length: 20
-        allowRepeat: true
-        noUpper: false
-        encoding: hex
-        secretKeys:
-          - shared-secret
-
-# Actions runner configuration
+# Actions runner configuration (disabled; kept for reference)
 actions:
-  enabled: true
+  enabled: false
   runner:
     image:
       repository: code.forgejo.org/forgejo/runner
