@@ -13,10 +13,19 @@ agent:
   # Each pipeline pod is independent, so this scales pipeline throughput
   # without needing more agent replicas.
   maxWorkflows: 5
-  # Namespace where the k8s backend creates ephemeral pipeline pods.
-  # Starts in prod alongside the agent; consider moving to a dedicated
-  # namespace once we have a feel for blast radius.
-  pipelineNamespace: prod
+  # Namespace where the k8s backend creates ephemeral pipeline pods. Kept
+  # out of prod so a LimitRange can bound every step without touching apps.
+  pipelineNamespace: woodpecker-ci
+  # Defaults for steps that set no resources of their own. Unbounded steps
+  # reached ~4 cores each and drove node load past 500 during CI bursts.
+  # Memory leaves headroom over observed peaks (mise ~5 GiB, kaniko ~3.7 GiB).
+  pipelineLimits:
+    default:
+      cpu: "2"
+      memory: 6Gi
+    defaultRequest:
+      cpu: 100m
+      memory: 256Mi
   pipelineStorageClass: local-path
   pipelineVolumeSize: 10G
 
