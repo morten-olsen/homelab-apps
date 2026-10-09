@@ -88,3 +88,10 @@ Unsigned requests return 404; a test ping alone does not prove PR refresh. Build
 still polls the current head independently of hooks.
 
 Forgejo v16 reference: https://forgejo.org/docs/v16.0/user/repository/webhooks/
+
+## Probes
+
+Readiness uses `/api/ready`, which reads one row at most from SQLite and returns 503 if the
+read fails. Startup and liveness use `/api/health`, so a database failure removes the server
+from Service endpoints without causing a restart loop. This read check does not prove that
+`/data` is writable. Deploy a server release containing `/api/ready` before merging this probe change.

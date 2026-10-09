@@ -27,9 +27,9 @@ container:
   resources:
     requests: { cpu: 100m, memory: 256Mi, ephemeral-storage: 1Gi }
     limits: { cpu: "1", memory: 1Gi, ephemeral-storage: 5Gi }
-  # /api/health proves the event loop answers, not that the database or /data work.
+  # Readiness reads SQLite; startup and liveness only check the event loop.
   startupProbe: { path: /api/health, periodSeconds: 5, failureThreshold: 24 }
-  readinessProbe: { path: /api/health, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
+  readinessProbe: { path: /api/ready, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
   livenessProbe: { path: /api/health, periodSeconds: 20, timeoutSeconds: 3, failureThreshold: 3 }
 
 service:
