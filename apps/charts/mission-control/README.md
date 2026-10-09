@@ -92,6 +92,7 @@ Forgejo v16 reference: https://forgejo.org/docs/v16.0/user/repository/webhooks/
 ## Probes
 
 Readiness uses `/api/ready`, which reads one row at most from SQLite and returns 503 if the
-read fails. Startup and liveness use `/api/health`, so a database failure removes the server
-from Service endpoints without causing a restart loop. This read check does not prove that
+read fails. Startup and liveness use `/api/health`, so thrown read errors remove the server
+from Service endpoints without directly causing restarts. A synchronous SQLite I/O stall can
+block the event loop and cause liveness timeouts and restarts; probe timeouts do not cancel SQL. This read check does not prove that
 `/data` is writable. Deploy a server release containing `/api/ready` before merging this probe change.
