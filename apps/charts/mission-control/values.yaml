@@ -3,7 +3,7 @@
 image:
   repository: code.olsen.cloud/ai/mission-control
   # Pinned by tag and digest; the registry's tags move.
-  tag: 0.15.0@sha256:b910f53eeacfb20783f5b0720d20f366d7cc9641c34ccad6da0651584c4ed42f
+  tag: 0.16.0@sha256:2cd812a7b67465e37c2eaa940b27b8bfaa4156d3c0731bf754d6e54160c285ba
   pullPolicy: IfNotPresent
 
 # Private gateway only: https://mission-control.<domain>, LAN and VPN. Mission Control has its own login.
@@ -11,7 +11,7 @@ subdomain: mission-control
 
 # The agent image agents run in, pinned by digest (`code.olsen.cloud/ai/mission-control-agent:<tag>@sha256:...`).
 # The chart refuses to render without a digest-pinned reference.
-agentImage: code.olsen.cloud/ai/mission-control-agent:0.15.0@sha256:64c49996ba5c042128d15ed9d6b6408e59706e34ec20fc0fed0f93d9e5d16d4d
+agentImage: code.olsen.cloud/ai/mission-control-agent:0.16.0@sha256:d7d3c964cbc21633c91c75312eedafbe96deea0b7dc148f8398e15c85d2f9e61
 
 deployment:
   strategy: Recreate # SQLite on one ReadWriteOnce claim: never two writers
