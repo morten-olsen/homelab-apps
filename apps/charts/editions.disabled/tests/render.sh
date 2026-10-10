@@ -14,8 +14,12 @@ jq -e '
       and .resources.requests.cpu == "250m" and .resources.limits.cpu == "2"
       and any(.env[]; .name == "NODE_OPTIONS" and .value == "--max-old-space-size=256")]
     == [true]) and
-  ([.[] | select(.kind == "Deployment") | .spec.template.spec.initContainers[]
-    | .resources.requests.memory == "16Mi" and .resources.limits.memory == "64Mi"] == [true]) and
+  any(.[]; .kind == "Deployment"
+    and ((.spec.template.spec.initContainers // []) | length) == 0
+    and .spec.template.spec.automountServiceAccountToken == false
+    and .spec.template.spec.securityContext.fsGroup == 1001
+    and .spec.template.spec.securityContext.fsGroupChangePolicy == "OnRootMismatch"
+    and .spec.template.metadata.annotations["sidecar.istio.io/inject"] == "false") and
   any(.[]; .kind == "PersistentVolumeClaim" and .metadata.name == "editions-data"
     and .metadata.annotations["argocd.argoproj.io/sync-options"] == "Delete=false")
 ' <<<"$json" >/dev/null

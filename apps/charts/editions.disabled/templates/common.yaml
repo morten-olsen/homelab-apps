@@ -1,1 +1,9 @@
-{{ include "common.all" (list . .Values) }}
+{{- /* The pinned common chart lacks pod security/token controls. Keep its
+Deployment rendering and add only those fields locally. */ -}}
+{{- $deployment := include "common.deployment" (list . .Values) | fromYaml -}}
+{{- $_ := set $deployment.spec.template.spec "automountServiceAccountToken" false -}}
+{{- $_ := set $deployment.spec.template.spec "securityContext" (dict "fsGroup" 1001 "fsGroupChangePolicy" "OnRootMismatch" "runAsNonRoot" true "seccompProfile" (dict "type" "RuntimeDefault")) -}}
+{{ toYaml $deployment }}
+{{- $other := deepCopy .Values -}}
+{{- $_ := unset $other "deployment" -}}
+{{ include "common.all" (list . $other) }}

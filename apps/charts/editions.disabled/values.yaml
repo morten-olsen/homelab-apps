@@ -15,6 +15,9 @@ dns:
 deployment:
   strategy: Recreate
   replicas: 1
+  # No Kubernetes API use or mesh policy is needed by Editions.
+  podAnnotations:
+    sidecar.istio.io/inject: "false"
 
 container:
   # Real fp32 worker warm-up reached ~500 MB RSS. Leave room for native ONNX
@@ -41,24 +44,6 @@ service:
   port: 3007
   type: ClusterIP
 
-initContainers:
-  - name: fix-permissions
-    image: busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
-    resources:
-      requests: { cpu: 10m, memory: 16Mi }
-      limits: { cpu: 100m, memory: 64Mi }
-    command: ["sh", "-c", "chown -R 1001:1001 /data"]
-    volumeMounts:
-      - name: data
-        mountPath: /data
-    securityContext:
-      runAsUser: 0
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop: [ALL]
-        add: [CHOWN]
-      seccompProfile:
-        type: RuntimeDefault
 externalSecrets:
   - name: "{release}-secrets"
     passwords:
