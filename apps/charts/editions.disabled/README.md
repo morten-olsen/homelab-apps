@@ -12,11 +12,21 @@ The acceptance and abort criteria live in the Editions repository at
 
 The root `chown` initializer has been removed. The application runs as UID/GID
 1001 with fsGroup 1001 and OnRootMismatch, no privilege escalation, all
-capabilities dropped and RuntimeDefault seccomp. The preserved local PV was
-previously used by UID 1001; normal Kubernetes volume-group handling is used.
+capabilities dropped and RuntimeDefault seccomp. The live PV reports
+spec.local.path (not spec.hostPath); its provisioner is rancher.io/local-path.
+Existing directory ownership and database write permissions are unverified;
+fsGroup in the Pod is not evidence that this particular mount is writable.
+Before starting the 72-hour clock, verify the fixed-image Pod is Running,
+startup has no EACCES/permission error, and a normal application operation
+successfully writes the database. Reading the database alone is insufficient.
 If the existing volume cannot be written during startup, stop and report;
 do not introduce a root initializer or maintenance permission job as a fallback.
 No PVC/PV deletion or database migration is part of this change.
+
+Observation must read restartCount and lastState, and node Ready history, in
+addition to continuous RSS data. Missed checks are unverified. Two failed analysis
+jobs require stop/report; score coverage and invalid-vector counts determine
+recovery, never analysed timestamps alone.
 
 The pinned common chart lacks pod security and token controls, so the local
 template augments its rendered Deployment and delegates all other resources to
