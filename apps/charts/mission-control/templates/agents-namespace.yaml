@@ -148,6 +148,23 @@ spec:
             except:
               {{- toYaml $a.egressExcept | nindent 14 }}
 ---
+{{- with $a.lan }}
+# The home network subnets in agents.lan, which allow-internet leaves out: every agent pod may reach them, on any port.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-lan
+  namespace: {{ $ns }}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        {{- range . }}
+        - ipBlock: { cidr: {{ . }} }
+        {{- end }}
+---
+{{- end }}
 # Pods whose run ended, or that ran for a day, hold quota and a Secret with credentials in it. A server that
 # was killed leaves them behind until its next start; these two policies do not wait for it.
 # The cleanup controller may delete pods only where a policy says so; this grants it the verbs.
