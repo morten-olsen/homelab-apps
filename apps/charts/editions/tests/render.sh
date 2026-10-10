@@ -12,7 +12,7 @@ jq -e '
     | select(.name == "editions")
     | .resources.requests.memory == "512Mi" and .resources.limits.memory == "1536Mi"
       and .resources.requests.cpu == "250m" and .resources.limits.cpu == "2"
-      and any(.env[]; .name == "NODE_OPTIONS" and .value == "--max-old-space-size=256")]
+      and any(.env[]; .name == "NODE_OPTIONS" and .value == "--max-old-space-size=1024")]
     == [true]) and
   any(.[]; .kind == "Deployment"
     and ((.spec.template.spec.initContainers // []) | length) == 0
