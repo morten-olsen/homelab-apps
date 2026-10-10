@@ -9,10 +9,13 @@ agent:
     tag: v3.19.0@sha256:f85f163e09494ace3377a3f3a6043f131fb47e3e627f7438de42417ee06ca56d
     pullPolicy: IfNotPresent
   replicas: 1
-  # Concurrent workflows this agent will run in parallel.
-  # Each pipeline pod is independent, so this scales pipeline throughput
-  # without needing more agent replicas.
-  maxWorkflows: 5
+  # Concurrent workflows this agent will run in parallel. Each workflow's
+  # steps write to a volume on the node's NVMe, beside the k3s datastore and
+  # every app's data, and resource limits do not bound disk I/O: on
+  # 2026-10-10 four workflows at once (pnpm installs) pushed I/O pressure to
+  # ~40% and stalled Mission Control, the ingress gateway and Grafana. Two
+  # until CI gets disk of its own (Mission Control task in Home IT).
+  maxWorkflows: 2
   # Namespace where the k8s backend creates ephemeral pipeline pods. Kept
   # out of prod so a LimitRange can bound every step without touching apps.
   pipelineNamespace: woodpecker-ci
