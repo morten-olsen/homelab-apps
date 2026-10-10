@@ -17,12 +17,14 @@ deployment:
   replicas: 1
 
 container:
-  # Real fp32 worker warm-up reached ~500 MB RSS. Leave room for native ONNX
-  # allocations, both Node heaps and the SQLite/model file cache. The 72-hour
-  # post-fix observation must pass before these provisional bounds are final.
+  # Two ONNX models run in the worker: bge-small embeddings (~500 MB RSS warm)
+  # and the bart-large-mnli classifier, 1.6 GB of fp32 weights on its own.
+  # At 1536Mi the first classification after the fix was OOMKilled
+  # (2026-10-10); the limit leaves room for both models, inference and the
+  # SQLite cache. The 72-hour observation settles the final numbers.
   resources:
-    requests: { cpu: 250m, memory: 512Mi }
-    limits: { cpu: "2", memory: 1536Mi }
+    requests: { cpu: 250m, memory: 2560Mi }
+    limits: { cpu: "2", memory: 4Gi }
   ports:
     - name: http
       port: 3007
@@ -52,7 +54,7 @@ externalSecrets:
           - jwt-secret
 
 env:
-  # The container's 1536Mi limit is what protects the node. The heap ceiling
+  # The container's 4Gi limit is what protects the node. The heap ceiling
   # only has to leave room for native (ONNX) memory under it: at 256 MiB the
   # startup re-analysis of ~17k articles hit it and crash-looped (2026-10-10).
   NODE_OPTIONS: "--max-old-space-size=1024"
