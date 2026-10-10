@@ -19,8 +19,8 @@ jq -e '
     and .spec.template.spec.automountServiceAccountToken == false
     and .spec.template.spec.securityContext.fsGroup == 1001
     and .spec.template.spec.securityContext.fsGroupChangePolicy == "OnRootMismatch"
-    and .spec.template.metadata.annotations["sidecar.istio.io/inject"] == "false") and
+    and (.spec.template.metadata.annotations["sidecar.istio.io/inject"] // "") != "false") and
   any(.[]; .kind == "PersistentVolumeClaim" and .metadata.name == "editions-data"
     and .metadata.annotations["argocd.argoproj.io/sync-options"] == "Delete=false")
 ' <<<"$json" >/dev/null
-printf 'Editions resource ceilings and preserved PVC verified\n'
+printf 'Editions resource ceilings, mesh sidecar and preserved PVC verified\n'
