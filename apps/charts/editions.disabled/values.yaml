@@ -15,8 +15,17 @@ dns:
 deployment:
   strategy: Recreate
   replicas: 1
+  # No Kubernetes API use or mesh policy is needed by Editions.
+  podAnnotations:
+    sidecar.istio.io/inject: "false"
 
 container:
+  # Real fp32 worker warm-up reached ~500 MB RSS. Leave room for native ONNX
+  # allocations, both Node heaps and the SQLite/model file cache. The 72-hour
+  # post-fix observation must pass before these provisional bounds are final.
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: "2", memory: 1536Mi }
   ports:
     - name: http
       port: 3007
@@ -24,20 +33,17 @@ container:
   securityContext:
     runAsUser: 1001
     runAsGroup: 1001
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
 # Service configuration
 service:
   port: 3007
   type: ClusterIP
 
-initContainers:
-  - name: fix-permissions
-    image: busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
-    command: ["sh", "-c", "chown -R 1001:1001 /data"]
-    volumeMounts:
-      - name: data
-        mountPath: /data
-    securityContext:
-      runAsUser: 0
 externalSecrets:
   - name: "{release}-secrets"
     passwords:
@@ -49,6 +55,7 @@ externalSecrets:
           - jwt-secret
 
 env:
+  NODE_OPTIONS: "--max-old-space-size=256"
   EDITIONS_PORT: "3007"
   EDITIONS_JWT_SECRET:
     valueFrom:
