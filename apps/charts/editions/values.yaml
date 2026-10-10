@@ -52,7 +52,10 @@ externalSecrets:
           - jwt-secret
 
 env:
-  NODE_OPTIONS: "--max-old-space-size=256"
+  # The container's 1536Mi limit is what protects the node. The heap ceiling
+  # only has to leave room for native (ONNX) memory under it: at 256 MiB the
+  # startup re-analysis of ~17k articles hit it and crash-looped (2026-10-10).
+  NODE_OPTIONS: "--max-old-space-size=1024"
   EDITIONS_PORT: "3007"
   EDITIONS_JWT_SECRET:
     valueFrom:
