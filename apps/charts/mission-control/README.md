@@ -57,6 +57,13 @@ Morten, trusted until there is a reason not to), every other Home IT role as `mi
 gateway (Forgejo, Woodpecker); a role that is not mapped reaches neither, so it cannot clone from the forge. A new
 role needs adding here. To take access back, remove the role from `roles`.
 
+## Home network for agents
+
+Agent pods reach the internet but none of the private ranges (`agents.egressExcept`). `agents.lan` lists the home
+network subnets every agent pod may reach as well, on any port (`allow-lan`), so roles can manage the hosts and
+devices there: today 192.168.10.0/24, 192.168.20.0/24 (with the homelab host) and 192.168.30.0/24. Empty it to take
+the access back. Choosing subnets per role in Mission Control is planned (task 74527fd7).
+
 ## Forge webhooks
 
 `config.forgeWebhook.enabled` wires `MC_FORGE_WEBHOOK_SECRET` from the dedicated

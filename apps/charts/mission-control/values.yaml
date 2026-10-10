@@ -116,6 +116,13 @@ agents:
     - 198.18.0.0/15
     - 192.0.0.0/24
     - 224.0.0.0/4
+  # Home network subnets every agent pod may also reach (templates/agents-namespace.yaml, allow-lan): the devices and
+  # hosts roles manage, the homelab host 192.168.20.180 among them. Decided by Morten (2026-10-10, task 74527fd7) in
+  # place of host networking; a per-role choice of subnets in Mission Control is planned. Empty for none.
+  lan:
+    - 192.168.10.0/24
+    - 192.168.20.0/24
+    - 192.168.30.0/24
   cleanup:
     schedule: "*/15 * * * *"
     terminatedAfter: 1h

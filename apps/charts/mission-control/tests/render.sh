@@ -87,7 +87,13 @@ assert "egress: DNS to kube-dns on 53" "[$np | .[] | select(.metadata.name == \"
 assert "egress: the server's pods on 7420 only" "[$np | .[] | select(.metadata.name == \"allow-mission-control\" and .spec.egress[0].to[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"prod\" and .spec.egress[0].to[0].podSelector.matchLabels[\"app.kubernetes.io/name\"] == \"mission-control\" and (.spec.egress[0].ports | length == 1) and .spec.egress[0].ports[0].port == 7420)] | length == 1"
 assert "egress: internet except every private range" "[$np | .[] | select(.metadata.name == \"allow-internet\" and .spec.egress[0].to[0].ipBlock.cidr == \"0.0.0.0/0\" and ([\"10.0.0.0/8\",\"172.16.0.0/12\",\"192.168.0.0/16\",\"100.64.0.0/10\",\"169.254.0.0/16\",\"0.0.0.0/8\",\"198.18.0.0/15\",\"192.0.0.0/24\",\"224.0.0.0/4\"] - .spec.egress[0].to[0].ipBlock.except | length == 0))] | length == 1"
 assert "no ingress rule anywhere, no IPv6 egress" "([$np | .[] | select(.spec.ingress != null)] | length == 0) and ([$np | .[].spec.egress // [] | .[].to[]?.ipBlock.cidr | select(. != null and contains(\":\"))] | length == 0)"
-assert "four network policies for every agent pod, and the read tier's" "($np | map(.metadata.name) | sort) == [\"allow-cluster-read\",\"allow-dns\",\"allow-internet\",\"allow-mission-control\",\"default-deny\"]"
+assert "five network policies for every agent pod, and the read tier's" "($np | map(.metadata.name) | sort) == [\"allow-cluster-read\",\"allow-dns\",\"allow-internet\",\"allow-lan\",\"allow-mission-control\",\"default-deny\"]"
+assert "egress: every agent pod reaches the home network subnets, nothing else of the private ranges" "[$np | .[] | select(.metadata.name == \"allow-lan\" and .spec.podSelector == {} and .spec.policyTypes == [\"Egress\"] and (.spec.egress | length == 1) and .spec.egress[0].ports == null and ([.spec.egress[0].to[].ipBlock] == [{\"cidr\":\"192.168.10.0/24\"},{\"cidr\":\"192.168.20.0/24\"},{\"cidr\":\"192.168.30.0/24\"}]))] | length == 1"
+if [ "$(printf '%s' "$(render --set agents.lan=null "$@")" | jq '[.[] | select(.kind == "NetworkPolicy" and .metadata.name == "allow-lan")] | length')" = 0 ]; then
+  printf 'ok   %s\n' "no home network access when agents.lan is empty"
+else
+  printf 'FAIL %s\n' "no home network access when agents.lan is empty"; failures=$((failures + 1))
+fi
 
 # The server, which has no sidecar, takes connections only from agents, the ingress gateway and the probe
 snp='[.[] | select(.kind == "NetworkPolicy" and .metadata.namespace == "prod")]'
