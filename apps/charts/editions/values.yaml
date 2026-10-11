@@ -1,6 +1,6 @@
 image:
   repository: code.olsen.cloud/incubator/editions
-  tag: 1b184705@sha256:36445f586d8c6f9fc189e2c5aae5c17cd69e6340c76c0fce0b078872539718b2
+  tag: 6dee3a01@sha256:4c1675a39e1849272eb21dc029a49b04851eca0e4d2a07f01130cbfb04072b25
   pullPolicy: Always
 
 subdomain: editions
@@ -17,13 +17,11 @@ deployment:
   replicas: 1
 
 container:
-  # Two ONNX models run in the worker: bge-small embeddings (~500 MB RSS warm)
-  # and the bart-large-mnli classifier, 1.6 GB of fp32 weights on its own.
-  # At 1536Mi the first classification after the fix was OOMKilled
-  # (2026-10-10); the limit leaves room for both models, inference and the
-  # SQLite cache. The 72-hour observation settles the final numbers.
+  # Measured production-copy startup with both fp32 models: 2841 MiB peak RSS.
+  # One model is resident at a time; bounded jobs/pages/HTTP and ONNX sessions
+  # keep work inside the limit. Long-term stability remains under observation.
   resources:
-    requests: { cpu: 250m, memory: 2560Mi }
+    requests: { cpu: 250m, memory: 3Gi }
     limits: { cpu: "2", memory: 4Gi }
   ports:
     - name: http
@@ -54,10 +52,8 @@ externalSecrets:
           - jwt-secret
 
 env:
-  # The container's 4Gi limit is what protects the node. The heap ceiling
-  # only has to leave room for native (ONNX) memory under it: at 256 MiB the
-  # startup re-analysis of ~17k articles hit it and crash-looped (2026-10-10).
-  NODE_OPTIONS: "--max-old-space-size=1024"
+  # Sampled main heap peaked at 162 MiB; native model memory is outside V8.
+  NODE_OPTIONS: "--max-old-space-size=512"
   EDITIONS_PORT: "3007"
   EDITIONS_JWT_SECRET:
     valueFrom:
