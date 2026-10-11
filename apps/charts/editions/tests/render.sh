@@ -10,9 +10,9 @@ json="$(helm template editions "$chart" --namespace prod --values "$globals" "$@
 jq -e '
   ([.[] | select(.kind == "Deployment") | .spec.template.spec.containers[]
     | select(.name == "editions")
-    | .resources.requests.memory == "2560Mi" and .resources.limits.memory == "4Gi"
+    | .resources.requests.memory == "3Gi" and .resources.limits.memory == "4Gi"
       and .resources.requests.cpu == "250m" and .resources.limits.cpu == "2"
-      and any(.env[]; .name == "NODE_OPTIONS" and .value == "--max-old-space-size=1024")]
+      and any(.env[]; .name == "NODE_OPTIONS" and .value == "--max-old-space-size=512")]
     == [true]) and
   any(.[]; .kind == "Deployment"
     and ((.spec.template.spec.initContainers // []) | length) == 0
