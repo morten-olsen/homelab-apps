@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 chart="$(cd "$(dirname "$0")/.." && pwd)"
-helm dependency update "$chart" >/dev/null
+helm dependency build "$chart" >/dev/null
 helm template woodpecker "$chart" --namespace prod \
   --values "$chart/../../root/values.yaml" \
   --show-only templates/agent-deployment.yaml | yq -o=json '.' | jq -e '
