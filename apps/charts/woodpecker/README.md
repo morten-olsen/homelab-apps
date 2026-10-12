@@ -1,5 +1,13 @@
 # woodpecker
 
+Workflow PVCs use the `woodpecker-ci` class under `/mnt/ssd/woodpecker-ci` on the node’s general SATA SSD.
+Deploy homelab/core's CI storage configuration first; see its `docs/ci-storage.md`.
+The agent uses Recreate to avoid doubling concurrency during rollouts: merge
+agent configuration changes only when no workflows are running. Workspaces move
+to sda, while container image unpacking, writable layers and logs stay on NVMe.
+Keep concurrency at two during the move and restore five after the measured
+concurrent-install acceptance run. `tests/render.sh` checks the agent wiring.
+
 Woodpecker CI server + agent (Kubernetes backend) integrated with Forgejo as the forge.
 
 The agent runs pipeline steps as ephemeral Pods in the `woodpecker-ci` namespace — no DinD, no privileged containers. A LimitRange there gives steps without their own `resources` default limits (`agent.pipelineLimits`), and reflector mirrors `woodpecker-pull-secret` from `prod` into it. Istio sidecar injection is disabled on workflow Pods so they terminate cleanly when steps finish.

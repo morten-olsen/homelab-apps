@@ -30,7 +30,9 @@ container:
   # Readiness reads SQLite; startup and liveness only check the event loop.
   startupProbe: { path: /api/health, periodSeconds: 5, failureThreshold: 24 }
   readinessProbe: { path: /api/ready, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
-  livenessProbe: { path: /api/health, periodSeconds: 20, timeoutSeconds: 3, failureThreshold: 3 }
+  # SQLite blocks the event loop during disk stalls. Allow ~3 minutes before
+  # restarting; readiness still stops routing requests after ~30 seconds.
+  livenessProbe: { path: /api/health, periodSeconds: 20, timeoutSeconds: 5, failureThreshold: 9 }
 
 service:
   port: 7420
