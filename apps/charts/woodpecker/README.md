@@ -5,8 +5,9 @@ Deploy homelab/core's CI storage configuration first; see its `docs/ci-storage.m
 The agent uses Recreate to avoid doubling concurrency during rollouts: merge
 agent configuration changes only when no workflows are running. Workspaces move
 to sda, while container image unpacking, writable layers and logs stay on NVMe.
-Keep concurrency at two during the move and restore five after the measured
-concurrent-install acceptance run. `tests/render.sh` checks the agent wiring.
+Concurrency is five after successful SSD acceptance at two; verify queued real
+installs after raising it. `tests/render.sh` checks the agent wiring. For recovery,
+return to two workflows at an idle agent boundary.
 
 Woodpecker CI server + agent (Kubernetes backend) integrated with Forgejo as the forge.
 

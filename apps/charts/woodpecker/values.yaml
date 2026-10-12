@@ -10,8 +10,8 @@ agent:
     pullPolicy: IfNotPresent
   replicas: 1
   # CI workspaces use a subfolder on the general sda filesystem, separate from k3s/app data.
-  # Keep two workflows during the move; restore five after measured acceptance.
-  maxWorkflows: 2
+  # Eight real installs passed at two on the SSD; restore five and verify a backlog.
+  maxWorkflows: 5
   # Namespace where the k8s backend creates ephemeral pipeline pods. Kept
   # out of prod so a LimitRange can bound every step without touching apps.
   pipelineNamespace: woodpecker-ci
