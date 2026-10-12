@@ -6,6 +6,9 @@ metadata:
     app: "{{ .Release.Name }}-agent"
 spec:
   replicas: {{ .Values.agent.replicas | default 1 }}
+  # Two agents during a rolling update would double the concurrency ceiling.
+  strategy:
+    type: Recreate
   revisionHistoryLimit: 2
   selector:
     matchLabels:
