@@ -55,6 +55,12 @@ oidc:
   redirectUris:
     - "/login"
   subjectMode: user_username
+  # A dedicated scope avoids the conflicting shared email mappings. Provision
+  # its reviewed expression with scripts/reconcile-email-mapping.py first.
+  scopes:
+    - openid
+    - profile
+    - mealie-email
 
 # Environment variables
 env:
@@ -66,6 +72,9 @@ env:
   PUID: "1000"
   PGID: "1000"
   OIDC_AUTH_ENABLED: "true"
+  OIDC_REQUIRES_EMAIL_VERIFICATION: "true"
+  # The standard profile mapping supplies groups as well as the user's name.
+  OIDC_SCOPES_OVERRIDE: "openid profile mealie-email"
   OIDC_SIGNUP_ENABLED: "true"
   OIDC_USER_GROUP: "mealie-users"
   OIDC_ADMIN_GROUP: "admin"
