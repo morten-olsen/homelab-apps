@@ -43,8 +43,10 @@ try:
         if not (user.is_active and user.username == "morten" and user.email == "morten@olsen.pro"):
             raise ValueError("Approved Authentik identity no longer matches; stop for a new decision")
         OAuth2Provider.objects.get(name="prod-mealie")
+        # The operator lowercases scope names when selecting mappings. Detect
+        # those same collisions, then require the canonical spelling below.
         candidates = ScopeMapping.objects.filter(
-            Q(scope_name=settings["scope"]) | Q(name=settings["name"])
+            Q(scope_name__iexact=settings["scope"]) | Q(name=settings["name"])
         )
         if settings["apply"]:
             candidates = candidates.select_for_update()

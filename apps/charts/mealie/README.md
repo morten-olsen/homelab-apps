@@ -17,7 +17,8 @@ This is an explicit owner attestation, not automated proof of mailbox ownership.
 
 The approved expression is in `scripts/reconcile-email-mapping.py`. It creates
 only `prod-mealie verified email`, with scope `mealie-email`, and refuses
-duplicate scopes, name collisions, managed mappings, an unexpected identity,
+duplicate scopes (case-insensitive, matching the operator), noncanonical scope
+spelling, name collisions, managed mappings, an unexpected identity,
 or a mapping attached to another provider. It never edits a shared mapping,
 provider, user, password, or Mealie database.
 
