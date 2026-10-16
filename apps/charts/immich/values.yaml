@@ -57,6 +57,25 @@ virtualService:
     public: true
     private: true
   servicePort: 80 # Port of the main server service
+  # Immich has no CORS support of its own; Envoy answers preflights and adds
+  # the headers. API keys travel in x-api-key, so credentials stay disabled.
+  corsPolicy:
+    allowOrigins:
+      - regex: "https?://localhost(:[0-9]+)?"
+      - regex: "https://([a-z0-9-]+\\.)+{domain}"
+    allowMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+    allowHeaders:
+      - authorization
+      - content-type
+      - x-api-key
+      - x-immich-checksum
+      - x-immich-share-key
+      - x-immich-user-token
+      - x-immich-session-token
+    exposeHeaders:
+      - content-disposition
+      - content-length
+    maxAge: 24h
 
 # OIDC client configuration
 oidc:
