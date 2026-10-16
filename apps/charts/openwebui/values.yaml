@@ -77,7 +77,7 @@ env:
       secretKeyRef:
         name: "{release}-oidc-credentials"
         key: clientSecret
-  ENABLE_LOGIN_FORM: "false"
+  ENABLE_LOGIN_FORM: "true"
   OPENID_REDIRECT:
     value: "https://{subdomain}.{domain}/oauth/oidc/callback"
   TERMINAL_SERVER_CONNECTIONS:
