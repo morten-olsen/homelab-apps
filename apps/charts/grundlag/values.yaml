@@ -18,7 +18,8 @@ persistentVolumeClaims:
 
 deployment:
   strategy: Recreate
-  replicas: 1
+  # Keep zero quoted: homelab-common's `default 1` replaces numeric zero.
+  replicas: "0"
   revisionHistoryLimit: 0
 
 container:
@@ -44,6 +45,8 @@ service:
   type: ClusterIP
 
 probe:
+  # Intentionally suspended; retain data and backups without availability alerts.
+  enabled: false
   path: /api/health
 
 virtualService:
