@@ -48,6 +48,20 @@ virtualService:
   gateways:
     public: true
     private: true
+  # Mealie has no CORS support of its own; Envoy answers preflights and adds
+  # the headers. API tokens travel as a bearer token, so credentials stay off.
+  corsPolicy:
+    allowOrigins:
+      - regex: "https?://localhost(:[0-9]+)?"
+      - regex: "https://([a-z0-9-]+\\.)+{domain}"
+    allowMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+    allowHeaders:
+      - authorization
+      - content-type
+    exposeHeaders:
+      - content-disposition
+      - content-length
+    maxAge: 24h
 
 # OIDC client configuration
 oidc:
