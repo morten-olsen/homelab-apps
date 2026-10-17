@@ -148,6 +148,27 @@ spec:
             except:
               {{- toYaml $a.egressExcept | nindent 14 }}
 ---
+{{- with $a.gateway }}
+# The private gateway in agents.gateway, which serves the forge and CI to in-cluster clients: every agent pod may reach it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway
+  namespace: {{ $ns }}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: {{ .namespace }} }
+          podSelector:
+            matchLabels:
+              {{- toYaml .podLabels | nindent 14 }}
+      ports:
+        - { protocol: TCP, port: {{ .port }} }
+---
+{{- end }}
 {{- with $a.lan }}
 # The home network subnets in agents.lan, which allow-internet leaves out: every agent pod may reach them, on any port.
 apiVersion: networking.k8s.io/v1

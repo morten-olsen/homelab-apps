@@ -6,7 +6,7 @@
 # Morten after the move retro). Which role gets which account is server configuration (MC_K8S_ROLE_ACCESS from
 # agents.clusterAccess.roles), not organization data. A mapped role's pod runs as its account with its token mounted
 # and the label cluster-access=read (the launcher's name for any mapped account), which also opens egress to the API
-# server and the private gateway. The read tier: no Secrets, ConfigMaps, logs, exec or writes; plain env values in
+# server. The read tier: no Secrets, ConfigMaps, logs, exec or writes; plain env values in
 # pod specs are readable.
 {{- range $account, $clusterRole := $r.accounts }}
 ---
@@ -90,12 +90,4 @@ spec:
         - ipBlock: { cidr: {{ $r.apiServer.cidr }} }
       ports:
         - { protocol: TCP, port: {{ $r.apiServer.port }} }
-    - to:
-        - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: {{ $r.gateway.namespace }} }
-          podSelector:
-            matchLabels:
-              {{- toYaml $r.gateway.podLabels | nindent 14 }}
-      ports:
-        - { protocol: TCP, port: {{ $r.gateway.port }} }
 {{- end }}

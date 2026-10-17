@@ -89,9 +89,8 @@ agents:
   # Cluster access for chosen roles' agent pods (templates/agents-cluster-access.yaml). Each account is a service
   # account in the agents namespace bound to a ClusterRole: `read` is the chart's read tier, any other value names an
   # existing ClusterRole. A mapped role's pods run as its account (MC_K8S_ROLE_ACCESS) and may also reach the API
-  # server and the private gateway (the forge and CI). Decided by Morten after the Mission Control move retro
-  # (2026-10-07): the Software Engineer acts as an operator, trusted until there is a reason not to. Every other Home IT
-  # role reads (Morten, 2026-10-10): roles that are not mapped cannot reach the forge either, so they cannot clone.
+  # server. Decided by Morten after the Mission Control move retro (2026-10-07): the Software Engineer acts as an
+  # operator, trusted until there is a reason not to. Every other Home IT role reads (Morten, 2026-10-10).
   clusterAccess:
     accounts:
       mission-control-cluster-read: read
@@ -104,7 +103,10 @@ agents:
       c643ade4-6f9e-4498-827a-7b3ea3ec0c12: mission-control-cluster-read # Home IT: Designer
       17b8bf9a-4ffa-4dbf-89c6-329a47cc4904: mission-control-cluster-read # Home IT: Device Deployment Engineer
     apiServer: { cidr: 192.168.20.180/32, port: 6443 }
-    gateway: { namespace: istio-ingress, podLabels: { istio: gateway }, port: 443 }
+  # The private gateway every agent pod may reach (templates/agents-namespace.yaml, allow-gateway): code.olsen.cloud and
+  # the other private hosts resolve to it inside the cluster, so without it a role cannot clone from the forge. It was
+  # part of cluster access until a new role (LAN Admin, 2026-10-17) could not clone; Morten chose to give it to all.
+  gateway: { namespace: istio-ingress, podLabels: { istio: gateway }, port: 443 }
   # Everything private, link-local, CGNAT and multicast is denied to agents (the node and the LAN sit in them).
   egressExcept:
     - 10.0.0.0/8

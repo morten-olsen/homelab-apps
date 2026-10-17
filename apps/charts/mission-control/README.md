@@ -53,9 +53,15 @@ admits only agent pods, the ingress gateway and the blackbox probe, on 7420.
 `agents.clusterAccess` maps Mission Control roles to service accounts in the agents namespace (`MC_K8S_ROLE_ACCESS`):
 the Software Engineer runs as `mission-control-operator` (bound to `cluster-admin`: it operates the homelab like
 Morten, trusted until there is a reason not to), every other Home IT role as `mission-control-cluster-read`
-(get/list/watch; no Secrets, ConfigMaps, logs or exec). Mapped pods may also reach the API server and the private
-gateway (Forgejo, Woodpecker); a role that is not mapped reaches neither, so it cannot clone from the forge. A new
-role needs adding here. To take access back, remove the role from `roles`.
+(get/list/watch; no Secrets, ConfigMaps, logs or exec). Mapped pods may also reach the API server. A new role needs
+adding here. To take access back, remove the role from `roles`.
+
+## Private gateway for agents
+
+`code.olsen.cloud` and the other private hosts resolve inside the cluster to the Istio gateway, which allow-internet
+leaves out. `agents.gateway` lets every agent pod reach it on 443 (`allow-gateway`), so any role can clone from the
+forge and talk to CI, mapped or not. Until 2026-10-17 this was part of cluster access, and a new role (LAN Admin)
+could not clone until someone added it to `roles`.
 
 ## Home network for agents
 
