@@ -18,6 +18,7 @@ from homeassistant.components.device_tracker.const import SourceType
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
+logging.getLogger('homeassistant.loader').setLevel(logging.ERROR)
 
 async def main():
     files = BUNDLE
@@ -42,8 +43,8 @@ async def main():
         assert entity.latitude==1 and entity.longitude==2 and entity.location_accuracy==8
         assert entity.extra_state_attributes=={'location_status':'fresh','recorded_at':'1970-01-01T00:16:40+00:00','last_seen':1000,'stale_notification_sent':False}
         await feed.poll(fixture,now=1901)
-        assert not entity.available and entity.extra_state_attributes['location_status']=='stale'
-        # Public state-machine write reproduces HA stripping attributes while unavailable.
+        assert entity.available and entity.extra_state_attributes['location_status']=='stale'
+        # Public state machine and native Person: stationary/old data remains last-known GPS.
         from homeassistant import loader
         from homeassistant.helpers import frame
         from homeassistant.helpers.entity_component import EntityComponent
@@ -53,12 +54,27 @@ async def main():
         initialized=device_registry.async_setup(hass)
         if inspect.isawaitable(initialized): await initialized
         for registry in [device_registry,area_registry,entity_registry]: await registry.async_load(hass,load_empty=True)
+        from homeassistant.config_entries import ConfigEntries
+        hass.config_entries=ConfigEntries(hass,{})
+        from homeassistant.setup import async_setup_component
+        assert await async_setup_component(hass,'zone',{})
         component=EntityComponent(logging.getLogger('fixture'),'device_tracker',hass)
         await component.async_add_entities([entity])
         entity.async_write_ha_state()
         state=hass.states.get(entity.entity_id)
-        assert state.state=='unavailable'
-        assert 'last_seen' not in state.attributes  # Native HA behavior; do not use this for the timer.
+        assert state.state not in ('unknown','unavailable')
+        assert state.attributes['last_seen']==1000
+        from homeassistant.components.person import Person
+        person_config={'id':'fixture','name':'Fixture','device_trackers':[entity.entity_id]}
+        person=Person.from_yaml(person_config)
+        people_component=EntityComponent(logging.getLogger('person_fixture'),'person',hass)
+        await people_component.async_add_entities([person])
+        await person.async_update_config(person_config)
+        await hass.async_block_till_done()
+        person_state=hass.states.get(person.entity_id)
+        assert person_state.state==state.state
+        assert person_state.attributes['source']==entity.entity_id
+        assert person_state.attributes['gps_accuracy']==8
         metadata=sys.modules['custom_components.dawarich.location_sensor'].DawarichLocationTimestamp(
             dt.LocationData(c,feed),MagicMock(entry_id='fixture'),None)
         sensors=EntityComponent(logging.getLogger('sensor_fixture'),'sensor',hass)
@@ -71,13 +87,20 @@ async def main():
         assert clock_state.attributes['stale_notification_sent'] is False
         async def broken_api(): raise TimeoutError()
         await feed.poll(broken_api,now=87400)
+        entity.async_write_ha_state()
+        await hass.async_block_till_done()
+        retained=hass.states.get(entity.entity_id)
+        assert retained.state==state.state and retained.attributes['latitude']==1
+        assert retained.attributes['last_seen']==1000
+        assert retained.attributes['location_status']=='error'
+        assert hass.states.get(person.entity_id).attributes['source']==entity.entity_id
         metadata.async_write_ha_state()
         assert hass.states.get(metadata.entity_id).state=='1970-01-01T00:16:40+00:00'
         assert hass.states.get(metadata.entity_id).attributes['location_status']=='error'
         await feed.acknowledge_alert(now=87400)
         metadata.async_write_ha_state()
         assert hass.states.get(metadata.entity_id).attributes['stale_notification_sent'] is True
-        print('Native HA state-machine regression: timestamp/status/gate survive GPS stale and API failure: PASS')
+        print('Native HA sole-tracker Person regression: last-known GPS, clock, accuracy and alert gate survive stale/API failure: PASS')
 
         class People:
             def __init__(self):
@@ -95,7 +118,7 @@ async def main():
         assert people.person['device_trackers']==['device_tracker.existing','device_tracker.dawarich_morten']
         assert people.person['picture']=='existing-picture'
         print('Existing person identity, picture and tracker associations preserved; association idempotent: PASS')
-        print('HA 2026.10.2 TrackerEntity imports, GPS source, accuracy, recorded timestamp and stale availability: PASS')
+        print('HA 2026.10.2 TrackerEntity imports, GPS source, accuracy, recorded timestamp and last-known availability: PASS')
         # Exercise real network adapter and existing credential without printing payload.
         entries=json.loads(pathlib.Path('/config/.storage/core.config_entries').read_text())['data']['entries']
         entry=next(e for e in entries if e['entry_id']==dt.POLICY['entry_id'])

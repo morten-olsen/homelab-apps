@@ -25,7 +25,9 @@ class PointFeed:
 
     @property
     def available(self):
-        return self.status == 'fresh'
+        # Availability means a last-known position exists, not that the phone is moving.
+        # The original clock and status independently report freshness/failures.
+        return self.point is not None
 
     def alert_due(self, *, now):
         return self.high_water > 0 and now - self.high_water >= 86400 and not self.alerted

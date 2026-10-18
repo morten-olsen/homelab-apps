@@ -25,12 +25,12 @@ class FeedTests(unittest.IsolatedAsyncioTestCase):
 
 
 class SafetyTests(unittest.IsolatedAsyncioTestCase):
-    async def test_offline_backlog_expires_by_recording_time_and_recovers(self):
+    async def test_offline_backlog_remains_last_known_with_original_age_and_recovers(self):
         async def save(value): pass
         async def fetch(): return [{'timestamp': 1000, 'latitude': 1, 'longitude': 2, 'accuracy': 8}]
         feed = location.PointFeed(save=save)
         await feed.poll(fetch, now=1901)
-        self.assertFalse(feed.available)
+        self.assertTrue(feed.available)
         self.assertEqual(feed.status, 'stale')
         self.assertEqual(feed.point.timestamp, 1000)
         async def fresh(): return [{'timestamp': 2000, 'latitude': 1, 'longitude': 2, 'accuracy': 9}]
@@ -55,8 +55,13 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
         await feed.poll(duplicate, now=1002)
         self.assertEqual(feed.point.latitude, 1)
         self.assertEqual(saved, [])
+        await feed.poll(old, now=1003)
+        self.assertEqual(feed.status, 'out_of_order')
+        self.assertTrue(feed.available)
+        self.assertEqual(feed.point.timestamp, 1000)
+        self.assertEqual(feed.point.latitude, 1)
 
-    async def test_api_failure_is_unavailable_without_exception_or_point_leak_and_recovers(self):
+    async def test_api_failure_retains_last_known_without_exception_or_point_leak_and_recovers(self):
         async def save(value): pass
         async def good(): return [{'timestamp': 1000, 'latitude': 1, 'longitude': 2, 'accuracy': 8}]
         async def bad(): raise TimeoutError('secret-token-and-location')
@@ -64,7 +69,7 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
         await feed.poll(good, now=1001)
         await feed.poll(bad, now=1002)
         self.assertEqual(feed.status, 'error')
-        self.assertFalse(feed.available)
+        self.assertTrue(feed.available)
         self.assertEqual(feed.point.timestamp, 1000)
         await feed.poll(good, now=1003)
         self.assertTrue(feed.available)
