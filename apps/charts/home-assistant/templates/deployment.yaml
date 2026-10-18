@@ -1,13 +1,1 @@
-{{- $deployment := include "common.deployment" (list . .Values) | fromYaml -}}
-{{- $pod := $deployment.spec.template -}}
-{{- $annotations := default dict $pod.metadata.annotations -}}
-{{- $_ := set $annotations "checksum/dawarich-location" (include (print $.Template.BasePath "/dawarich-location.yaml") . | sha256sum) -}}
-{{- $_ := set $pod.metadata "annotations" $annotations -}}
-{{- $container := index $pod.spec.containers 0 -}}
-{{- $mounts := $container.volumeMounts -}}
-{{- range $name := list "__init__.py" "device_tracker.py" "location.py" "location-policy.json" "stale-automation.json" -}}
-{{- $mounts = append $mounts (dict "name" "dawarich-location" "mountPath" (print "/config/custom_components/dawarich/" $name) "subPath" $name "readOnly" true) -}}
-{{- end -}}
-{{- $_ := set $container "volumeMounts" $mounts -}}
-{{- $_ := set $pod.spec "volumes" (append $pod.spec.volumes (dict "name" "dawarich-location" "configMap" (dict "name" (print .Release.Name "-dawarich-location")))) -}}
-{{ toYaml $deployment }}
+{{ include "common.deployment" (list . .Values) }}
