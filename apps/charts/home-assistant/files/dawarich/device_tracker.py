@@ -7,12 +7,14 @@ import time
 
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.components.person import async_add_user_device_tracker
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
 
 from .location import PointFeed, fetch_latest
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 POLICY = json.loads((Path(__file__).parent / 'location-policy.json').read_text())
@@ -24,12 +26,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     store = Store(hass, 1, 'dawarich_location.' + entry.entry_id)
     saved = await store.async_load() or {}
 
-    async def save(timestamp):
-        # Never persist coordinates or credentials; only prevent time regression.
-        await store.async_save({'high_water': timestamp})
+    async def save(state):
+        # Never persist coordinates or credentials, only epoch and notification gate.
+        await store.async_save(state)
 
     feed = PointFeed(save=save, high_water=saved.get('high_water', 0),
-                     stale_seconds=POLICY['stale_seconds'])
+                     stale_seconds=POLICY['stale_seconds'], alerted=saved.get('alerted', False))
     session = async_get_clientsession(hass)
 
     async def update():
@@ -37,7 +39,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         async def fetch():
             return await fetch_latest(session, POLICY['url'], entry.data['api_key'], now=now)
         await feed.poll(fetch, now=now)
-        return (feed.status, feed.point)
+        return (feed.status, feed.point, feed.alerted)
 
     coordinator = DataUpdateCoordinator(
         hass, _LOGGER, name='Dawarich location', config_entry=entry,
@@ -45,6 +47,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
         always_update=False,
     )
     await coordinator.async_config_entry_first_refresh()
+    async def acknowledge(call):
+        try:
+            await feed.acknowledge_alert(now=time.time())
+        except Exception:
+            raise HomeAssistantError('Could not persist location notification acknowledgement') from None
+        coordinator.async_set_updated_data((feed.status, feed.point, feed.alerted))
+
+    hass.services.async_register(DOMAIN, 'acknowledge_stale_location', acknowledge)
+    entry.async_on_unload(lambda: hass.services.async_remove(DOMAIN, 'acknowledge_stale_location'))
     async_add_entities([DawarichLocation(coordinator, feed, entry)])
 
 
@@ -83,8 +94,8 @@ class DawarichLocation(CoordinatorEntity, TrackerEntity):
 
     @property
     def extra_state_attributes(self):
-        attributes = {'location_status': self.feed.status}
-        if point := self.feed.point:
-            attributes['recorded_at'] = datetime.fromtimestamp(point.timestamp, UTC).isoformat()
-            attributes['last_seen'] = point.timestamp
+        attributes = {'location_status': self.feed.status, 'stale_notification_sent': self.feed.alerted}
+        if self.feed.high_water > 0:
+            attributes['recorded_at'] = datetime.fromtimestamp(self.feed.high_water, UTC).isoformat()
+            attributes['last_seen'] = self.feed.high_water
         return attributes

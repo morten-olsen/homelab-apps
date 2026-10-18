@@ -21,7 +21,7 @@ class FeedTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(feed.point.timestamp, 1000)
         self.assertEqual(feed.point.accuracy, 8)
         self.assertEqual(feed.point.latitude, 1.25)
-        self.assertEqual(saved, [1000])
+        self.assertEqual(saved, [{'high_water': 1000, 'alerted': False}])
 
 
 class SafetyTests(unittest.IsolatedAsyncioTestCase):
@@ -142,5 +142,40 @@ class PolicyTests(unittest.TestCase):
         self.assertIs(location.receive_only_data('other', data, 'selected'), data)
         disabled = {**data, 'mobile_app': None}
         self.assertIs(location.receive_only_data('selected', disabled, 'selected'), disabled)
+
+class NoticeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_alert_threshold_acknowledgement_restart_and_fresh_rearm(self):
+        saved = []
+        async def save(value): saved.append(value)
+        async def point(timestamp):
+            async def fetch(): return [{'timestamp': timestamp, 'latitude': 1, 'longitude': 2, 'accuracy': 8}]
+            return fetch
+        feed = location.PointFeed(save=save)
+        self.assertFalse(feed.alert_due(now=100000))
+        await feed.poll(await point(1000), now=1001)
+        self.assertFalse(feed.alert_due(now=87399))
+        self.assertTrue(feed.alert_due(now=87400))
+        await feed.acknowledge_alert(now=87400)
+        self.assertFalse(feed.alert_due(now=87401))
+        self.assertEqual(saved[-1], {'high_water': 1000, 'alerted': True})
+        restarted = location.PointFeed(save=save, high_water=1000, alerted=True)
+        async def failed(): raise TimeoutError()
+        await restarted.poll(failed, now=90000)
+        self.assertFalse(restarted.alert_due(now=90000))
+        # Offline backlog does not rearm even when it advances the high-water mark.
+        await restarted.poll(await point(2000), now=90000)
+        self.assertFalse(restarted.alert_due(now=90000))
+        await restarted.poll(await point(90000), now=90001)
+        self.assertFalse(restarted.alert_due(now=90001))
+        self.assertEqual(saved[-1], {'high_water': 90000, 'alerted': False})
+        self.assertTrue(restarted.alert_due(now=176400))
+
+    async def test_no_premature_acknowledgement_and_failed_save_does_not_suppress(self):
+        async def save(value): raise OSError('fixture')
+        feed=location.PointFeed(save=save, high_water=1000)
+        await feed.acknowledge_alert(now=1001)
+        self.assertFalse(feed.alerted)
+        with self.assertRaises(OSError): await feed.acknowledge_alert(now=87400)
+        self.assertTrue(feed.alert_due(now=87400))
 
 if __name__ == '__main__': unittest.main()

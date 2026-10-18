@@ -9,9 +9,11 @@ accuracy. Arrival/departure latency needs an observed real movement; polling alo
 only bounds the bridge's contribution to about 30 seconds plus request time.
 
 `files/dawarich` extends the installed AlbinLind Dawarich integration **1.0.0**
-(MIT, license retained). `__init__.py` is the installed upstream file with two
+(MIT, license retained). `__init__.py` is the installed upstream file with three
 changes: forward the device_tracker platform, and set `mobile_app` to null only
-for the configured entry, before setting up its sensors. Statistics and other
+for the configured entry, before setting up its sensors; start optional statistics
+refreshes in background tasks so an API outage cannot block the GPS tracker and
+restored alert clock. Statistics and other
 Dawarich entries retain their existing behavior. The other two Python files are
 the receive-only bridge. Read-only ConfigMap subPath mounts and a pod checksum
 make the deployment reproducible. Review this overlay against upstream before a
@@ -44,12 +46,41 @@ turns a stale phone point into a fresh arrival/departure or overwrites those
 devices. A recovered API can make the same still-fresh point available again.
 
 A tiny HA Store `dawarich_location.<entry_id>` persists only the greatest accepted
-epoch. Offline uploads older than that cannot move the tracker backwards, even
+epoch and the sent/not-sent notification gate. Offline uploads older than that cannot move the tracker backwards, even
 after restart. Equal timestamps can rehydrate after restart, but cannot replace
 an already loaded point. No coordinates are persisted by the bridge's own store
 (HA's ordinary recorder still records entity state). Failure to persist a newer
 timestamp makes that update unavailable. Future points are excluded by the query;
 a response more than 60 seconds ahead of the poll clock is rejected as well.
+
+## 24-hour stale notification
+
+Morten requested one ntfy notification if tracking has not updated for 24 hours.
+`files/stale-automation.yaml` is the Git source for the single HA automation ID
+`dawarich_location_stale_24h`; the chart also mounts its exact rendered JSON as
+`/config/custom_components/dawarich/stale-automation.json`. Apply that object with
+HA's authenticated `POST /api/config/automation/config/dawarich_location_stale_24h`
+after the chart rolls out. The supported config API validates it, preserves other
+automations and reloads only this ID. Future Git changes to this automation must
+also be applied through this API after rollout; ArgoCD distributes the artifact
+but does not write HA's application database/configuration files. Do not replace
+the whole existing `automations.yaml`.
+
+The automation checks on HA startup and every five minutes. It uses original
+`last_seen`, never entity `last_updated` or a 24-hour `for` timer. Unknown recorded
+time does not invent an age. At 24 hours it calls the existing ntfy `notify.home`
+entity using `notify.send_message`, with Designer-directed fixed wording and
+normal topic/priority defaults, then acknowledges successful delivery through
+`dawarich.acknowledge_stale_location`. If notification delivery fails, acknowledgement
+does not run and the next check retries. The sent flag persists in the bridge
+store under the same lock as the high-water mark. API failures, restart and old
+backlog do not rearm; a newer point within the 15-minute freshness window silently
+rearms. There is no recovery message or repeated reminder. An acknowledgement
+store failure can cause a retry/duplicate rather than silently losing the alert.
+
+Rollback also removes/disables this single automation via HA's supported API;
+otherwise it would reference the removed acknowledgement service. Other
+notifications/automations remain intact.
 
 ## Validation and rollback
 

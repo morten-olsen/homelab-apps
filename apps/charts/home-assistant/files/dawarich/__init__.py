@@ -68,15 +68,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: DawarichConfigEntry) -> 
         )
 
     coordinator = DawarichStatsCoordinator(hass, api, entry.entry_id)
-    await coordinator.async_config_entry_first_refresh()
     version_coordinator = DawarichVersionCoordinator(hass, api, entry.entry_id)
-    await version_coordinator.async_config_entry_first_refresh()
+    if entry.entry_id != LOCATION_POLICY['entry_id']:
+        await coordinator.async_config_entry_first_refresh()
+        await version_coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = DawarichConfigEntryData(
         api=api, coordinator=coordinator, version_coordinator=version_coordinator
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Optional statistics must not block GPS setup/its restored timestamp on outage.
+    if entry.entry_id == LOCATION_POLICY['entry_id']:
+        for optional in (coordinator, version_coordinator):
+            entry.async_create_background_task(
+                hass, optional.async_refresh(), "Dawarich optional statistics refresh"
+            )
 
     return True
 

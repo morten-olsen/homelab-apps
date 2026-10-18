@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import math
 import json
+import asyncio
 
 
 @dataclass(frozen=True, repr=False)
@@ -13,9 +14,11 @@ class Point:
 
 
 class PointFeed:
-    def __init__(self, *, save, high_water=0, stale_seconds=900):
+    def __init__(self, *, save, high_water=0, stale_seconds=900, alerted=False):
         self.save = save
         self.high_water = high_water
+        self.alerted = alerted
+        self._lock = asyncio.Lock()
         self.stale_seconds = stale_seconds
         self.point = None
         self.status = 'empty'
@@ -24,7 +27,20 @@ class PointFeed:
     def available(self):
         return self.status == 'fresh'
 
+    def alert_due(self, *, now):
+        return self.high_water > 0 and now - self.high_water >= 86400 and not self.alerted
+
+    async def acknowledge_alert(self, *, now):
+        async with self._lock:
+            if self.alert_due(now=now):
+                await self.save({'high_water': self.high_water, 'alerted': True})
+                self.alerted = True
+
     async def poll(self, fetch, *, now):
+        async with self._lock:
+            await self._poll(fetch, now=now)
+
+    async def _poll(self, fetch, *, now):
         try:
             rows = await fetch()
         except Exception:
@@ -60,12 +76,15 @@ class PointFeed:
             self.status = 'out_of_order'
             return
         if point.timestamp > self.high_water:
+            # Only a genuinely fresh recording rearms; a stale backlog never does.
+            alerted = self.alerted and now - point.timestamp > self.stale_seconds
             try:
-                await self.save(point.timestamp)
+                await self.save({'high_water': point.timestamp, 'alerted': alerted})
             except Exception:
                 self.status = 'error'
                 return
             self.high_water = point.timestamp
+            self.alerted = alerted
             self.point = point
         elif self.point is None:
             self.point = point

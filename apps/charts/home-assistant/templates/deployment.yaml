@@ -5,7 +5,7 @@
 {{- $_ := set $pod.metadata "annotations" $annotations -}}
 {{- $container := index $pod.spec.containers 0 -}}
 {{- $mounts := $container.volumeMounts -}}
-{{- range $name := list "__init__.py" "device_tracker.py" "location.py" "location-policy.json" -}}
+{{- range $name := list "__init__.py" "device_tracker.py" "location.py" "location-policy.json" "stale-automation.json" -}}
 {{- $mounts = append $mounts (dict "name" "dawarich-location" "mountPath" (print "/config/custom_components/dawarich/" $name) "subPath" $name "readOnly" true) -}}
 {{- end -}}
 {{- $_ := set $container "volumeMounts" $mounts -}}
