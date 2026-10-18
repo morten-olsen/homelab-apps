@@ -26,6 +26,7 @@ from .helpers import get_api
 from .location import receive_only_data
 
 VERSION = json.loads((Path(__file__).parent / "manifest.json").read_text())["version"]
+LOCATION_POLICY = json.loads((Path(__file__).parent / "location-policy.json").read_text())
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.DEVICE_TRACKER]
 
@@ -46,8 +47,7 @@ class DawarichConfigEntryData:
 async def async_setup_entry(hass: HomeAssistant, entry: DawarichConfigEntry) -> bool:
     """Set up Dawarich from a config entry."""
     # Git-managed receive-only policy applies to Morten's entry, not other users.
-    policy = json.loads((Path(__file__).parent / "location-policy.json").read_text())
-    data = receive_only_data(entry.entry_id, entry.data, policy["entry_id"])
+    data = receive_only_data(entry.entry_id, entry.data, LOCATION_POLICY["entry_id"])
     if data is not entry.data:
         hass.config_entries.async_update_entry(entry, data=data)
 
