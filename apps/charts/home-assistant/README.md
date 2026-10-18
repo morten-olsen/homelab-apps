@@ -38,23 +38,30 @@ bridge shares HA's existing resource budget; its additional work is one bounded
 response and one point, rather than a second HA process.
 
 `recorded_at` (UTC ISO) and `last_seen` (original epoch) retain the observation
-time on the available GPS entity. HA strips extra GPS attributes when that entity
-is unavailable, so the always-readable diagnostic timestamp sensor
-`sensor.dawarich_last_recorded_location` holds the original UTC time and alert
-state independently. Unknown source time remains unknown. `gps_accuracy` retains the API's `accuracy` in metres. A point over 15
-minutes old is unavailable (`location_status=stale`), with its original clock and status
-retained by the timestamp sensor. Empty, invalid, future, API-failed and regressing responses are also
-unavailable with fixed status strings. Existing HA person behavior ignores
-unavailable trackers and may use its other associated devices; this bridge never
-turns a stale phone point into a fresh arrival/departure or overwrites those
-devices. A recovered API can make the same still-fresh point available again.
+time; `gps_accuracy` retains the API's `accuracy` in metres. Once a valid point is
+loaded, the GPS tracker retains that **last known position**, including when the
+phone is stationary, offline or the API fails. The person can use it as its sole
+tracker. A point over 15 minutes old is explicitly `location_status=stale`, not
+unavailable. This freshness threshold controls diagnostics and reminder rearming;
+it does not erase a recorded position or imply a new observation. Presence
+conditions therefore use the last reported position until a newer point arrives;
+the separate 24-hour reminder indicates when phone tracking needs attention.
+
+Empty, invalid, future, API-failed and regressing responses retain any accepted
+position with fixed status strings; they cannot refresh its clock or move it.
+Before any valid point is loaded (including a restart during an API outage), GPS
+is unavailable rather than inventing coordinates. The always-readable diagnostic
+timestamp sensor `sensor.dawarich_last_recorded_location` restores the original
+UTC time and alert gate independently, even then. Unknown source time remains
+unknown. Offline backlog may advance the last known position only in recording
+time order and remains explicitly stale; it does not count as fresh for rearming.
 
 A tiny HA Store `dawarich_location.<entry_id>` persists only the greatest accepted
 epoch and the sent/not-sent notification gate. Offline uploads older than that cannot move the tracker backwards, even
 after restart. Equal timestamps can rehydrate after restart, but cannot replace
 an already loaded point. No coordinates are persisted by the bridge's own store
 (HA's ordinary recorder still records entity state). Failure to persist a newer
-timestamp makes that update unavailable. Future points are excluded by the query;
+timestamp rejects that update and retains the previous accepted position, if any. Future points are excluded by the query;
 a response more than 60 seconds ahead of the poll clock is rejected as well.
 
 ## 24-hour stale notification
