@@ -1,118 +1,50 @@
 # Home Assistant
 
-## Dawarich location
+## Phone location: Home Assistant → Dawarich
 
-Phone → Dawarich → the existing HA Dawarich config entry →
-`device_tracker.dawarich_morten` → the existing `person.morten`.
-The standard HA GPS tracker computes zones using the original coordinates and
-accuracy. Arrival/departure latency needs an observed real movement; polling alone
-only bounds the bridge's contribution to about 30 seconds plus request time.
+Home Assistant Companion on Morten's Pixel 9 is the location source.
+`device_tracker.pixel_9` supplies the existing `person.morten`; the installed
+HACS Dawarich integration 1.0.0 forwards that tracker to Dawarich. Dawarich is a
+history destination. There is no Dawarich → HA GPS feed or polling overlay.
+Morten requested this restoration on 2026-10-19 and will stop the Dawarich phone
+app. A future custom phone application is separate work.
 
-`files/dawarich` extends the installed AlbinLind Dawarich integration **1.0.0**
-(MIT, license retained). `__init__.py` is the installed upstream entrypoint with three
-changes: forward the device_tracker platform, and set `mobile_app` to null only
-for the configured entry, before setting up its sensors; start optional statistics
-refreshes in background tasks so an API outage cannot block the GPS tracker and
-restored alert clock. Statistics and other
-Dawarich entries retain their existing behavior. `sensor.py` is the installed upstream sensor platform plus one append of the
-shared timestamp sensor. The other Python files implement the receive-only feed,
-GPS entity and timestamp metadata. Read-only ConfigMap subPath mounts and a pod checksum
-make the deployment reproducible. Review this overlay against upstream before a
-HACS Dawarich upgrade; do not upgrade the underlying integration independently.
-Removing the overlay exposes the original files on the config PVC again.
+The existing HA config entry `01KQVN8547CAQH77C3T7TAHH0M` must have
+`mobile_app=device_tracker.pixel_9`. Configure it through the integration's
+supported reconfigure flow, preserving host, SSL/verification, name and existing
+credential. Do not commit a credential or replace the config-entry store. Person
+settings use HA's person API/UI, preserving identity and unrelated trackers.
+These application settings live on the existing config PVC; this document records
+the desired settings. The chart uses the standard common deployment and existing
+image/resources/exposure without custom integration mounts.
 
-The existing credential stays in HA config-entry storage. It is never put in
-values, a ConfigMap, a URL, an exception message or bridge logs. HTTPS certificate
-verification remains enabled. `dawarich.olsen.cloud` resolves to the internal
-Istio gateway in the cluster. Direct service requests from HA's host-network pod
-are denied by `ns-isolation`; use the existing HTTPS route without changing that
-policy. No MQTT hop, image, sidecar, credential, network policy or exposure is
-added.
+When reverting the retired inbound bridge, remove only HA automation ID
+`dawarich_location_stale_24h` through its native config API, then remove the bridge
+mounts through Git and restart normally. This retires the Dawarich-specific
+24-hour ntfy reminder, timestamp entity and acknowledgement service. Clean up only
+the two retired entity-registry entries (`<entry_id>/location` and
+`<entry_id>/last_recorded_location`) after unload. Preserve other automations,
+statistics and recorded history. The retired timestamp/alert store can remain
+inert; no historical data or PVC needs deleting.
 
-One serial request every 30 seconds asks `/api/v1/points` for `order=desc`,
-`per_page=1`, and `end_at=<poll time>`. The API orders by **recording timestamp**,
-not insertion time, and omits anomalous points by default. Redirects and non-200
-responses are rejected, requests time out after 10 seconds, and response bodies
-are capped at 64 KiB. There are no catch-up pages, queues or retry loops. The
-bridge shares HA's existing resource budget; its additional work is one bounded
-response and one point, rather than a second HA process.
+Morten must enable location tracking and the required background permission in
+the HA Companion app. Server configuration alone cannot enable phone sensors or
+prove movement delivery. Acceptance requires a real new phone report in HA and
+its matching Dawarich point; do not inject a fabricated location or replay an old
+position with a new time. Report handset delivery and movement latency as
+unverified until observed.
 
-`recorded_at` (UTC ISO) and `last_seen` (original epoch) retain the observation
-time; `gps_accuracy` retains the API's `accuracy` in metres. Once a valid point is
-loaded, the GPS tracker retains that **last known position**, including when the
-phone is stationary, offline or the API fails. The person can use it as its sole
-tracker. A point over 15 minutes old is explicitly `location_status=stale`, not
-unavailable. This freshness threshold controls diagnostics and reminder rearming;
-it does not erase a recorded position or imply a new observation. Presence
-conditions therefore use the last reported position until a newer point arrives;
-the separate 24-hour reminder indicates when phone tracking needs attention.
+## Validation and operations
 
-Empty, invalid, future, API-failed and regressing responses retain any accepted
-position with fixed status strings; they cannot refresh its clock or move it.
-Before any valid point is loaded (including a restart during an API outage), GPS
-is unavailable rather than inventing coordinates. The always-readable diagnostic
-timestamp sensor `sensor.dawarich_last_recorded_location` restores the original
-UTC time and alert gate independently, even then. Unknown source time remains
-unknown. Offline backlog may advance the last known position only in recording
-time order and remains explicitly stale; it does not count as fresh for rearming.
+Run `mise exec -- scripts/ci/validate-charts.sh apps/charts/home-assistant` and
+server-dry-run the rendered chart. `tests/render.sh` verifies absence of the
+retired overlay and preservation of the existing process, config mount and
+resource budget. Follow CI, Forgejo mirror, ArgoCD and the actual HA objects.
+Check the selected entry, person source and forwarding sensor through HA APIs;
+compare a real phone report with Dawarich only in memory, printing timestamps,
+accuracy and match booleans rather than coordinates or credentials.
 
-A tiny HA Store `dawarich_location.<entry_id>` persists only the greatest accepted
-epoch and the sent/not-sent notification gate. Offline uploads older than that cannot move the tracker backwards, even
-after restart. Equal timestamps can rehydrate after restart, but cannot replace
-an already loaded point. No coordinates are persisted by the bridge's own store
-(HA's ordinary recorder still records entity state). Failure to persist a newer
-timestamp rejects that update and retains the previous accepted position, if any. Future points are excluded by the query;
-a response more than 60 seconds ahead of the poll clock is rejected as well.
-
-## 24-hour stale notification
-
-Morten requested one ntfy notification if tracking has not updated for 24 hours.
-`files/stale-automation.yaml` is the Git source for the single HA automation ID
-`dawarich_location_stale_24h`; the chart also mounts its exact rendered JSON as
-`/config/custom_components/dawarich/stale-automation.json`. Apply that object with
-HA's authenticated `POST /api/config/automation/config/dawarich_location_stale_24h`
-after the chart rolls out. The supported config API validates it, preserves other
-automations and reloads only this ID. Future Git changes to this automation must
-also be applied through this API after rollout; ArgoCD distributes the artifact
-but does not write HA's application database/configuration files. Do not replace
-the whole existing `automations.yaml`.
-
-The automation checks on HA startup and every five minutes. It uses the timestamp sensor
-state, never entity `last_updated` or a 24-hour `for` timer. Unknown recorded
-time does not invent an age. At 24 hours it calls the existing ntfy `notify.home`
-entity using `notify.send_message`, with Designer-directed fixed wording and
-normal topic/priority defaults, then acknowledges successful delivery through
-`dawarich.acknowledge_stale_location`. If notification delivery fails, acknowledgement
-does not run and the next check retries. The sent flag persists in the bridge
-store under the same lock as the high-water mark. API failures, restart and old
-backlog do not rearm; a newer point within the 15-minute freshness window silently
-rearms. There is no recovery message or repeated reminder. An acknowledgement
-store failure can cause a retry/duplicate rather than silently losing the alert.
-
-Rollback also removes/disables this single automation via HA's supported API;
-otherwise it would reference the removed acknowledgement service. Other
-notifications/automations remain intact.
-
-## Validation and rollback
-
-Run `mise exec -- scripts/ci/validate-charts.sh apps/charts/home-assistant`.
-Run `python3 apps/charts/home-assistant/tests/ha_runtime.py` for a read-only
-compatibility, real HA state-machine regression, startup and real-API probe inside the installed HA pod.
-`tests/render.sh` runs poll/HTTP tests and verifies the rendered mounts, policy,
-checksum and unchanged HA process/resource layout. Use the installed HA runtime
-to verify TrackerEntity compatibility as well, and server-dry-run the rendered
-chart, including CRDs.
-
-After merge, verify the Forgejo mirror and ArgoCD revision, the mounted checksum,
-HA's live GPS tracker timestamp/accuracy against the newest Dawarich point
-(compare coordinates only in memory), person association, disabled outbound
-forwarding, working statistics, and lack of points written back by HA. Never
-print locations or credentials while collecting evidence.
-
-Rollback is a Git revert and ArgoCD reconciliation. It restarts HA with the
-original integration files. The deliberately disabled `mobile_app` field and
-person association are HA configuration: a revert does not undo them. Remove the
-new tracker from Morten's existing person through HA's person API/UI; if returning
-to HA → Dawarich, reconfigure just the original entry's forwarding selector to
-`device_tracker.pixel_9`. Do not recreate the person or restore the database.
-Keep the old mobile entities and automations intact.
+The base runbook `docs/home-assistant-location.md` retains the decision and rollout
+evidence. Undoing this rollback requires both a Git change and explicit HA
+application reconfiguration; reverting a chart does not change person settings
+or the outbound selector. Keep one source direction to prevent a feedback loop.

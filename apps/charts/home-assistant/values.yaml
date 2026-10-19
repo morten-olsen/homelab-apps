@@ -87,12 +87,3 @@ matter:
     repository: ghcr.io/home-assistant-libs/python-matter-server
     tag: stable@sha256:170aa093ce91c76cde4cc390918307590f0f5558fcec93f913af3cb019e6562a
     pullPolicy: IfNotPresent
-
-# Existing HACS Dawarich 1.0.0 entry; its credential remains in HA storage.
-# HTTPS resolves through the existing internal gateway; HA hostNetwork has no mesh identity.
-dawarichLocation:
-  entry_id: 01KQVN8547CAQH77C3T7TAHH0M
-  person_user_id: 331cb39811134db996d2bc3c5f626bfd
-  url: https://dawarich.olsen.cloud
-  poll_seconds: 30
-  stale_seconds: 900
