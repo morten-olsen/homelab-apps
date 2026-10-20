@@ -45,6 +45,9 @@ container:
   healthProbe:
     type: tcpSocket
   resources:
+    # Explicit request: a limit alone becomes the request and reserved 500m at ~3m of use.
+    requests:
+      cpu: 10m
     limits:
       memory: "128Mi"
       cpu: "500m"

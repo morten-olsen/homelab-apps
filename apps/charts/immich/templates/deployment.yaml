@@ -74,6 +74,9 @@ spec:
               containerPort: 3003
               protocol: TCP
           resources:
+            # Explicit request: a limit alone becomes the request and reserved 1.5 cores at ~5m of idle use.
+            requests:
+              cpu: 50m
             limits:
               cpu: "1500m"
           volumeMounts:
@@ -191,6 +194,8 @@ spec:
               containerPort: 6379
               protocol: TCP
           resources:
+            requests:
+              cpu: 10m
             limits:
               cpu: "500m"
           livenessProbe:
