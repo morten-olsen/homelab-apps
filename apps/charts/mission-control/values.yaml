@@ -74,14 +74,17 @@ agents:
   dataPath: /var/lib/rancher/k3s/storage/pvc-12f6c36d-d4ef-4927-be81-deac67c406d7_prod_mission-control-data
   serviceAccount: mission-control-agent
   priorityClass: mission-control-agent
+  # Sized for 10 concurrent runs at the limitRange defaults (2 CPU / 4Gi / ~12Gi ephemeral of limits each).
+  # At 5 runs the limits.* totals refused the next pod outright and the run failed (2026-10-20); the limits
+  # are caps, not reservations, and agent pods are evicted first (priority -100).
   quota:
-    pods: "6"
+    pods: "10"
     requests.cpu: 2500m
-    limits.cpu: "10"
+    limits.cpu: "20"
     requests.memory: 8Gi
-    limits.memory: 20Gi
-    requests.ephemeral-storage: 20Gi
-    limits.ephemeral-storage: 60Gi
+    limits.memory: 40Gi
+    requests.ephemeral-storage: 30Gi
+    limits.ephemeral-storage: 120Gi
   limitRange:
     defaultRequest: { cpu: 250m, memory: 512Mi, ephemeral-storage: 1Gi }
     default: { cpu: "2", memory: 4Gi, ephemeral-storage: 10Gi }
