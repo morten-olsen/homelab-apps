@@ -1,6 +1,6 @@
 image:
   repository: bbilly1/tubearchivist
-  tag: latest@sha256:ba1c846ddd0c6fdd0f040727129d2466e03b7a0c26499223839d450c7586ac09
+  tag: latest@sha256:0cbc18aa953c72ec7dfdd6f8fa7c2fe89b5d04489857d7baa354fecbd6181e69
   pullPolicy: IfNotPresent
 
 subdomain: tubearchivist
@@ -105,12 +105,12 @@ env:
 redis:
   image:
     repository: redis
-    tag: latest@sha256:2c2dff791878316e3b083188be0d578423b24813cdda5de0e80ea4f7b3e6bfd6
+    tag: latest@sha256:97ec88159e6d7cfb5ddef9015386087d58a912de80112f06ebdfa78fa5989901
     pullPolicy: IfNotPresent
 
 # Elasticsearch configuration
 elasticsearch:
   image:
     repository: bbilly1/tubearchivist-es
-    tag: latest@sha256:9da63fb1973ec3d57daf6916be948eddd0d8a404cc8e447c938480c85fe2c554
+    tag: latest@sha256:9513a22cd332402cb6fd6ef69844f4f78717190ba9e2e08cb72b3288839d84fa
     pullPolicy: IfNotPresent
