@@ -3,8 +3,16 @@
 Editions stays in the prod mesh, with the existing sidecar, ns-isolation policy,
 public/private gateways and persistent data claim.
 
-Pinned image: `c12c082b@sha256:a24a3086583f2745fe16847a02c11e9144255edcc03b8131caaf07c4dd006c26`
-(main pipeline #52, OCI revision verified).
+Pinned image: `9f6e9c95@sha256:80c8049469ac71cbdef2535973d753eda1dc7932cfb337cb379a0ec2b3360d32`
+(Editions main pipeline #58).
+
+PR #15 fixes scheduled-publication starvation (HOMEIT-436): check due editions
+before starting new feed refreshes, so repeatedly failing feeds cannot make
+readiness active again before every publication check. Existing analysis still
+holds publication. Feed HTTP 503 diagnosis remains HOMEIT-255. For this code
+change, rollback can restore the previous recovered image
+`c12c082b@sha256:a24a3086583f2745fe16847a02c11e9144255edcc03b8131caaf07c4dd006c26`
+through GitOps; preserve all issues and the PVC.
 
 Editions PR #12 fixes startup recovery: analyse pending articles without resetting
 scores, hold scheduled editions while analysis runs, and checkpoint failures.
