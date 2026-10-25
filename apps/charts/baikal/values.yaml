@@ -57,5 +57,6 @@ persistentVolumeClaims:
 virtualService:
   enabled: true
   gateways:
-    public: true
+    # Keep PHP off the internet until the php2shell-vulnerable runtime is upgraded.
+    public: false
     private: true
