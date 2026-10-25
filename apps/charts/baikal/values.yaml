@@ -1,6 +1,6 @@
 image:
   repository: docker.io/ckulka/baikal
-  tag: 0.10.1-nginx@sha256:434bdd162247cc6aa6f878c9b4dce6216e39e79526b980453b13812d5f8ebf4b
+  tag: apache-php8.2@sha256:288f8388297d8637265a95052b6375ca534ad4ae9e99fccb73c7c40cf977f424
   pullPolicy: IfNotPresent
 
 subdomain: baikal
@@ -41,6 +41,10 @@ volumes:
   - name: config
     mountPath: /var/www/baikal/config
     persistentVolumeClaim: config
+  - name: php-config
+    mountPath: /usr/local/etc/php/conf.d/zz-security.ini
+    subPath: zz-security.ini
+    configMap: "{release}-php-config"
 
 # Persistent volume claims
 persistentVolumeClaims:
@@ -57,6 +61,6 @@ persistentVolumeClaims:
 virtualService:
   enabled: true
   gateways:
-    # Keep PHP off the internet until the php2shell-vulnerable runtime is upgraded.
+    # Remain private after patching; restoring public access requires a separate decision.
     public: false
     private: true
