@@ -110,3 +110,9 @@ read fails. Startup and liveness use `/api/health`, so thrown read errors remove
 from Service endpoints without directly causing restarts. A synchronous SQLite I/O stall can
 block the event loop and cause liveness timeouts and restarts; probe timeouts do not cancel SQL. This read check does not prove that
 `/data` is writable. Deploy a server release containing `/api/ready` before merging this probe change.
+
+
+The render test pins the agents ResourceQuota to Morten's October 20 decision
+(HOMEIT-369, commit `156e6c1`): 10 pods; limits 20 CPU, 40Gi memory and 120Gi
+ephemeral storage; requests 2500m CPU, 8Gi memory and 30Gi ephemeral storage.
+When an approved quota changes, update these exact expectations alongside values.
