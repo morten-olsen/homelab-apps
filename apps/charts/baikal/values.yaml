@@ -45,6 +45,10 @@ volumes:
     mountPath: /usr/local/etc/php/conf.d/zz-security.ini
     subPath: zz-security.ini
     configMap: "{release}-php-config"
+  - name: apache-config
+    mountPath: /etc/apache2/sites-enabled/000-default.conf
+    subPath: apache.conf
+    configMap: "{release}-apache-config"
 
 # Persistent volume claims
 persistentVolumeClaims:

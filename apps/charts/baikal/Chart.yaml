@@ -1,5 +1,5 @@
 apiVersion: v2
-version: 0.1.9
+version: 0.1.10
 name: baikal
 dependencies:
   - name: homelab-common
