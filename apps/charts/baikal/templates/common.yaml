@@ -1,6 +1,5 @@
 {{- $values := deepCopy .Values -}}
 {{- $annotations := default dict $values.deployment.podAnnotations -}}
 {{- $_ := set $annotations "checksum/php-config" (include (print $.Template.BasePath "/php-config.yaml") . | sha256sum) -}}
-{{- $_ := set $annotations "checksum/apache-config" (include (print $.Template.BasePath "/apache-config.yaml") . | sha256sum) -}}
 {{- $_ := set $values.deployment "podAnnotations" $annotations -}}
 {{ include "common.all" (list . $values) }}

@@ -1,6 +1,6 @@
 image:
-  repository: docker.io/ckulka/baikal
-  tag: apache-php8.2@sha256:288f8388297d8637265a95052b6375ca534ad4ae9e99fccb73c7c40cf977f424
+  repository: ghcr.io/aalmenar/baikal
+  tag: 0.13.0@sha256:329ade88f83e2017e37715b4f649f51ddee0c0425d6940b8c2542ce04a0873dd
   pullPolicy: IfNotPresent
 
 subdomain: baikal
@@ -42,13 +42,9 @@ volumes:
     mountPath: /var/www/baikal/config
     persistentVolumeClaim: config
   - name: php-config
-    mountPath: /usr/local/etc/php/conf.d/zz-security.ini
+    mountPath: /etc/php/8.5/fpm/conf.d/zz-security.ini
     subPath: zz-security.ini
     configMap: "{release}-php-config"
-  - name: apache-config
-    mountPath: /etc/apache2/sites-enabled/000-default.conf
-    subPath: apache.conf
-    configMap: "{release}-apache-config"
 
 # Persistent volume claims
 persistentVolumeClaims:
