@@ -144,6 +144,9 @@ actions:
       repository: code.forgejo.org/forgejo/runner
       tag: "13.2.0@sha256:ca3d5eea46004789a175d1369eec6829d3ea9bfbe2011a06625b4bdaa55f7552"
       pullPolicy: IfNotPresent
+    curlImage:
+      repository: curlimages/curl
+      tag: latest@sha256:11e64e28c5f58c8d93ee95fcf22ac055f48b0bc440e0ce7d8013bbb5ad6aa8ac
     dind:
       image:
         repository: code.forgejo.org/oci/docker

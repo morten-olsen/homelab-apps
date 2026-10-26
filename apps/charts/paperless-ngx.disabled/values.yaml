@@ -1,3 +1,11 @@
+oidcConfigImage:
+  repository: bitnami/kubectl
+  tag: latest@sha256:eaf442416e6f6b37ea76cc03dbdacc1d85f4c061670df7974dd1387288a11e50
+
+permissionsImage:
+  repository: busybox
+  tag: 1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+
 image:
   repository: ghcr.io/paperless-ngx/paperless-ngx
   tag: latest@sha256:9bc6e8248891bcfa6f52fffe8b81e4ea8cae75790c3ec1b9906961a7ba55c969

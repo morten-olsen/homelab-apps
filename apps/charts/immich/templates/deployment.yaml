@@ -167,40 +167,4 @@ spec:
           persistentVolumeClaim:
             claimName: "{{ .Release.Name }}-model-cache"
 
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: "{{ .Release.Name }}-valkey"
-spec:
-  strategy:
-    type: Recreate
-  replicas: 1
-  revisionHistoryLimit: 0
-  selector:
-    matchLabels:
-      app: "{{ .Release.Name }}-valkey"
-  template:
-    metadata:
-      labels:
-        app: "{{ .Release.Name }}-valkey"
-    spec:
-      containers:
-        - name: "{{ .Release.Name }}-valkey"
-          image: "{{ .Values.valkey.image.repository }}:{{ .Values.valkey.image.tag }}"
-          imagePullPolicy: "{{ .Values.valkey.image.pullPolicy }}"
-          ports:
-            - name: tcp
-              containerPort: 6379
-              protocol: TCP
-          resources:
-            requests:
-              cpu: 10m
-            limits:
-              cpu: "500m"
-          livenessProbe:
-            tcpSocket:
-              port: tcp
-          readinessProbe:
-            tcpSocket:
-              port: tcp
+{{ include "common.standaloneStore" (list . .Values.valkey) }}

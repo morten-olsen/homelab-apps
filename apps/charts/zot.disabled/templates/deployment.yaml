@@ -21,7 +21,7 @@ spec:
     spec:
       initContainers:
         - name: render-config
-          image: alpine:3.20
+          image: "{{ .Values.configImage.repository }}:{{ .Values.configImage.tag }}"
           command: ["/bin/sh", "-c"]
           env:
             - name: ISSUER

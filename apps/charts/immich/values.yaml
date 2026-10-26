@@ -18,11 +18,35 @@ ml:
     repository: ghcr.io/immich-app/immich-machine-learning
     tag: release@sha256:5b28c9352c8374b8a1ed96fbdd8d6755fea6e43510ec43fdf6538aa02ea40f56
     pullPolicy: IfNotPresent
+# Valkey holds live queue state. Preserve the existing no-PVC topology and
+# default server arguments; a pod replacement can lose queued work.
 valkey:
   image:
     repository: valkey/valkey
     tag: 9-alpine@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11
     pullPolicy: IfNotPresent
+  name: "{release}-valkey"
+  commonLabels: false
+  selectorLabels:
+    app: "{release}-valkey"
+  containerName: "{release}-valkey"
+  portName: tcp
+  port: 6379
+  resources:
+    requests:
+      cpu: 10m
+    limits:
+      cpu: "500m"
+  livenessProbe:
+    tcpSocket:
+      port: tcp
+  readinessProbe:
+    tcpSocket:
+      port: tcp
+  service:
+    type: ClusterIP
+    port: 6379
+    targetPort: 6379
 postgres:
   image:
     repository: pgvector/pgvector

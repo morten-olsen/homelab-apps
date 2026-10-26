@@ -19,7 +19,7 @@ spec:
       hostname: docker
       initContainers:
         - name: install-jq
-          image: curlimages/curl:latest
+          image: "{{ .Values.actions.runner.curlImage.repository }}:{{ .Values.actions.runner.curlImage.tag }}"
           command:
             - sh
             - -c

@@ -1,3 +1,7 @@
+permissionsImage:
+  repository: busybox
+  tag: 1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+
 image:
   repository: bbilly1/tubearchivist
   tag: latest@sha256:0cbc18aa953c72ec7dfdd6f8fa7c2fe89b5d04489857d7baa354fecbd6181e69

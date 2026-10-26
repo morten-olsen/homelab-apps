@@ -12,18 +12,15 @@
   ],
   customManagers: [
     {
+      // Forgejo runner labels embed job images rather than Kubernetes image fields.
+      // Keep the label names and image streams intact while tracking tags and digests.
       customType: "regex",
-      managerFilePatterns: [
-        "/.*/templates/.*\\.yaml$/",
-        "/.*/templates/.*\\.yml$/",
-      ],
+      managerFilePatterns: ["/^apps/charts/forgejo/values\\.yaml$/"],
       matchStrings: [
-        "repoURL:s*(?<registryUrls>https?://[^\\n\\r]+)[\\s\\S]*?targetRevision:s*(?<currentValue>[^\\n\\r\\s]+)[\\s\\S]*?chart:s*(?<depName>[^\\n\\r\\s]+)",
-        "repoURL:s*'(?<registryUrls>https?://[^']+)'[\\s\\S]*?targetRevision:s*'(?<currentValue>[^']+)'[\\s\\S]*?chart:s*'(?<depName>[^']+)'",
-        'repoURL:s*"(?<registryUrls>https?://[^"]+)"[\\s\\S]*?targetRevision:s*"(?<currentValue>[^"]+)"[\\s\\S]*?chart:s*"(?<depName>[^"]+)"',
+        "docker://(?<depName>[^\\s\"@]+):(?<currentValue>[^\\s\"@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?",
       ],
-      datasourceTemplate: "helm",
-      versioningTemplate: "semver",
+      datasourceTemplate: "docker",
+      versioningTemplate: "docker",
     },
   ],
 }

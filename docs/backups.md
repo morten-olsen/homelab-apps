@@ -133,6 +133,18 @@ kubectl get replicationsource -n prod
 kubectl describe replicationsource backup-vaultwarden-data -n prod
 ```
 
+## Redis and Valkey queue state
+
+Dawarich's Redis and Immich's Valkey are separate standalone instances rendered
+through `common.standaloneStore`. Their existing engines, service names and pod
+templates are preserved by the shared-template cutover.
+
+Neither instance currently mounts persistent storage. They contain application
+job queues, not just disposable cache: drain or preserve outstanding work before
+an image change or pod replacement. PostgreSQL does not back up these queues.
+Keep the instances separate and do not copy Redis 8 snapshot files into Valkey.
+Adding durable queue storage is a separate operational change.
+
 ## NetBird SQLite upgrades
 
 Before upgrading management, use SQLite's online backup API for both `store.db`

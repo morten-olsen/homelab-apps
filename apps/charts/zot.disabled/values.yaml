@@ -1,3 +1,7 @@
+configImage:
+  repository: alpine
+  tag: 3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
+
 image:
   repository: ghcr.io/project-zot/zot
   tag: v2.1.22@sha256:96cda11459ce6f8c60da3b03f03e9f67fd11b3ae2d82c4c04c92b3c608996080

@@ -42,7 +42,7 @@ spec:
       {{- if .Values.oidc.enabled }}
       initContainers:
       - name: oidc-config-generator
-        image: bitnami/kubectl:latest
+        image: "{{ .Values.oidcConfigImage.repository }}:{{ .Values.oidcConfigImage.tag }}"
         command:
         - sh
         - -c

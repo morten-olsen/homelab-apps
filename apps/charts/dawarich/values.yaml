@@ -1,8 +1,8 @@
 # Dawarich is a Rails app + Sidekiq worker backed by PostGIS-flavored
 # Postgres and Redis, with an in-cluster Photon for reverse-geocoding.
 # This chart is custom (not common.all) because it ships five deployments;
-# common.* is still used for PVCs, OIDC, VirtualService, secrets, and
-# backups so the wiring matches every other app.
+# common.* supplies the standalone Redis workload, PVCs, OIDC, VirtualService,
+# secrets, and backups so the wiring matches every other app.
 
 subdomain: dawarich
 
@@ -25,11 +25,47 @@ db:
     tag: 17-3.5-alpine@sha256:894f570c0cf0664ed5576a8fd5d5bfb8fb1b19d592885b686c3a88c8bd90c41f
     pullPolicy: IfNotPresent
 
+# Redis holds live Sidekiq queues, not Postgres-backed jobs. Keep its existing
+# snapshot arguments and no-PVC topology: snapshots are not durable across pod
+# replacement, so avoid restarting this store during configuration-only changes.
 redis:
   image:
     repository: redis
     tag: 8.10-alpine@sha256:0bf6577d7774e592b29d093e3ac9390eb91e13d72c21e506afce736de5e0eeb0
     pullPolicy: IfNotPresent
+  name: "{release}-redis"
+  commonLabels: true
+  selectorLabels:
+    app: "{release}-redis"
+  containerName: redis
+  portName: redis
+  port: 6379
+  args:
+    - redis-server
+    - --save
+    - "900"
+    - "1"
+    - --save
+    - "300"
+    - "10"
+    - --appendonly
+    - "no"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+  livenessProbe:
+    tcpSocket:
+      port: redis
+  readinessProbe:
+    exec:
+      command: ["redis-cli", "ping"]
+  service:
+    type: ClusterIP
+    port: 6379
+    targetPort: 6379
 
 # Photon does in-cluster reverse-geocoding so we don't ping the public API
 # for every point. The data dir is regenerable from the upstream OSM dump,
