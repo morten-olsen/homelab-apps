@@ -60,7 +60,7 @@ service:
 virtualService:
   enabled: true
   gateways:
-    public: true
+    public: false
     private: true
 
 # Authentik provisions {release}-oidc-credentials with clientId, clientSecret

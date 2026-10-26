@@ -51,7 +51,7 @@ virtualService:
 # Public + private routing knobs the custom VirtualService reads.
 routing:
   gateways:
-    public: true
+    public: false
     private: true
 
 # OIDC client — windmill OSS configures OIDC in the admin UI (no env contract).

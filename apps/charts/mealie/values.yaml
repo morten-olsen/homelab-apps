@@ -46,7 +46,7 @@ persistentVolumeClaims:
 virtualService:
   enabled: true
   gateways:
-    public: true
+    public: false
     private: true
   # Mealie has no CORS support of its own; Envoy answers preflights and adds
   # the headers. API tokens travel as a bearer token, so credentials stay off.
