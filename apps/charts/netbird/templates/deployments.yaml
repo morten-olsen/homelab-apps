@@ -27,8 +27,8 @@ spec:
     spec:
       containers:
         - name: dashboard
-          image: "{{ .Values.images.dashboard.repository }}:{{ .Values.images.dashboard.tag }}"
-          imagePullPolicy: {{ .Values.images.dashboard.pullPolicy }}
+          image: "{{ .Values.images.dashboardImage.repository }}:{{ .Values.images.dashboardImage.tag }}"
+          imagePullPolicy: {{ .Values.images.dashboardImage.pullPolicy }}
           ports:
             - name: http
               containerPort: 80
@@ -105,8 +105,8 @@ spec:
     spec:
       initContainers:
         - name: render-config
-          image: "{{ .Values.images.busybox.repository }}:{{ .Values.images.busybox.tag }}"
-          imagePullPolicy: {{ .Values.images.busybox.pullPolicy }}
+          image: "{{ .Values.images.busyboxImage.repository }}:{{ .Values.images.busyboxImage.tag }}"
+          imagePullPolicy: {{ .Values.images.busyboxImage.pullPolicy }}
           command: ["sh", "-ec"]
           args:
             - |-
@@ -193,8 +193,8 @@ spec:
               mountPath: /config
       containers:
         - name: management
-          image: "{{ .Values.images.management.repository }}:{{ .Values.images.management.tag }}"
-          imagePullPolicy: {{ .Values.images.management.pullPolicy }}
+          image: "{{ .Values.images.managementImage.repository }}:{{ .Values.images.managementImage.tag }}"
+          imagePullPolicy: {{ .Values.images.managementImage.pullPolicy }}
           args:
             - --port
             - "{{ .Values.netbird.management.port }}"
@@ -253,8 +253,8 @@ spec:
     spec:
       containers:
         - name: signal
-          image: "{{ .Values.images.signal.repository }}:{{ .Values.images.signal.tag }}"
-          imagePullPolicy: {{ .Values.images.signal.pullPolicy }}
+          image: "{{ .Values.images.signalImage.repository }}:{{ .Values.images.signalImage.tag }}"
+          imagePullPolicy: {{ .Values.images.signalImage.pullPolicy }}
           args:
             - --log-file
             - console
@@ -304,8 +304,8 @@ spec:
     spec:
       containers:
         - name: relay
-          image: "{{ .Values.images.relay.repository }}:{{ .Values.images.relay.tag }}"
-          imagePullPolicy: {{ .Values.images.relay.pullPolicy }}
+          image: "{{ .Values.images.relayImage.repository }}:{{ .Values.images.relayImage.tag }}"
+          imagePullPolicy: {{ .Values.images.relayImage.pullPolicy }}
           ports:
             - name: http
               containerPort: {{ .Values.netbird.relay.port }}
@@ -360,8 +360,8 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       initContainers:
         - name: render-config
-          image: "{{ .Values.images.busybox.repository }}:{{ .Values.images.busybox.tag }}"
-          imagePullPolicy: {{ .Values.images.busybox.pullPolicy }}
+          image: "{{ .Values.images.busyboxImage.repository }}:{{ .Values.images.busyboxImage.tag }}"
+          imagePullPolicy: {{ .Values.images.busyboxImage.pullPolicy }}
           command: ["sh", "-ec"]
           args:
             - |-
@@ -389,8 +389,8 @@ spec:
               mountPath: /config
       containers:
         - name: coturn
-          image: "{{ .Values.images.coturn.repository }}:{{ .Values.images.coturn.tag }}"
-          imagePullPolicy: {{ .Values.images.coturn.pullPolicy }}
+          image: "{{ .Values.images.coturnImage.repository }}:{{ .Values.images.coturnImage.tag }}"
+          imagePullPolicy: {{ .Values.images.coturnImage.pullPolicy }}
           args:
             - -c
             - /etc/coturn/turnserver.conf

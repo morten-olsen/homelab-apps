@@ -32,28 +32,30 @@ netbird:
     maxPort: 49252
     user: self
 
+# Keep each repository/tag object's key ending in Image so Renovate's
+# helm-values manager discovers it, including the Coturn and BusyBox helpers.
 images:
-  dashboard:
+  dashboardImage:
     repository: netbirdio/dashboard
-    tag: v2.90.0@sha256:05022a0ab704865678f9299a308747cb0878d4258488c00536c27b23f2bd5921
+    tag: v2.95.0@sha256:3d6adfee19dd8d34d795af51daee69d27d2081d2076a5a304cfdd14acc67d6f4
     pullPolicy: IfNotPresent
-  management:
+  managementImage:
     repository: netbirdio/management
-    tag: 0.73.2@sha256:0f61798edc63fdd541dc93981ce873d778a3fa4ed0adc9511346f67f36f61456
+    tag: 0.81.5@sha256:1b8c177dce855ef83e4da0fcd82a51a78b80145eb48453fe363fd40aca4b5471
     pullPolicy: IfNotPresent
-  signal:
+  signalImage:
     repository: netbirdio/signal
-    tag: 0.73.2@sha256:22dc936fe9668c457f6df5221eecc376969b3ead19faa36af6768028cd436944
+    tag: 0.81.5@sha256:eea5dfeb5ad81216731a7c53b2a2b5b5a35115e66327bbd42c3704fc0b9a857e
     pullPolicy: IfNotPresent
-  relay:
+  relayImage:
     repository: netbirdio/relay
-    tag: 0.73.2@sha256:c9a8c704c4cfa310d298369a1f9b5261283973f3e2d9e77030e85951cfc5aebb
+    tag: 0.81.5@sha256:9e2b250ed5bfb63c98fb2d184b59847facc200876211ce54bebc86b50499537f
     pullPolicy: IfNotPresent
-  coturn:
+  coturnImage:
     repository: coturn/coturn
     tag: 4.7.0-r0@sha256:99bf5bf6ab1c119862d0c3d2dfb2bbf805a86a131492cab18c148be64ae7d978
     pullPolicy: IfNotPresent
-  busybox:
+  busyboxImage:
     repository: docker.io/library/busybox
     tag: 1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
     pullPolicy: IfNotPresent

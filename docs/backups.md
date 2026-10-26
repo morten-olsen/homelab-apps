@@ -133,6 +133,26 @@ kubectl get replicationsource -n prod
 kubectl describe replicationsource backup-vaultwarden-data -n prod
 ```
 
+## NetBird SQLite upgrades
+
+Before upgrading management, use SQLite's online backup API for both `store.db`
+and `events.db`; copying active database files is not a consistent backup.
+Run `PRAGMA integrity_check` on each backup and rehearse the new image against
+an isolated copy with the existing management configuration.
+
+The 0.73.2 → 0.81.5 upgrade was rehearsed on 2026-10-26. Backups are retained on
+the `netbird-management` PVC at
+`/var/lib/netbird/pre-upgrade-0.81.5-20261026/{store.db,events.db}`.
+The migration preserved all account, peer, user, group, policy, route, network,
+resource, router and setup-key identities. This same-PVC checkpoint is for
+upgrade rollback, not protection against volume loss.
+
+To roll back, suspend ArgoCD automated sync and stop management before restoring
+both database files from that checkpoint and the previous image pin. Remove
+any SQLite `-wal` and `-shm` files belonging to the replaced databases while
+management is stopped. Resume GitOps reconciliation only after Git contains the
+intended image pins. Do not run the old image against the migrated databases.
+
 ## Restoring an app PVC
 
 ### Via Volsync ReplicationDestination
