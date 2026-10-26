@@ -66,5 +66,5 @@ oidc:
 virtualService:
   enabled: true
   gateways:
-    public: true
+    public: false
     private: true
