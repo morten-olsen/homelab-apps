@@ -77,6 +77,8 @@ spec:
               env:
                 - name: FIREFLY_III_URL
                   value: http://firefly-iii:8080
+                - name: IMPORT_DIR_ALLOWLIST
+                  value: /tmp
                 - name: APP_ENV
                   value: production
                 - name: APP_DEBUG
