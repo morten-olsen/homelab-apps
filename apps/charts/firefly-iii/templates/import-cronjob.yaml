@@ -66,7 +66,14 @@ spec:
                     >/tmp/import.log 2>&1
                   status=$?
                   set -e
-                  cat /tmp/import.log
+                  php -r '
+                  $log = file_get_contents($argv[1]);
+                  echo preg_replace_callback(
+                      "/(The last 25 chars of the access token are:).*/",
+                      static fn (array $matches): string => $matches[1] . " [REDACTED]",
+                      $log
+                  );
+                  ' /tmp/import.log
                   if [ "${status}" -eq 1 ] && php -r '
                   $lines = file($argv[1], FILE_IGNORE_NEW_LINES);
                   $completed = false;
