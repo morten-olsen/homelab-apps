@@ -67,7 +67,7 @@ spec:
                     name: {{ .Values.scheduledImport.credentialsSecret | quote }}
               env:
                 - name: FIREFLY_III_URL
-                  value: http://firefly-iii:8080
+                  value: {{ printf "https://firefly.%s" .Values.globals.domain | quote }}
                 - name: IMPORT_DIR_ALLOWLIST
                   value: /tmp
                 - name: APP_ENV
