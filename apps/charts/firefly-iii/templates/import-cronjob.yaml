@@ -55,14 +55,45 @@ spec:
                   $config["date_not_before"] = (new DateTimeImmutable("today", $timezone))
                       ->modify("-30 days")
                       ->format("Y-m-d");
-                  $config["ignore_duplicate_transactions"] = true;
                   file_put_contents(
                       $target,
                       json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL
                   );
                   chmod($target, 0600);
                   ' {{ .Values.scheduledImport.configPath | quote }} /tmp/import-config.json
-                  exec php artisan importer:import /tmp/import-config.json --no-interaction
+                  set +e
+                  php artisan importer:import /tmp/import-config.json --no-interaction \
+                    >/tmp/import.log 2>&1
+                  status=$?
+                  set -e
+                  cat /tmp/import.log
+                  if [ "${status}" -eq 1 ] && php -r '
+                  $lines = file($argv[1], FILE_IGNORE_NEW_LINES);
+                  $completed = false;
+                  $duplicates = 0;
+                  foreach ($lines as $line) {
+                      if ("Done!" === $line) {
+                          $completed = true;
+                      }
+                      if (
+                          str_contains($line, "production.ERROR")
+                          && !str_contains($line, "Exit code is GENERAL_ERROR")
+                      ) {
+                          exit(1);
+                      }
+                      if (str_starts_with($line, "Import index ") && str_contains($line, "]:")) {
+                          if (!str_contains($line, "]: There is already ")) {
+                              exit(1);
+                          }
+                          ++$duplicates;
+                      }
+                  }
+                  exit($completed && $duplicates > 0 ? 0 : 1);
+                  ' /tmp/import.log; then
+                    echo "Importer completed with duplicate-only results."
+                    exit 0
+                  fi
+                  exit "${status}"
               envFrom:
                 - secretRef:
                     name: {{ .Values.scheduledImport.credentialsSecret | quote }}
