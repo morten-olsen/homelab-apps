@@ -196,6 +196,6 @@ importer:
 scheduledImport:
   enabled: true
   schedule: "30 3 * * *"
-  suspend: true
+  suspend: false
   configPath: /var/www/html/storage/configurations/scheduled.json
   credentialsSecret: firefly-iii-importer-credentials
