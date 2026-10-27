@@ -31,11 +31,25 @@ spec:
               image: "{{ .Values.importer.image.repository }}:{{ .Values.importer.image.tag }}"
               imagePullPolicy: {{ .Values.importer.image.pullPolicy }}
               command:
-                - php
-                - artisan
-                - importer:import
-                - {{ .Values.scheduledImport.configPath | quote }}
-                - --no-interaction
+                - /bin/sh
+                - -ec
+              args:
+                - |
+                  php -r '
+                  $source = $argv[1];
+                  $target = $argv[2];
+                  $config = json_decode(file_get_contents($source), true, 512, JSON_THROW_ON_ERROR);
+                  $timezone = new DateTimeZone(getenv("TZ"));
+                  $config["date_not_before"] = (new DateTimeImmutable("today", $timezone))
+                      ->modify("-30 days")
+                      ->format("Y-m-d");
+                  file_put_contents(
+                      $target,
+                      json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL
+                  );
+                  chmod($target, 0600);
+                  ' {{ .Values.scheduledImport.configPath | quote }} /tmp/import-config.json
+                  exec php artisan importer:import /tmp/import-config.json --no-interaction
               envFrom:
                 - secretRef:
                     name: {{ .Values.scheduledImport.credentialsSecret | quote }}
