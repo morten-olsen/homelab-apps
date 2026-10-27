@@ -40,6 +40,17 @@ spec:
                     --retry 30 \
                     --retry-delay 2 \
                     --retry-all-errors \
+                    --connect-timeout 1 \
+                    --max-time 2 \
+                    http://127.0.0.1:15021/healthz/ready \
+                    >/dev/null
+                  curl \
+                    --fail \
+                    --silent \
+                    --show-error \
+                    --retry 30 \
+                    --retry-delay 2 \
+                    --retry-all-errors \
                     --connect-timeout 5 \
                     --max-time 10 \
                     --header "Authorization: Bearer ${FIREFLY_III_ACCESS_TOKEN}" \
