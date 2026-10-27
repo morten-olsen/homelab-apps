@@ -1,0 +1,65 @@
+{{- if .Values.scheduledImport.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: "{{ .Release.Name }}-import"
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.scheduledImport.schedule | quote }}
+  timeZone: {{ .Values.globals.timezone | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            {{- include "common.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: scheduled-import
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: importer
+              image: "{{ .Values.importer.image.repository }}:{{ .Values.importer.image.tag }}"
+              imagePullPolicy: {{ .Values.importer.image.pullPolicy }}
+              command:
+                - php
+                - artisan
+                - importer:import
+                - {{ .Values.scheduledImport.configPath | quote }}
+                - --no-interaction
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.scheduledImport.credentialsSecret | quote }}
+              env:
+                - name: FIREFLY_III_URL
+                  value: http://firefly-iii:8080
+                - name: APP_ENV
+                  value: production
+                - name: APP_DEBUG
+                  value: "false"
+                - name: LOG_CHANNEL
+                  value: stdout
+                - name: LOG_LEVEL
+                  value: notice
+                - name: TZ
+                  value: {{ .Values.globals.timezone | quote }}
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+              volumeMounts:
+                - name: configurations
+                  mountPath: /var/www/html/storage/configurations
+          volumes:
+            - name: configurations
+              persistentVolumeClaim:
+                claimName: "{{ .Release.Name }}-configurations"
+{{- end }}
