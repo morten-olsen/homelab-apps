@@ -35,6 +35,18 @@ spec:
                 - -ec
               args:
                 - |
+                  curl \
+                    --fail \
+                    --silent \
+                    --show-error \
+                    --retry 30 \
+                    --retry-delay 2 \
+                    --retry-all-errors \
+                    --connect-timeout 5 \
+                    --max-time 10 \
+                    --header "Authorization: Bearer ${FIREFLY_III_ACCESS_TOKEN}" \
+                    "${FIREFLY_III_URL}/api/v1/about" \
+                    >/dev/null
                   php -r '
                   $source = $argv[1];
                   $target = $argv[2];
