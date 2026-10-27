@@ -9,6 +9,7 @@ metadata:
 spec:
   schedule: {{ .Values.scheduledImport.schedule | quote }}
   timeZone: {{ .Values.globals.timezone | quote }}
+  suspend: {{ .Values.scheduledImport.suspend }}
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
