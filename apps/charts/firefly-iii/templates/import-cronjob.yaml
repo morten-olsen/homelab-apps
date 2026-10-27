@@ -19,6 +19,8 @@ spec:
       ttlSecondsAfterFinished: 86400
       template:
         metadata:
+          annotations:
+            proxy.istio.io/config: '{"holdApplicationUntilProxyStarts": true}'
           labels:
             {{- include "common.selectorLabels" . | nindent 12 }}
             app.kubernetes.io/component: scheduled-import
