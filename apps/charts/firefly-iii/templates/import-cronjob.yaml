@@ -19,6 +19,8 @@ spec:
       ttlSecondsAfterFinished: 86400
       template:
         metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
           labels:
             {{- include "common.selectorLabels" . | nindent 12 }}
             app.kubernetes.io/component: scheduled-import
@@ -33,17 +35,6 @@ spec:
                 - -ec
               args:
                 - |
-                  curl \
-                    --fail \
-                    --silent \
-                    --show-error \
-                    --retry 30 \
-                    --retry-delay 2 \
-                    --retry-all-errors \
-                    --connect-timeout 1 \
-                    --max-time 2 \
-                    http://127.0.0.1:15021/healthz/ready \
-                    >/dev/null
                   curl \
                     --fail \
                     --silent \
