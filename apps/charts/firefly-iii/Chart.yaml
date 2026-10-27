@@ -1,0 +1,7 @@
+apiVersion: v2
+version: 0.1.0
+name: firefly-iii
+dependencies:
+  - name: homelab-common
+    version: 0.1.11
+    repository: https://mortenolsen.pro/homelab-core/

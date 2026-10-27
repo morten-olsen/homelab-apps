@@ -1,0 +1,184 @@
+firefly:
+  image:
+    repository: fireflyiii/core
+    tag: version-6.7.9@sha256:d51ab6a3a7b91a5c892441578e0da7f2935f84f36bd1151fc3833acc6e060871
+    pullPolicy: IfNotPresent
+
+  subdomain: firefly
+
+  dns:
+    enabled: true
+    type: A
+    dnsClassRef:
+      name: private-dns
+
+  deployment:
+    strategy: Recreate
+    replicas: 1
+
+  container:
+    port: 8080
+    healthProbe:
+      type: httpGet
+      path: /health
+      port: http
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
+
+  service:
+    port: 8080
+    type: ClusterIP
+
+  volumes:
+    - name: upload
+      mountPath: /var/www/html/storage/upload
+      persistentVolumeClaim: firefly-iii-upload
+
+  persistentVolumeClaims:
+    - name: upload
+      size: 5Gi
+      storageClassName: local-path
+      backup: true
+
+  virtualService:
+    enabled: true
+    gateways:
+      public: false
+      private: true
+
+  database:
+    enabled: true
+
+  externalSecrets:
+    - name: "{release}-secrets"
+      passwords:
+        - name: app-key
+          length: 32
+          encoding: raw
+          allowRepeat: true
+          secretKeys:
+            - appKey
+
+  env:
+    APP_ENV: production
+    APP_DEBUG: "false"
+    APP_KEY:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-secrets"
+          key: appKey
+    APP_URL:
+      value: "https://{subdomain}.{domain}"
+    SITE_OWNER: admin@olsen.cloud
+    DEFAULT_LANGUAGE: en_US
+    DEFAULT_LOCALE: equal
+    TRUSTED_PROXIES: "**"
+    LOG_CHANNEL: stdout
+    APP_LOG_LEVEL: notice
+    AUDIT_LOG_LEVEL: emergency
+    DB_CONNECTION: pgsql
+    DB_HOST:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-connection"
+          key: host
+    DB_PORT:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-connection"
+          key: port
+    DB_DATABASE:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-connection"
+          key: database
+    DB_USERNAME:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-connection"
+          key: user
+    DB_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-connection"
+          key: password
+    PGSQL_SSL_MODE: prefer
+    PGSQL_SCHEMA: public
+    COOKIE_SECURE: "true"
+    MAIL_MAILER: log
+    SEND_ERROR_MESSAGE: "false"
+
+importer:
+  nameOverride: importer
+
+  image:
+    repository: fireflyiii/data-importer
+    tag: version-2.3.5@sha256:59f2f26ddf6eb55e84ce0d571259c9aabd6ddfcc23dd4d3825ab01ad79e34930
+    pullPolicy: IfNotPresent
+
+  subdomain: firefly-importer
+
+  dns:
+    enabled: true
+    type: A
+    dnsClassRef:
+      name: private-dns
+
+  deployment:
+    strategy: Recreate
+    replicas: 1
+
+  container:
+    port: 8080
+    healthProbe:
+      type: httpGet
+      path: /
+      port: http
+      initialDelaySeconds: 10
+      periodSeconds: 30
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
+
+  service:
+    port: 8080
+    type: ClusterIP
+
+  volumes:
+    - name: configurations
+      mountPath: /var/www/html/storage/configurations
+      persistentVolumeClaim: firefly-iii-configurations
+
+  persistentVolumeClaims:
+    - name: configurations
+      size: 1Gi
+      storageClassName: local-path
+      backup: true
+
+  virtualService:
+    enabled: true
+    gateways:
+      public: false
+      private: true
+
+  env:
+    FIREFLY_III_URL: http://firefly-iii:8080
+    VANITY_URL:
+      value: "https://firefly.{domain}"
+    TRUSTED_PROXIES: "**"
+    FALLBACK_LOCALE: en_US
+    APP_ENV: production
+    APP_DEBUG: "false"
+    LOG_CHANNEL: stdout
+    LOG_LEVEL: notice
