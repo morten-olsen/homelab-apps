@@ -55,6 +55,7 @@ spec:
                   $config["date_not_before"] = (new DateTimeImmutable("today", $timezone))
                       ->modify("-30 days")
                       ->format("Y-m-d");
+                  $config["ignore_duplicate_transactions"] = true;
                   file_put_contents(
                       $target,
                       json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL
