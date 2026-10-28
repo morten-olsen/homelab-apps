@@ -1,0 +1,114 @@
+# Dragonfly server (android/dragonfly, apps/server): Morten's own ledger, ingesting Lunch Flow
+# on its own sync schedule; the Dragonfly app will mirror it. Design: docs/server.md there.
+image:
+  repository: code.olsen.cloud/android/dragonfly-server
+  # Pinned by version and digest; a published android/dragonfly release replaces it
+  # (its deploy-release workflow). 0.0.0 marks the first deploy, the main build of 5c6c7b2:
+  # the digest is what the node pulls.
+  tag: 0.0.0@sha256:5042a32d2647847cc4ce256e32ea3c8fc8f39942ef32f78577c51fee88abad63
+  pullPolicy: IfNotPresent
+
+# Private gateway only: https://dragonfly.<domain>, LAN and VPN.
+subdomain: dragonfly
+
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+deployment:
+  # One process: the job runner re-queues "running" jobs on start, assuming it is the only one.
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 2
+
+container:
+  port: 3000
+  healthProbe:
+    type: httpGet
+    path: /api/health
+    port: http
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+  resources:
+    requests:
+      cpu: 50m
+      memory: 192Mi
+    limits:
+      memory: 512Mi
+
+service:
+  port: 3000
+  type: ClusterIP
+
+probe:
+  path: /api/health
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+# The shared CNPG cluster; the operator provisions dragonfly-connection (url, host, ...).
+database:
+  enabled: true
+
+# Authentik client for the API. Access tokens are RS256 (verified against the issuer's JWKS),
+# keyed by the user's uuid. Device code is how `task server:login` signs in from a laptop;
+# Authentik requires a redirect URI though none is used yet.
+oidc:
+  enabled: true
+  redirectUris:
+    - /api/auth/callback
+  subjectMode: user_uuid
+  grantTypes:
+    - urn:ietf:params:oauth:grant-type:device_code
+    - refresh_token
+  scopes:
+    - openid
+    - profile
+    - email
+    - offline_access
+  signingKeyName: authentik Self-signed Certificate
+
+# The key that seals provider credentials (Lunch Flow API keys) in the database. Generated
+# once, never rotated: losing it means re-entering the keys, not losing data.
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: secret-key
+        length: 32
+        encoding: base64
+        allowRepeat: true
+        secretKeys:
+          - secretKey
+
+env:
+  DRAGONFLY_DATABASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url
+  DRAGONFLY_SECRET_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: secretKey
+  DRAGONFLY_OIDC_ISSUER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: issuer
+  DRAGONFLY_OIDC_AUDIENCE:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientId
+  # New connections sync daily at 04:00 local time (after Firefly's 03:30 import); each
+  # connection's schedule can be changed through the API.
+  DRAGONFLY_TIMEZONE:
+    value: "{timezone}"
+  DRAGONFLY_SYNC_DEFAULT_SCHEDULE: "0 4 * * *"
