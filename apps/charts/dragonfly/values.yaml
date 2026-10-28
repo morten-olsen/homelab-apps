@@ -87,6 +87,10 @@ externalSecrets:
           - secretKey
 
 env:
+  # Explicit, because the Service is called dragonfly: Kubernetes injects its service links as
+  # DRAGONFLY_PORT=tcp://<ip>:3000 and friends, and a container's own env wins over those.
+  DRAGONFLY_PORT: "3000"
+  DRAGONFLY_HOST: "0.0.0.0"
   DRAGONFLY_DATABASE_URL:
     valueFrom:
       secretKeyRef:
