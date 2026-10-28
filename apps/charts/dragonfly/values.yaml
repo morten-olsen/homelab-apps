@@ -59,12 +59,13 @@ database:
 # The Authentik client the app and the CLI sign in with (templates/oidc-client.yaml, not
 # homelab-common's `oidc`, which can't make a public client). Public: the app is a phone and
 # holds no secret, so it signs in with authorization code + PKCE, redirected to
-# dragonfly://oauth; the CLI uses the device code. Access tokens are RS256 (verified against
+# dragonfly://oauth (dragonfly-dev://oauth for development builds); the CLI uses the device code. Access tokens are RS256 (verified against
 # the issuer's JWKS), keyed by the user's uuid. The operator writes the issuer and client id
 # to dragonfly-oidc-credentials.
 authClient:
   redirectUris:
     - dragonfly://oauth
+    - dragonfly-dev://oauth
   subjectMode: user_uuid
   grantTypes:
     - authorization_code
