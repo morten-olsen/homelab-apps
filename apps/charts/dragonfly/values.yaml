@@ -56,17 +56,20 @@ virtualService:
 database:
   enabled: true
 
-# Authentik client for the API. Access tokens are RS256 (verified against the issuer's JWKS),
-# keyed by the user's uuid. Device code is how `task server:login` signs in from a laptop;
-# Authentik requires a redirect URI though none is used yet.
-oidc:
-  enabled: true
+# The Authentik client the app and the CLI sign in with (templates/oidc-client.yaml, not
+# homelab-common's `oidc`, which can't make a public client). Public: the app is a phone and
+# holds no secret, so it signs in with authorization code + PKCE, redirected to
+# dragonfly://oauth; the CLI uses the device code. Access tokens are RS256 (verified against
+# the issuer's JWKS), keyed by the user's uuid. The operator writes the issuer and client id
+# to dragonfly-oidc-credentials.
+authClient:
   redirectUris:
-    - /api/auth/callback
+    - dragonfly://oauth
   subjectMode: user_uuid
   grantTypes:
-    - urn:ietf:params:oauth:grant-type:device_code
+    - authorization_code
     - refresh_token
+    - urn:ietf:params:oauth:grant-type:device_code
   scopes:
     - openid
     - profile
