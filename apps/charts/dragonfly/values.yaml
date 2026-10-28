@@ -5,7 +5,7 @@ image:
   # Pinned by version and digest; a published android/dragonfly release replaces it
   # (its deploy-release workflow). 0.0.0 marks the first deploy, the main build of 5c6c7b2:
   # the digest is what the node pulls.
-  tag: 0.4.1@sha256:7dc1497a0623cd8b4ec89c3e4c4273df9ebbcb8e8e8e8f1993b1e97c9deccae5
+  tag: 0.4.2@sha256:77ddddd54f369c0f0f9ca990a0b96ce71152ea0a287e34a009494692b17a956b
   pullPolicy: IfNotPresent
 
 # Private gateway only: https://dragonfly.<domain>, LAN and VPN.
