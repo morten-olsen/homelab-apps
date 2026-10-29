@@ -70,7 +70,9 @@ oidc:
     - name: admin
       namespace: shared
   group:
-    members: []
+    members:
+      - id: 6
+        uuid: 1ee1b704-c1eb-433c-b90c-bf440152550a
   enabled: true
   redirectUris:
     - "/login"
