@@ -58,6 +58,12 @@ virtualService:
 # the {release}-oidc-credentials secret exists; the admin pastes those
 # values into Memos' IdP form on first run.
 oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
   enabled: true
   redirectUris:
     - "/auth/callback"
