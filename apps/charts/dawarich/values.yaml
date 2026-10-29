@@ -102,6 +102,12 @@ virtualService:
 # Authentik provisions {release}-oidc-credentials with clientId, clientSecret
 # and issuer; Dawarich supports env-driven OIDC discovery natively.
 oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
   enabled: true
   redirectUris:
     - "/users/auth/openid_connect/callback"
