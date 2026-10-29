@@ -1,0 +1,62 @@
+# Canary for Authentik forward auth. The whoami image echoes each request,
+# so the identity headers Authentik adds after a successful check are visible.
+subdomain: forward-auth-canary
+
+image:
+  repository: docker.io/traefik/whoami
+  tag: v1.11.0@sha256:200689790a0a0ea48ca45992e0450bc26ccab5307375b41c84dfc4f2475937ab
+  pullPolicy: IfNotPresent
+
+args:
+  - --port
+  - "8080"
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+
+container:
+  port: 8080
+  healthProbe:
+    type: tcpSocket
+    port: http
+  resources:
+    requests:
+      cpu: 5m
+      memory: 16Mi
+    limits:
+      memory: 32Mi
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+
+service:
+  port: 80
+  type: ClusterIP
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+# /api echoes without a session (stands in for an API-key protected API);
+# /health serves the blackbox probe. Everything else needs shared/admin.
+forwardAuth:
+  enabled: true
+  accessTokenValidity: hours=1
+  excludePaths:
+    - /api
+    - /health
+  group:
+    members: []
+  allowedGroups:
+    - name: admin
+      namespace: shared
+
+probe:
+  path: /health

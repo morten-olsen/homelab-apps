@@ -1,0 +1,8 @@
+apiVersion: v2
+version: 0.1.0
+name: forward-auth-canary
+description: Echo service behind Authentik forward auth, used to verify the ext_authz path (Mission Control 50ce4193)
+dependencies:
+  - name: homelab-common
+    version: 0.3.0
+    repository: https://mortenolsen.pro/homelab-core/
