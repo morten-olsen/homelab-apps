@@ -39,6 +39,10 @@ for chart in "${charts[@]}"; do
     step "helm lint" helm lint "$chart" --values "$chart/values.yaml" --values "$tmp/globals.yaml"
     if helm template "${name%.disabled}" "$chart" --namespace prod --values "$tmp/globals.yaml" >"$tmp/rendered.yaml" 2>"$tmp/out"; then
       step "kubeconform" kubeconform -strict -kubernetes-version 1.33.4 -ignore-missing-schemas -summary "$tmp/rendered.yaml"
+      if yq -e '.dependencies[] | select(.name == "homelab-common" and .version == "0.2.0")' "$chart/Chart.yaml" > /dev/null 2>&1; then
+        yq -o=json -I=0 'select(.kind == "AuthentikGroup" or .kind == "AuthentikClient")' "$tmp/rendered.yaml" > "$tmp/identity.json"
+        step "OIDC group access" python3 "$root/scripts/ci/check-oidc-access.py" "$tmp/identity.json"
+      fi
     else
       echo "FAIL $name: helm template"
       sed 's/^/    /' "$tmp/out"
