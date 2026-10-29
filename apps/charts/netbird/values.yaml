@@ -80,6 +80,12 @@ virtualService:
 # /nb-auth and /nb-silent-auth for browser OIDC callbacks; localhost is for
 # CLI PKCE enrollment.
 oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
   enabled: true
   redirectUris:
     - /nb-auth
