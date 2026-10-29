@@ -49,6 +49,12 @@ virtualService:
 
 # OIDC client configuration
 oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
   enabled: true
   redirectUris:
     - "/auth/openid/callback"
