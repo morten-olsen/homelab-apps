@@ -69,6 +69,8 @@ oidc:
   allowedGroups:
     - name: admin
       namespace: shared
+    - name: homeit-474-missing
+      namespace: prod
   group:
     members: []
   enabled: true
