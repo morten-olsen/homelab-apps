@@ -120,3 +120,12 @@ env:
   DRAGONFLY_TIMEZONE:
     value: "{timezone}"
   DRAGONFLY_SYNC_DEFAULT_SCHEDULE: "0 4 * * *"
+
+# Membership and grants for the custom AuthentikClient.
+oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []

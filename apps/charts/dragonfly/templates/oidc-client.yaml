@@ -1,5 +1,7 @@
 {{- /* The app's and CLI's sign-in client: public (no secret), so the phone can use PKCE. Kept
        in the same resource homelab-common's `oidc` used to make, so the client keeps its id. */ -}}
+{{ include "common.oidcGroup" (list . .Values) }}
+---
 apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
 kind: AuthentikClient
 metadata:
@@ -14,6 +16,8 @@ spec:
   name: {{ include "common.fullname" . }}
   clientType: public
   secretName: {{ printf "%s-oidc-credentials" (include "common.fullname" .) }}
+  allowedGroups:
+    {{- include "common.allowedGroups" (list . .Values) | nindent 4 }}
   redirectUris:
     {{- toYaml .Values.authClient.redirectUris | nindent 4 }}
   subjectMode: {{ .Values.authClient.subjectMode }}
