@@ -42,6 +42,12 @@ dns:
 
 # OIDC/Authentik configuration
 oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
   enabled: true
   redirectUris:
     - "/user/oauth2/Authentik/callback"
