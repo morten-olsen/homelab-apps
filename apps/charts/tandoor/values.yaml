@@ -92,6 +92,12 @@ virtualService:
     private: true
 
 oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
   enabled: true
   redirectUris:
     - "/accounts/authentik/login/callback/"
