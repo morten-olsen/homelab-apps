@@ -17,7 +17,7 @@ oidc:
 ```
 
 Additional allowedGroups extends the app group. Empty app membership grants
-nobody access through that group. Every currently enrolled application explicitly
+nobody access through that group. Each migrated application explicitly
 adds shared/admin, whose initial member is morten. Admin is a deployment group;
 it does not give Authentik superuser or in-app administrator privileges. The
 operator gives no implicit access to superusers.
@@ -42,6 +42,8 @@ issued tokens must be reported separately. Rollback needs an explicit safe
 access plan; a chart revert does not undo Authentik binding state.
 
 PR CI checks rendered migrated enrollments using scripts/ci/check-oidc-access.py.
-For a local full enrollment check after building dependencies, run
-scripts/tests/oidc-access.sh. Publishing the new library and installing operator
+For a local enrollment check after building dependencies, run
+`scripts/tests/oidc-access.sh mealie` for the canary, or pass the names of the
+applications in the current stage. With no arguments it checks all 17 migrations.
+Publishing the new library and installing operator
 CRDs are prerequisites, not steps this repository's CI can perform.

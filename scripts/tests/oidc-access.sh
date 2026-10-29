@@ -6,7 +6,12 @@ root="$(cd "$(dirname "$0")/../.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 yq '{"globals": .globals}' "$root/apps/root/values.yaml" > "$tmp/globals.yaml"
-for name in audiobookshelf bytestash coder dawarich dragonfly forgejo home-assistant immich jellyfin mealie memos miniflux netbird openwebui tandoor vikunja windmill; do
+if [ "$#" -gt 0 ]; then
+  names=("$@")
+else
+  names=(audiobookshelf bytestash coder dawarich dragonfly forgejo home-assistant immich jellyfin mealie memos miniflux netbird openwebui tandoor vikunja windmill)
+fi
+for name in "${names[@]}"; do
   chart="$root/apps/charts/$name"
   helm lint "$chart" --values "$tmp/globals.yaml" > /dev/null
   helm template "$name" "$chart" --namespace prod --values "$tmp/globals.yaml" > "$tmp/rendered.yaml"
