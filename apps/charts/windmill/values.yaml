@@ -59,6 +59,12 @@ routing:
 # admin pastes the values on first sign-in. Redirect URI is the windmill-side
 # callback path for an "authentik" provider name.
 oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
   enabled: true
   redirectUris:
     - "/user/login_callback/authentik"
