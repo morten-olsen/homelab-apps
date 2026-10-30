@@ -9,6 +9,13 @@
   NET_ADMIN; forwarding is enabled for the pod's network namespace through the
   kubelet's allowed net.ipv4.* sysctls. No Istio sidecar: WireGuard and ICE are
   UDP, and routed traffic leaves through the node, not the mesh.
+
+  Peer-to-peer (HOMEIT-499): WireGuard and ICE share UDP router.wireguardPort.
+  The UniFi forward WAN UDP 51820 -> node:51820 reaches the pod through the
+  ServiceLB Service below, and NB_EXTERNAL_IP_MAP advertises the WAN address as
+  the candidate. The host alias sends the management/relay/STUN hostname to the
+  node, where coturn (hostNetwork) answers STUN; through the CoreDNS rewrite it
+  would reach the Istio gateway, which has no UDP 3478.
 */ -}}
 {{- if .Values.router.enabled }}
 {{- $clientHost := printf "%s.%s" .Values.netbird.clientHost .Values.globals.domain }}
@@ -37,6 +44,9 @@ spec:
         sidecar.istio.io/inject: "false"
     spec:
       automountServiceAccountToken: false
+      hostAliases:
+        - ip: {{ .Values.netbird.hostIp | quote }}
+          hostnames: [{{ $clientHost | quote }}]
       securityContext:
         sysctls:
           - name: net.ipv4.ip_forward
@@ -64,6 +74,10 @@ spec:
               value: "true"
             - name: NB_LOG_FILE
               value: console
+            - name: NB_WIREGUARD_PORT
+              value: {{ .Values.router.wireguardPort | quote }}
+            - name: NB_EXTERNAL_IP_MAP
+              value: {{ .Values.netbird.turn.externalIp | quote }}
           volumeMounts:
             - name: state
               mountPath: /var/lib/netbird
@@ -91,6 +105,26 @@ spec:
         - name: state
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-router-state
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-router
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: router
+spec:
+  type: LoadBalancer
+  # Keep the peer's source address so WireGuard and ICE see the real endpoint.
+  externalTrafficPolicy: Local
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: router
+  ports:
+    - name: wireguard
+      protocol: UDP
+      port: {{ .Values.router.wireguardPort }}
+      targetPort: {{ .Values.router.wireguardPort }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

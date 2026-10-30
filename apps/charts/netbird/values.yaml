@@ -133,3 +133,6 @@ externalSecrets:
 router:
   enabled: true
   hostname: k8s-router
+  # UniFi forwards WAN UDP 51820 to the node (HOMEIT-499); the WAN address is
+  # netbird.turn.externalIp.
+  wireguardPort: 51820
