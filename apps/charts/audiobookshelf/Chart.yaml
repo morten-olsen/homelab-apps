@@ -3,5 +3,5 @@ version: 0.1.8
 name: audiobookshelf
 dependencies:
   - name: homelab-common
-    version: 0.2.0
+    version: 0.3.0
     repository: https://mortenolsen.pro/homelab-core/
