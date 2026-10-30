@@ -1,0 +1,108 @@
+{{- /*
+  In-cluster NetBird routing peer for the "Home" network (HOMEIT-498). It
+  enrolls once with a single-use setup key that puts it in the cluster-routers
+  group, which routes Home ahead of the desktop router, and keeps its peer
+  identity on a small volume, so the key is worthless after first use. A lost
+  volume needs a new key (base scripts/netbird-router.py). It routes for others only:
+  client routes (including the 0.0.0.0/0 exit routes sent to All) and DNS stay
+  off so the pod's own networking is untouched. Kernel WireGuard needs only
+  NET_ADMIN; forwarding is enabled for the pod's network namespace through the
+  kubelet's allowed net.ipv4.* sysctls. No Istio sidecar: WireGuard and ICE are
+  UDP, and routed traffic leaves through the node, not the mesh.
+*/ -}}
+{{- if .Values.router.enabled }}
+{{- $clientHost := printf "%s.%s" .Values.netbird.clientHost .Values.globals.domain }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-router
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: router
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: router
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: router
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        sysctls:
+          - name: net.ipv4.ip_forward
+            value: "1"
+      containers:
+        - name: netbird
+          image: "{{ .Values.images.routerImage.repository }}:{{ .Values.images.routerImage.tag }}"
+          imagePullPolicy: {{ .Values.images.routerImage.pullPolicy }}
+          command: ["/usr/local/bin/netbird-entrypoint.sh"]
+          env:
+            - name: NB_SETUP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-router-setup-key
+                  key: setupKey
+                  # Only needed for the first enrollment.
+                  optional: true
+            - name: NB_MANAGEMENT_URL
+              value: "https://{{ $clientHost }}"
+            - name: NB_HOSTNAME
+              value: {{ .Values.router.hostname | quote }}
+            - name: NB_DISABLE_CLIENT_ROUTES
+              value: "true"
+            - name: NB_DISABLE_DNS
+              value: "true"
+            - name: NB_LOG_FILE
+              value: console
+          volumeMounts:
+            - name: state
+              mountPath: /var/lib/netbird
+          securityContext:
+            capabilities:
+              add: [NET_ADMIN, NET_RAW]
+          readinessProbe:
+            exec:
+              command: [netbird, status, --check, ready]
+            periodSeconds: 30
+            timeoutSeconds: 10
+          livenessProbe:
+            exec:
+              command: [netbird, status, --check, live]
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 48Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-router-state
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-router-state
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: router
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 64Mi
+{{- end }}
