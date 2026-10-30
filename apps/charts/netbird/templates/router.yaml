@@ -78,6 +78,11 @@ spec:
               value: {{ .Values.router.wireguardPort | quote }}
             - name: NB_EXTERNAL_IP_MAP
               value: {{ .Values.netbird.turn.externalIp | quote }}
+            # The entrypoint's `netbird up` only applies these settings while the
+            # daemon is disconnected; without this the daemon reconnects from the
+            # stored config first and `up` reports "Already connected".
+            - name: NB_DISABLE_AUTO_CONNECT
+              value: "true"
           volumeMounts:
             - name: state
               mountPath: /var/lib/netbird
