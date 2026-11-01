@@ -19,6 +19,9 @@
       matchStrings: [
         "docker://(?<depName>[^\\s\"@]+):(?<currentValue>[^\\s\"@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?",
       ],
+      // Pinning starts with no currentDigest, so Renovate must build the full reference.
+      autoReplaceStringTemplate:
+        "docker://{{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}",
       datasourceTemplate: "docker",
       versioningTemplate: "docker",
     },

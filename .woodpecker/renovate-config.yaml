@@ -1,0 +1,9 @@
+when:
+  - event: [push, pull_request, manual]
+
+steps:
+  config:
+    image: code.olsen.cloud/ci/renovate:latest@sha256:d5b585ee8cdc6dce829f53162a09ef4f6198ee0d5d4452ea9d2e2032671636e7
+    commands:
+      - renovate-config-validator --strict renovate.json5
+      - node scripts/tests/renovate-config.cjs
