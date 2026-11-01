@@ -1,6 +1,6 @@
 image:
   repository: codeberg.org/forgejo/forgejo
-  tag: 17@sha256:06d38310de496a10186d952bdad5ca764c153c8023ede8dfa0944c79a1dc5412
+  tag: 17@sha256:fcd19ff4ebc85fb098a67e8e1d0d5a84d07dd6e8a23edcfdfd5b71a6178953be
   pullPolicy: IfNotPresent
 
 subdomain: code
@@ -148,11 +148,11 @@ actions:
   runner:
     image:
       repository: code.forgejo.org/forgejo/runner
-      tag: "13.2.0@sha256:ca3d5eea46004789a175d1369eec6829d3ea9bfbe2011a06625b4bdaa55f7552"
+      tag: "13.2.1@sha256:568cea8c15ddc01fc8f330124892f572af7db37fa28344a2c1914405793bf61d"
       pullPolicy: IfNotPresent
     curlImage:
       repository: curlimages/curl
-      tag: latest@sha256:11e64e28c5f58c8d93ee95fcf22ac055f48b0bc440e0ce7d8013bbb5ad6aa8ac
+      tag: latest@sha256:3fb7e13e5d179a845c97d78204f3f1064d1907037f26a3ebf91710571151fd93
     dind:
       image:
         repository: code.forgejo.org/oci/docker
@@ -163,8 +163,8 @@ actions:
     storage:
       size: 10Gi
     labels:
-      - "ubuntu-latest:docker://gitea/runner-images:ubuntu-latest-slim"
-      - "ubuntu-slim-latest:docker://gitea/runner-images:ubuntu-latest-slim"
-      - "ubuntu-full-latest:docker://gitea/runner-images:ubuntu-latest-full"
-      - "docker-cli:docker://code.forgejo.org/oci/docker:cli"
+      - "ubuntu-latest:docker://gitea/runner-images:ubuntu-latest-slim@sha256:645f015708a3e18a835c4afa7c91bfddc35adacfffa398a871e8f3e76bd99859"
+      - "ubuntu-slim-latest:docker://gitea/runner-images:ubuntu-latest-slim@sha256:645f015708a3e18a835c4afa7c91bfddc35adacfffa398a871e8f3e76bd99859"
+      - "ubuntu-full-latest:docker://gitea/runner-images:ubuntu-latest-full@sha256:e387ebe347230c35e1a7f173a0dcf1947d6726c6c542e9b65b0ffc1c6928a601"
+      - "docker-cli:docker://code.forgejo.org/oci/docker:cli@sha256:5e6baf67325a79f64ed3bed6863954d5e05d0f3d4e57cbdb14809346814bbfdb"
       - "node-bookworm:docker://code.forgejo.org/oci/node:20-bookworm"

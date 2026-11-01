@@ -1,14 +1,14 @@
 oidcConfigImage:
   repository: bitnami/kubectl
-  tag: latest@sha256:eaf442416e6f6b37ea76cc03dbdacc1d85f4c061670df7974dd1387288a11e50
+  tag: latest@sha256:bedd34c910e2a5ce9836813d16444af449d7fe07a29136d59f34e861e8e660c5
 
 permissionsImage:
   repository: busybox
-  tag: 1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+  tag: 1.38.0@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
 
 image:
   repository: ghcr.io/paperless-ngx/paperless-ngx
-  tag: latest@sha256:9bc6e8248891bcfa6f52fffe8b81e4ea8cae75790c3ec1b9906961a7ba55c969
+  tag: latest@sha256:1a08d8dfc2b51a08de09652dd86ad4d0c611c362382f944533ad38b73125fbc4
   pullPolicy: IfNotPresent
 
 subdomain: paperless
@@ -159,7 +159,7 @@ env:
 valkey:
   image:
     repository: valkey/valkey
-    tag: latest@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
+    tag: latest@sha256:3add1a336a920ea54770a001ab6feb3da5fceea96a40373a3a2cd469b815f0b7
     pullPolicy: IfNotPresent
   storage:
     size: 1Gi
