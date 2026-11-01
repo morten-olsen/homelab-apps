@@ -4,6 +4,10 @@ when:
 steps:
   renovate:
     image: code.olsen.cloud/ci/renovate:latest@sha256:d5b585ee8cdc6dce829f53162a09ef4f6198ee0d5d4452ea9d2e2032671636e7
+    environment:
+      LOG_LEVEL: debug
+      RENOVATE_DRY_RUN: full
+      RENOVATE_FORCE: '{"enabledManagers":["custom.regex"]}'
     settings:
       token:
         from_secret: renovate_forgejo_token
