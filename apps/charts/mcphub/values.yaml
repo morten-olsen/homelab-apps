@@ -1,0 +1,155 @@
+# MCPHub: aggregates MCP servers behind one endpoint. Database mode (shared
+# PostgreSQL) is required for Authentik login through Better Auth.
+#
+# The database needs the vector extension, which is not trusted, so it is
+# created once as superuser (like immich):
+#   kubectl exec -n shared postgres-cluster-1 -c postgres -- \
+#     psql -U postgres -d prod_mcphub -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+#
+# Authentik users map to a local user named by their email and are created as
+# non-admins. Sign in once as `admin` (password in {release}-secrets) to promote
+# them under Users.
+image:
+  repository: samanhappy/mcphub
+  tag: 1.2.1@sha256:deb97d6c27142f722eb6caaf8105694e10ccf4f1f82f61628bbb227f04bc380b
+  pullPolicy: IfNotPresent
+
+subdomain: mcphub
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 3000
+  healthProbe:
+    type: httpGet
+    path: /health
+    port: http
+  # Explicit requests: a limit alone becomes the request. stdio MCP servers run
+  # as child processes inside this container and share its memory.
+  resources:
+    requests:
+      cpu: 20m
+      memory: 256Mi
+    limits:
+      memory: 2Gi
+
+service:
+  port: 80
+
+probe:
+  path: /health
+
+volumes:
+  - name: data
+    mountPath: /app/data
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    size: 1Gi
+    storageClassName: local-path
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
+  enabled: true
+  redirectUris:
+    - "/api/auth/better/callback/authentik"
+
+database:
+  enabled: true
+
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: jwt-secret
+        length: 64
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - jwtSecret
+      - name: better-auth-secret
+        length: 64
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - betterAuthSecret
+      # 32 bytes, canonical base64. Encrypts stored upstream credentials:
+      # losing it makes them unrecoverable even with a database backup.
+      - name: credential-key
+        length: 32
+        encoding: base64
+        allowRepeat: true
+        secretKeys:
+          - credentialKey
+      - name: admin-password
+        length: 32
+        encoding: raw
+        allowRepeat: true
+        secretKeys:
+          - adminPassword
+
+env:
+  NODE_ENV: production
+  DB_URL:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-connection"
+        key: url
+  JWT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: jwtSecret
+  BETTER_AUTH_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: betterAuthSecret
+  MCPHUB_CREDENTIAL_ENCRYPTION_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: credentialKey
+  ADMIN_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: adminPassword
+  # Better Auth generic OIDC against Authentik
+  BETTER_AUTH_ENABLED: "true"
+  BETTER_AUTH_URL: "https://{subdomain}.{domain}"
+  BETTER_AUTH_OIDC_ENABLED: "true"
+  BETTER_AUTH_OIDC_PROVIDER_ID: authentik
+  # Kubernetes expands $(VAR) only from env vars earlier in the list, and
+  # common.env renders keys sorted, so the issuer var must sort before
+  # BETTER_AUTH_*. The Authentik issuer already ends in "/".
+  AUTHENTIK_ISSUER:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: issuer
+  BETTER_AUTH_OIDC_DISCOVERY_URL: "$(AUTHENTIK_ISSUER).well-known/openid-configuration"
+  OIDC_CLIENT_ID:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientId
+  OIDC_CLIENT_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-oidc-credentials"
+        key: clientSecret
