@@ -91,7 +91,7 @@ For multi-app charts or value segregation, scope to a values subset:
 
 - Chart and release names use kebab-case
 - All container images pinned by SHA256 digest (Renovate manages updates)
-- Storage uses `persistent` storageClassName
+- Storage uses the `local-path` storageClassName (`persistent` no longer exists)
 - Istio VirtualServices route via public/private gateways
 - Deployment strategy: `Recreate` for stateful apps, `RollingUpdate` for stateless
 
