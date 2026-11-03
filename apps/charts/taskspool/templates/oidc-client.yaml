@@ -1,0 +1,29 @@
+{{- /* The server's and CLI's sign-in client: public (no secret), so both use PKCE or the
+       device code. Custom rather than homelab-common's `oidc`, which only takes https
+       redirect URIs on the app's own domain. */ -}}
+{{ include "common.oidcGroup" (list . .Values) }}
+---
+apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
+kind: AuthentikClient
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  serverRef:
+    name: {{ .Values.globals.authentik.ref.name }}
+    namespace: {{ .Values.globals.authentik.ref.namespace }}
+  name: {{ include "common.fullname" . }}
+  clientType: public
+  secretName: {{ printf "%s-oidc-credentials" (include "common.fullname" .) }}
+  allowedGroups:
+    {{- include "common.allowedGroups" (list . .Values) | nindent 4 }}
+  redirectUris:
+    {{- toYaml .Values.authClient.redirectUris | nindent 4 }}
+  subjectMode: {{ .Values.authClient.subjectMode }}
+  scopes:
+    {{- toYaml .Values.authClient.scopes | nindent 4 }}
+  grantTypes:
+    {{- toYaml .Values.authClient.grantTypes | nindent 4 }}
+  signingKeyName: {{ .Values.authClient.signingKeyName | quote }}

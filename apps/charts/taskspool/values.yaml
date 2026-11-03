@@ -1,0 +1,27 @@
+# Taskspool (morten-olsen/taskspool): only the sign-in client for now; the server workload,
+# routing and storage come later.
+
+# Access to the client; the chart always retains its own group.
+oidc:
+  allowedGroups:
+    - name: admin
+      namespace: shared
+
+# Public client (no secret): the server signs in with PKCE, the CLI with the device code.
+# Tokens are RS256 (verified against the issuer's JWKS), keyed by the user's uuid. The
+# operator writes the issuer and client id to taskspool-oidc-credentials.
+authClient:
+  redirectUris:
+    # Local development server.
+    - http://localhost:3030/api/auth/oidc/callback
+  subjectMode: user_uuid
+  grantTypes:
+    - authorization_code
+    - refresh_token
+    - urn:ietf:params:oauth:grant-type:device_code
+  scopes:
+    - openid
+    - profile
+    - email
+    - offline_access
+  signingKeyName: authentik Self-signed Certificate
