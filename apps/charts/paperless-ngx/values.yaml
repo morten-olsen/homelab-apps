@@ -132,6 +132,11 @@ env:
   PAPERLESS_TIKA_ENABLED: "1"
   PAPERLESS_TIKA_ENDPOINT: "http://tika.{namespace}.svc.cluster.local"
   PAPERLESS_TIKA_GOTENBERG_ENDPOINT: "http://gotenberg.{namespace}.svc.cluster.local"
+  # OCR: Danish needs its language pack (installed at container start), and "redo"
+  # also OCRs images of text on pages that already have some text layer
+  PAPERLESS_OCR_LANGUAGES: "dan"
+  PAPERLESS_OCR_LANGUAGE: "dan+eng"
+  PAPERLESS_OCR_MODE: "redo"
   # OIDC configuration using django-allauth
   PAPERLESS_ENABLE_ALLAUTH: "true"
   PAPERLESS_APPS: "allauth.socialaccount.providers.openid_connect"
