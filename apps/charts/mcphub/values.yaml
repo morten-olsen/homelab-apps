@@ -107,6 +107,9 @@ externalSecrets:
 
 env:
   NODE_ENV: production
+  # Public URL for links rendered in the dashboard and OAuth metadata; the
+  # default is http://localhost:3000.
+  INSTALL_BASE_URL: "https://{subdomain}.{domain}"
   DB_URL:
     valueFrom:
       secretKeyRef:
