@@ -1,0 +1,42 @@
+# The server's keys are generated in the cluster, once, and never appear in Git. The Secret is orphaned
+# from the ExternalSecret: pruning the ExternalSecret must not delete the keys, because project secrets
+# encrypted with TASKSPOOL_SECRET_KEY are unreadable without it. Both sync before the Deployment (wave -1).
+---
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: {{ .Release.Name }}-keys-generator
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  length: 48
+  allowRepeat: true
+  encoding: base64
+  secretKeys:
+    - TASKSPOOL_JWT_SECRET
+    - TASKSPOOL_SECRET_KEY
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ .Values.config.keysSecret }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  refreshInterval: "0"
+  target:
+    name: {{ .Values.config.keysSecret }}
+    creationPolicy: Orphan
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: {{ .Release.Name }}-keys-generator

@@ -1,0 +1,9 @@
+{{- /* The Deployment and the VirtualService are written out in their own files: the library has no pod
+       security context, no startup probe and no way to turn route retries off. The service, the probe and
+       the route only exist once a release is pinned (image.tag); the data volume and its backup always do. */ -}}
+{{ include "common.pvc" (list . .Values) }}
+{{ include "common.backup" (list . .Values) }}
+{{- if .Values.image.tag }}
+{{ include "common.service" (list . .Values) }}
+{{ include "common.probe" (list . .Values) }}
+{{- end }}

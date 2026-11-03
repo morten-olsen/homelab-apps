@@ -20,6 +20,7 @@ spec:
   allowedGroups:
     {{- include "common.allowedGroups" (list . .Values) | nindent 4 }}
   redirectUris:
+    - {{ printf "%s/api/auth/oidc/callback" (include "common.url" .) | quote }}
     {{- toYaml .Values.authClient.redirectUris | nindent 4 }}
   subjectMode: {{ .Values.authClient.subjectMode }}
   scopes:

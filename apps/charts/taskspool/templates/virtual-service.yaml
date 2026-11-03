@@ -1,0 +1,25 @@
+{{- if .Values.image.tag }}
+# Private gateway only. Kyverno generates the ServiceEntry and the DNS record from this object.
+# No retries: a retried run request would start the run twice, a retried push would replay a pack. No
+# route timeout either (Istio has none unless set): `wait: true` runs and large pushes take as long as they take.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ include "common.fullname" . }}-private
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  gateways:
+    {{- include "common.virtualServiceGatewaysPrivate" . | nindent 4 }}
+  hosts:
+    - {{ include "common.domain" . }}
+    - mesh
+  http:
+    - retries:
+        attempts: 0
+      route:
+        - destination:
+            host: {{ include "common.fullname" . }}
+            port:
+              number: {{ .Values.service.port }}
+{{- end }}

@@ -1,5 +1,53 @@
-# Taskspool (morten-olsen/taskspool): only the sign-in client for now; the server workload,
-# routing and storage come later.
+# Taskspool (morten-olsen/taskspool): a script runner whose projects are git repositories it hosts.
+# The server image and its pin come from taskspool's release pipeline; see image.tag.
+
+image:
+  repository: code.olsen.cloud/morten-olsen/taskspool
+  # <version>@sha256:<digest>, written by taskspool's release pipeline (scripts/deploy-release.mjs) when a
+  # release is published. Empty until the first release: the chart then renders no workload, only the
+  # sign-in client, the keys and the data volume.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Private gateway only: https://taskspool.<domain>, LAN and VPN.
+subdomain: taskspool
+
+deployment:
+  strategy: Recreate # SQLite and the git repositories on one ReadWriteOnce claim: never two writers
+  replicas: 1
+  revisionHistoryLimit: 2
+  # Runs are cancelled on shutdown (SIGTERM, then SIGKILL after 5s) before the database closes.
+  terminationGracePeriodSeconds: 30
+  uid: 10001
+  gid: 10001
+
+container:
+  port: 3030
+  # Scripts run as Deno processes inside the server's container, so its limits are theirs too.
+  resources:
+    requests: { cpu: 100m, memory: 256Mi, ephemeral-storage: 512Mi }
+    limits: { cpu: "2", memory: 2Gi, ephemeral-storage: 4Gi }
+  startupProbe: { path: /api/health, periodSeconds: 5, failureThreshold: 24 }
+  readinessProbe: { path: /api/health, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
+  livenessProbe: { path: /api/health, periodSeconds: 20, timeoutSeconds: 5, failureThreshold: 6 }
+
+service:
+  port: 3030
+
+probe:
+  path: /api/health
+
+persistentVolumeClaims:
+  # Database, project repositories, commit checkouts and the Deno download cache.
+  - name: data
+    size: 10Gi
+    storageClassName: local-path
+    backup: true
+
+config:
+  # Generated once by External Secrets, never rotated by the chart: TASKSPOOL_JWT_SECRET and
+  # TASKSPOOL_SECRET_KEY. Losing the secret key makes every stored project secret unreadable.
+  keysSecret: taskspool-keys
 
 # Access to the client; the chart always retains its own group.
 oidc:
@@ -11,6 +59,7 @@ oidc:
 # Tokens are RS256 (verified against the issuer's JWKS), keyed by the user's uuid. The
 # operator writes the issuer and client id to taskspool-oidc-credentials.
 authClient:
+  # The deployed server's callback (https://taskspool.<domain>/api/auth/oidc/callback) is added by the template.
   redirectUris:
     # Local development server.
     - http://localhost:3030/api/auth/oidc/callback

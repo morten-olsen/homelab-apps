@@ -1,0 +1,97 @@
+{{- if .Values.image.tag }}
+{{- if not (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+@sha256:[0-9a-f]{64}$" .Values.image.tag) }}
+{{- fail "image.tag must be <version>@sha256:<digest>, as taskspool's release pipeline writes it" }}
+{{- end }}
+{{- $c := .Values.container }}
+{{- $keys := .Values.config.keysSecret }}
+{{- $oidc := printf "%s-oidc-credentials" (include "common.fullname" .) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: {{ .Values.deployment.strategy }}
+  replicas: {{ .Values.deployment.replicas }}
+  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+    spec:
+      # Scripts run inside this pod; they get no Kubernetes credentials.
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.deployment.uid }}
+        runAsGroup: {{ .Values.deployment.gid }}
+        fsGroup: {{ .Values.deployment.gid }}
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $c.port }}
+              protocol: TCP
+          startupProbe:
+            httpGet: { path: {{ $c.startupProbe.path }}, port: http }
+            periodSeconds: {{ $c.startupProbe.periodSeconds }}
+            failureThreshold: {{ $c.startupProbe.failureThreshold }}
+          readinessProbe:
+            httpGet: { path: {{ $c.readinessProbe.path }}, port: http }
+            periodSeconds: {{ $c.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ $c.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ $c.readinessProbe.failureThreshold }}
+          livenessProbe:
+            httpGet: { path: {{ $c.livenessProbe.path }}, port: http }
+            periodSeconds: {{ $c.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ $c.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ $c.livenessProbe.failureThreshold }}
+          resources:
+            {{- toYaml $c.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          env:
+            - { name: PORT, value: {{ $c.port | quote }} }
+            - { name: TASKSPOOL_DATA_DIR, value: /data }
+            - { name: TASKSPOOL_PUBLIC_URL, value: {{ include "common.url" . | quote }} }
+            - { name: TZ, value: {{ .Values.globals.timezone | default "UTC" | quote }} }
+            - name: TASKSPOOL_JWT_SECRET
+              valueFrom:
+                secretKeyRef: { name: {{ $keys }}, key: TASKSPOOL_JWT_SECRET }
+            - name: TASKSPOOL_SECRET_KEY
+              valueFrom:
+                secretKeyRef: { name: {{ $keys }}, key: TASKSPOOL_SECRET_KEY }
+            # A public client: issuer and client id only, the server signs in with PKCE.
+            - name: OIDC_ISSUER
+              valueFrom:
+                secretKeyRef: { name: {{ $oidc }}, key: issuer }
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef: { name: {{ $oidc }}, key: clientId }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+            - { name: tmp, mountPath: /tmp }
+            - { name: home, mountPath: /home/taskspool }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data
+        - name: tmp
+          emptyDir: { sizeLimit: 2Gi }
+        - name: home
+          emptyDir: { sizeLimit: 256Mi }
+{{- end }}
