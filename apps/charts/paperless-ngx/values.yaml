@@ -1,7 +1,3 @@
-oidcConfigImage:
-  repository: bitnami/kubectl
-  tag: latest@sha256:bedd34c910e2a5ce9836813d16444af449d7fe07a29136d59f34e861e8e660c5
-
 image:
   repository: ghcr.io/paperless-ngx/paperless-ngx
   tag: latest@sha256:1a08d8dfc2b51a08de09652dd86ad4d0c611c362382f944533ad38b73125fbc4
@@ -137,10 +133,15 @@ env:
   # OIDC configuration using django-allauth
   PAPERLESS_ENABLE_ALLAUTH: "true"
   PAPERLESS_APPS: "allauth.socialaccount.providers.openid_connect"
-  # PAPERLESS_SOCIALACCOUNT_PROVIDERS is set via init container (see deployment.yaml)
   PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "true"
   PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
-  # OIDC credentials for init container (will be used to construct JSON)
+  # Kubernetes expands $(VAR) from env vars earlier in the list; common.env
+  # renders keys sorted, so PAPERLESS_OIDC_* precede the providers JSON.
+  PAPERLESS_SOCIALACCOUNT_PROVIDERS: >-
+    {"openid_connect":{"OAUTH_PKCE_ENABLED":true,"APPS":[{"provider_id":"authentik",
+    "name":"authentik","client_id":"$(PAPERLESS_OIDC_CLIENT_ID)",
+    "secret":"$(PAPERLESS_OIDC_CLIENT_SECRET)",
+    "settings":{"server_url":"$(PAPERLESS_OIDC_ISSUER_URL)/.well-known/openid-configuration"}}]}}
   PAPERLESS_OIDC_CLIENT_ID:
     valueFrom:
       secretKeyRef:
