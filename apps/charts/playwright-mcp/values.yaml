@@ -1,0 +1,48 @@
+# Playwright MCP over streamable HTTP, for MCPHub's `playwright` server
+# (http://playwright-mcp.prod.svc.cluster.local:8931/mcp). MCPHub's slim image
+# ships no browser, so the official image with headless Chromium runs here.
+# In-cluster only: no VirtualService, no authentication.
+image:
+  repository: mcr.microsoft.com/playwright/mcp
+  tag: v0.0.83@sha256:690763cbb437ee7233f538a953bb5390bf03791eb5c965b471e59d17a6132fcb
+  pullPolicy: IfNotPresent
+
+# Appended to the image entrypoint (--headless --browser chromium
+# --no-sandbox). The server rejects any Host header not listed in
+# --allowed-hosts, port included. --isolated keeps each session's profile in
+# memory instead of a shared on-disk one.
+args:
+  - --port=8931
+  - --host=0.0.0.0
+  - --allowed-hosts={release}.{namespace}.svc.cluster.local:8931
+  - --isolated
+
+deployment:
+  strategy: RollingUpdate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 8931
+  # Every path answers 400 without an MCP session, so only check the socket.
+  healthProbe:
+    type: tcpSocket
+    port: http
+  # Explicit requests: a limit alone becomes the request. One headless page is
+  # about 300Mi; each open tab or session adds a renderer.
+  resources:
+    requests:
+      cpu: 20m
+      memory: 256Mi
+    limits:
+      memory: 2Gi
+
+service:
+  port: 8931
+
+# The blackbox probe's Host header is not allowed and no path returns 2xx.
+probe:
+  enabled: false
+
+virtualService:
+  enabled: false
