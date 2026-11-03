@@ -1,0 +1,42 @@
+# Document conversion (Chromium + LibreOffice) for Paperless-ngx's Tika
+# integration. In-cluster only: no VirtualService, no authentication.
+image:
+  repository: gotenberg/gotenberg
+  tag: 8.39.0@sha256:13672f317b443c793e972b1bd2155ec62a3e7b6891b411e8196442cc053ee5f5
+  pullPolicy: IfNotPresent
+
+# Paperless-ngx's recommended flags: no JavaScript in converted HTML and no
+# file access outside the conversion workspace.
+command:
+  - gotenberg
+  - --chromium-disable-javascript=true
+  - --chromium-allow-list=file:///tmp/.*
+
+deployment:
+  strategy: RollingUpdate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 3000
+  healthProbe:
+    type: httpGet
+    path: /health
+    port: http
+  # Explicit requests: a limit alone becomes the request. Chromium and
+  # LibreOffice start on demand, so idle use is small but conversions spike.
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+    limits:
+      memory: 1Gi
+
+service:
+  port: 80
+
+probe:
+  path: /health
+
+virtualService:
+  enabled: false
