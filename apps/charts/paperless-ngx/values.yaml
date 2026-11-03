@@ -128,6 +128,10 @@ env:
   # Redis/Valkey configuration
   PAPERLESS_REDIS:
     value: "redis://{release}-valkey.{namespace}.svc.cluster.local:6379"
+  # Office documents, email and HTML via the in-cluster tika and gotenberg apps
+  PAPERLESS_TIKA_ENABLED: "1"
+  PAPERLESS_TIKA_ENDPOINT: "http://tika.{namespace}.svc.cluster.local"
+  PAPERLESS_TIKA_GOTENBERG_ENDPOINT: "http://gotenberg.{namespace}.svc.cluster.local"
   # OIDC configuration using django-allauth
   PAPERLESS_ENABLE_ALLAUTH: "true"
   PAPERLESS_APPS: "allauth.socialaccount.providers.openid_connect"
