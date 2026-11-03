@@ -2,10 +2,6 @@ oidcConfigImage:
   repository: bitnami/kubectl
   tag: latest@sha256:bedd34c910e2a5ce9836813d16444af449d7fe07a29136d59f34e861e8e660c5
 
-permissionsImage:
-  repository: busybox
-  tag: 1.38.0@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
-
 image:
   repository: ghcr.io/paperless-ngx/paperless-ngx
   tag: latest@sha256:1a08d8dfc2b51a08de09652dd86ad4d0c611c362382f944533ad38b73125fbc4
@@ -51,16 +47,16 @@ volumes:
 persistentVolumeClaims:
   - name: data
     size: 10Gi
-    storageClassName: persistent
+    storageClassName: local-path
   - name: media
     size: 50Gi
-    storageClassName: persistent
+    storageClassName: local-path
   - name: consume
     size: 5Gi
-    storageClassName: persistent
+    storageClassName: local-path
   - name: export
     size: 5Gi
-    storageClassName: persistent
+    storageClassName: local-path
 
 # VirtualService configuration
 virtualService:
@@ -71,6 +67,12 @@ virtualService:
 
 # OIDC client configuration
 oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
   enabled: true
   redirectUris:
     - "/accounts/oidc/authentik/login/callback/"
@@ -155,12 +157,41 @@ env:
         name: "{release}-oidc-credentials"
         key: issuer
 
-# Valkey (Redis-compatible) configuration
+# Valkey is the Celery broker. Persistence is disabled (no snapshots, no AOF,
+# no PVC), so a pod replacement drops queued tasks; files left in consume/ are
+# picked up again on the next scan.
 valkey:
   image:
     repository: valkey/valkey
     tag: latest@sha256:3add1a336a920ea54770a001ab6feb3da5fceea96a40373a3a2cd469b815f0b7
     pullPolicy: IfNotPresent
-  storage:
-    size: 1Gi
-    storageClassName: persistent
+  name: "{release}-valkey"
+  commonLabels: true
+  selectorLabels:
+    app: "{release}-valkey"
+  containerName: "{release}-valkey"
+  portName: tcp
+  port: 6379
+  args:
+    - valkey-server
+    - --appendonly
+    - "no"
+    - --save
+    - ""
+    - --stop-writes-on-bgsave-error
+    - "no"
+  resources:
+    requests:
+      cpu: 10m
+    limits:
+      cpu: "500m"
+  livenessProbe:
+    tcpSocket:
+      port: tcp
+  readinessProbe:
+    tcpSocket:
+      port: tcp
+  service:
+    type: ClusterIP
+    port: 6379
+    targetPort: 6379
