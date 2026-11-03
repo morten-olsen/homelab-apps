@@ -25,5 +25,9 @@ container:
 service:
   port: 80
 
+# Tika has no authentication; serve it on the private gateway only.
 virtualService:
-  enabled: false
+  enabled: true
+  gateways:
+    public: false
+    private: true
