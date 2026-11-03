@@ -137,6 +137,10 @@ env:
   PAPERLESS_OCR_LANGUAGES: "dan"
   PAPERLESS_OCR_LANGUAGE: "dan+eng"
   PAPERLESS_OCR_MODE: "redo"
+  # Not derived from the OCR language: unset, Danish dates ("14. marts 2024") are guessed
+  PAPERLESS_DATE_PARSER_LANGUAGES: "da+en"
+  # A second worker so uploads don't wait behind long runs of re-embedding tasks
+  PAPERLESS_TASK_WORKERS: "2"
   # OIDC configuration using django-allauth
   PAPERLESS_ENABLE_ALLAUTH: "true"
   PAPERLESS_APPS: "allauth.socialaccount.providers.openid_connect"
