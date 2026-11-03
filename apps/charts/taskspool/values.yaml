@@ -6,7 +6,7 @@ image:
   # <version>@sha256:<digest>, written by taskspool's release pipeline (scripts/deploy-release.mjs) when a
   # release is published. Empty until the first release: the chart then renders no workload, only the
   # sign-in client, the keys and the data volume.
-  tag: "0.3.0@sha256:ef996bc86df7d9d1b7a0bcbf5a1a23b4b5b1924c4329c756f4fa55381f999f2c"
+  tag: "0.3.1@sha256:ce1977263c824520b77343af8b4265cab45d2313ace2753391e9f9bad074f37b"
   pullPolicy: IfNotPresent
 
 # Private gateway only: https://taskspool.<domain>, LAN and VPN.
