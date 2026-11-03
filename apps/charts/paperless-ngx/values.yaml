@@ -91,8 +91,6 @@ externalSecrets:
 
 # Environment variables
 env:
-  TZ:
-    value: "{timezone}"
   PAPERLESS_URL:
     value: "https://{subdomain}.{domain}"
   PAPERLESS_SECRET_KEY:
@@ -137,11 +135,12 @@ env:
   PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
   # Kubernetes expands $(VAR) from env vars earlier in the list; common.env
   # renders keys sorted, so PAPERLESS_OIDC_* precede the providers JSON.
+  # The Authentik issuer already ends in "/".
   PAPERLESS_SOCIALACCOUNT_PROVIDERS: >-
     {"openid_connect":{"OAUTH_PKCE_ENABLED":true,"APPS":[{"provider_id":"authentik",
     "name":"authentik","client_id":"$(PAPERLESS_OIDC_CLIENT_ID)",
     "secret":"$(PAPERLESS_OIDC_CLIENT_SECRET)",
-    "settings":{"server_url":"$(PAPERLESS_OIDC_ISSUER_URL)/.well-known/openid-configuration"}}]}}
+    "settings":{"server_url":"$(PAPERLESS_OIDC_ISSUER_URL).well-known/openid-configuration"}}]}}
   PAPERLESS_OIDC_CLIENT_ID:
     valueFrom:
       secretKeyRef:
