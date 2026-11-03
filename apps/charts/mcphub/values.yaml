@@ -68,6 +68,9 @@ oidc:
   enabled: true
   redirectUris:
     - "/api/auth/better/callback/authentik"
+  # Better Auth verifies the id_token against the discovery JWKS, so the
+  # provider must sign with RS256 rather than the default HS256.
+  signingKeyName: authentik Self-signed Certificate
 
 database:
   enabled: true
