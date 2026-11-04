@@ -20,7 +20,7 @@
 #   kubectl exec -n shared postgres-cluster-1 -c postgres -- \
 #     psql -U postgres -d prod_hindsight -c 'CREATE EXTENSION IF NOT EXISTS vector;'
 #
-# Models: the LLM is llama-swap's `primary` alias over cluster DNS. Embeddings
+# Models: the LLM is llama-swap's `long` alias over cluster DNS. Embeddings
 # (BAAI/bge-small-en-v1.5, 384 dims) and the reranker (hindsight-ai/hs-rerank-1) run
 # on CPU inside the full API image, which ships them preloaded, so no cache volume is
 # needed. llama-swap's embedding model is not used: it swaps models one at a time,
@@ -111,13 +111,21 @@ api:
     HINDSIGHT_API_WORKER_ID: "{release}"
     HINDSIGHT_API_LLM_PROVIDER: openai
     HINDSIGHT_API_LLM_BASE_URL: "http://llama-swap.{namespace}.svc.cluster.local:8090/v1"
-    HINDSIGHT_API_LLM_MODEL: primary
+    # Same gemma-4-26b-a4b weights as `primary`, but a 32k context instead of 16k.
+    # llama-swap counts it as a separate model, so Hindsight's calls swap out
+    # `primary` while something else is using it.
+    HINDSIGHT_API_LLM_MODEL: long
     # llama-swap takes no key, but the OpenAI client refuses to start without one.
     HINDSIGHT_API_LLM_API_KEY: llama-swap
     # llama-swap serves one model at a time and loads it on demand: keep the
     # concurrency low and allow for a cold model load.
     HINDSIGHT_API_LLM_MAX_CONCURRENT: "2"
     HINDSIGHT_API_LLM_TIMEOUT: "300"
+    # Fit the 32k context. The defaults assume hosted models: retain asks for up to
+    # 64k output tokens, and reflect gathers up to 100k tokens of evidence.
+    # Retain's cap must stay above HINDSIGHT_API_RETAIN_CHUNK_SIZE (3000).
+    HINDSIGHT_API_RETAIN_MAX_COMPLETION_TOKENS: "16000"
+    HINDSIGHT_API_REFLECT_MAX_CONTEXT_TOKENS: "20000"
 
 ui:
   image:
