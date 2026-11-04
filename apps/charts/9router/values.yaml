@@ -65,6 +65,9 @@ oidc:
   enabled: true
   redirectUris:
     - "/api/auth/oidc/callback"
+  # 9router verifies the ID token only against the JWKS, which stays empty (HS256)
+  # unless the provider has a signing key.
+  signingKeyName: authentik Self-signed Certificate
 
 # Generated secrets
 externalSecrets:
