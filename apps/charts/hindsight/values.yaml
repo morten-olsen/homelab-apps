@@ -121,6 +121,11 @@ api:
     # concurrency low and allow for a cold model load.
     HINDSIGHT_API_LLM_MAX_CONCURRENT: "2"
     HINDSIGHT_API_LLM_TIMEOUT: "300"
+    # Gemma 4 thinks by default, and at Hindsight's temperature 0.1 its reasoning
+    # loops until the output limit: retain spent 16k tokens (about 200s) on a
+    # two-sentence input and returned nothing. Without thinking, the same
+    # extraction takes 384 tokens.
+    HINDSIGHT_API_LLM_EXTRA_BODY: '{"chat_template_kwargs":{"enable_thinking":false}}'
     # Fit the 32k context. The defaults assume hosted models: retain asks for up to
     # 64k output tokens, and reflect gathers up to 100k tokens of evidence.
     # Retain's cap must stay above HINDSIGHT_API_RETAIN_CHUNK_SIZE (3000).
