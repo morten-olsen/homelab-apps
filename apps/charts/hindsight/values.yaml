@@ -28,7 +28,10 @@
 # Changing the embedding model later means re-indexing every bank.
 
 api:
-  nameOverride: api
+  # Resources are named {release}-dataplane, not {release}-api: Kubernetes injects
+  # service links into every pod, and a Service named hindsight-api would set
+  # HINDSIGHT_API_PORT=tcp://… — Hindsight's own config prefix — and crash it.
+  nameOverride: dataplane
 
   image:
     repository: ghcr.io/vectorize-io/hindsight-api
@@ -168,7 +171,7 @@ ui:
     NODE_ENV: production
     HINDSIGHT_CP_HOSTNAME: "0.0.0.0"
     HINDSIGHT_CP_PORT: "3000"
-    HINDSIGHT_CP_DATAPLANE_API_URL: "http://{release}-api.{namespace}.svc.cluster.local"
+    HINDSIGHT_CP_DATAPLANE_API_URL: "http://{release}-dataplane.{namespace}.svc.cluster.local"
     HINDSIGHT_CP_DATAPLANE_API_KEY:
       valueFrom:
         secretKeyRef:
