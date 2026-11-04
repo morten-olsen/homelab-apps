@@ -163,8 +163,8 @@ actions:
     storage:
       size: 10Gi
     labels:
-      - "ubuntu-latest:docker://gitea/runner-images:ubuntu-latest-slim@sha256:645f015708a3e18a835c4afa7c91bfddc35adacfffa398a871e8f3e76bd99859"
-      - "ubuntu-slim-latest:docker://gitea/runner-images:ubuntu-latest-slim@sha256:645f015708a3e18a835c4afa7c91bfddc35adacfffa398a871e8f3e76bd99859"
+      - "ubuntu-latest:docker://gitea/runner-images:ubuntu-latest-slim@sha256:1241f498a84062d219e28aea36ed7e6b9fc69d014ef75d7dfee785a5a1b5abca"
+      - "ubuntu-slim-latest:docker://gitea/runner-images:ubuntu-latest-slim@sha256:1241f498a84062d219e28aea36ed7e6b9fc69d014ef75d7dfee785a5a1b5abca"
       - "ubuntu-full-latest:docker://gitea/runner-images:ubuntu-latest-full@sha256:e387ebe347230c35e1a7f173a0dcf1947d6726c6c542e9b65b0ffc1c6928a601"
       - "docker-cli:docker://code.forgejo.org/oci/docker:cli@sha256:5e6baf67325a79f64ed3bed6863954d5e05d0f3d4e57cbdb14809346814bbfdb"
       - "node-bookworm:docker://code.forgejo.org/oci/node:20-bookworm"
