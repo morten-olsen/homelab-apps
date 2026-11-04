@@ -52,8 +52,9 @@ virtualService:
 
 # OIDC client for the dashboard login. 9router stores the issuer, client ID and
 # secret in its own settings (Profile page), so they are entered there from
-# {release}-oidc-credentials. 9router admits any user the provider authenticates,
-# so the Authentik group binding is the only access control.
+# ninerouter-oidc-credentials (named after fullnameOverride). 9router admits any
+# user the provider authenticates, so the Authentik group binding is the only
+# access control.
 oidc:
   # Additional application access; the chart always retains its own group.
   allowedGroups:
