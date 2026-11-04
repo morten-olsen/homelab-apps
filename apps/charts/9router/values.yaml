@@ -50,6 +50,21 @@ virtualService:
     public: false
     private: true
 
+# OIDC client for the dashboard login. 9router stores the issuer, client ID and
+# secret in its own settings (Profile page), so they are entered there from
+# {release}-oidc-credentials. 9router admits any user the provider authenticates,
+# so the Authentik group binding is the only access control.
+oidc:
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
+  enabled: true
+  redirectUris:
+    - "/api/auth/oidc/callback"
+
 # Generated secrets
 externalSecrets:
   - name: "{release}-secrets"
@@ -68,3 +83,5 @@ env:
       secretKeyRef:
         name: "{release}-secrets"
         key: initial-password
+  # Origin for the OIDC redirect URI, instead of trusting forwarded headers.
+  BASE_URL: "https://{subdomain}.{domain}"
