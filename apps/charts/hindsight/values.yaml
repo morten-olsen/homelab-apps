@@ -1,0 +1,176 @@
+# Hindsight: long-term memory for agents (retain / recall / reflect), served as a
+# REST API and an MCP server, plus a web control plane.
+#
+# Two deployments in one chart, so the two auth models never overlap:
+#
+#   ui  → hindsight.{domain}      Control plane (Next.js). Self-hosted Hindsight has
+#                                 no OIDC, only a shared access key, so the UI sits
+#                                 behind Authentik forward auth instead. The policy
+#                                 selects only this pod.
+#   api → hindsight-api.{domain}  REST API (/v1/…) and MCP (/mcp/…). No forward auth;
+#                                 every request needs `Authorization: Bearer <apiKey>`
+#                                 from {release}-secrets (built-in ApiKeyTenantExtension,
+#                                 which also guards MCP).
+#
+# The UI reaches the API over cluster DNS with the same key; browsers never see it.
+#
+# Database: shared CNPG (prod_hindsight). Migrations create pg_trgm and btree_gin
+# themselves (trusted), but vector is not trusted, so it is created once as
+# superuser (like immich and mcphub):
+#   kubectl exec -n shared postgres-cluster-1 -c postgres -- \
+#     psql -U postgres -d prod_hindsight -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+#
+# Models: the LLM is llama-swap's `primary` alias over cluster DNS. Embeddings
+# (BAAI/bge-small-en-v1.5, 384 dims) and the reranker (hindsight-ai/hs-rerank-1) run
+# on CPU inside the full API image, which ships them preloaded, so no cache volume is
+# needed. llama-swap's embedding model is not used: it swaps models one at a time,
+# and qwen3-embedding-8b's 4096 dims exceed pgvector's 2000-dim HNSW limit.
+# Changing the embedding model later means re-indexing every bank.
+
+api:
+  nameOverride: api
+
+  image:
+    repository: ghcr.io/vectorize-io/hindsight-api
+    tag: 1.2.0@sha256:ef1a5ac515a7652fbff605277d44a39e7616e421503c61841189e63ef6db6705
+    pullPolicy: IfNotPresent
+
+  subdomain: hindsight-api
+
+  # Migrations run on startup and the in-process worker claims tasks under a fixed
+  # worker ID, so never run an old and a new pod side by side.
+  deployment:
+    strategy: Recreate
+    replicas: 1
+    revisionHistoryLimit: 0
+
+  container:
+    port: 8888
+    healthProbe:
+      type: httpGet
+      # /health checks the database; liveness must not, so a slow database
+      # never restarts the pod.
+      path: /health/live
+      port: http
+      # First start runs the migrations and loads the local models
+      # (HINDSIGHT_API_MODEL_INIT_TIMEOUT defaults to 300s).
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      timeoutSeconds: 5
+      failureThreshold: 20
+    # Explicit requests: a limit alone becomes the request. Upstream sizes the
+    # full image at 1.5-2 GB with the embedder and reranker loaded.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 1536Mi
+      limits:
+        memory: 4Gi
+
+  service:
+    port: 80
+
+  probe:
+    path: /health
+
+  virtualService:
+    enabled: true
+    gateways:
+      public: false
+      private: true
+
+  database:
+    enabled: true
+
+  externalSecrets:
+    - name: "{release}-secrets"
+      passwords:
+        - name: api-key
+          length: 64
+          encoding: hex
+          allowRepeat: true
+          secretKeys:
+            - apiKey
+
+  env:
+    HINDSIGHT_API_DATABASE_URL:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-connection"
+          key: url
+    HINDSIGHT_API_TENANT_EXTENSION: "hindsight_api.extensions.builtin.tenant:ApiKeyTenantExtension"
+    HINDSIGHT_API_TENANT_API_KEY:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-secrets"
+          key: apiKey
+    # Stable identity so tasks claimed before a restart are picked up again.
+    HINDSIGHT_API_WORKER_ID: "{release}"
+    HINDSIGHT_API_LLM_PROVIDER: openai
+    HINDSIGHT_API_LLM_BASE_URL: "http://llama-swap.{namespace}.svc.cluster.local:8090/v1"
+    HINDSIGHT_API_LLM_MODEL: primary
+    # llama-swap takes no key, but the OpenAI client refuses to start without one.
+    HINDSIGHT_API_LLM_API_KEY: llama-swap
+    # llama-swap serves one model at a time and loads it on demand: keep the
+    # concurrency low and allow for a cold model load.
+    HINDSIGHT_API_LLM_MAX_CONCURRENT: "2"
+    HINDSIGHT_API_LLM_TIMEOUT: "300"
+
+ui:
+  image:
+    repository: ghcr.io/vectorize-io/hindsight-control-plane
+    tag: 1.2.0@sha256:f518803353d16e870aee930382e2eaaae965e649adba90a0b57fa4dc93bfd9a1
+    pullPolicy: IfNotPresent
+
+  subdomain: hindsight
+
+  deployment:
+    strategy: RollingUpdate
+    replicas: 1
+    revisionHistoryLimit: 0
+
+  container:
+    port: 3000
+    healthProbe:
+      type: tcpSocket
+      port: http
+    resources:
+      requests:
+        cpu: 20m
+        memory: 192Mi
+      limits:
+        memory: 1Gi
+
+  service:
+    port: 80
+
+  # Excluded from forward auth. Reports UI and API reachability only.
+  probe:
+    path: /api/health
+
+  virtualService:
+    enabled: true
+    gateways:
+      public: false
+      private: true
+
+  forwardAuth:
+    enabled: true
+    excludePaths:
+      - /api/health
+    allowedGroups:
+      - name: admin
+        namespace: shared
+    group:
+      members: []
+
+  env:
+    NODE_ENV: production
+    HINDSIGHT_CP_HOSTNAME: "0.0.0.0"
+    HINDSIGHT_CP_PORT: "3000"
+    HINDSIGHT_CP_DATAPLANE_API_URL: "http://{release}-api.{namespace}.svc.cluster.local"
+    HINDSIGHT_CP_DATAPLANE_API_KEY:
+      valueFrom:
+        secretKeyRef:
+          name: "{release}-secrets"
+          key: apiKey
