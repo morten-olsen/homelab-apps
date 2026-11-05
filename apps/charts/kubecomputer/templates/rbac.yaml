@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubecomputer
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "kubecomputer.labels" . | nindent 4 }}
+---
+# Rules generated from the code's markers (config/rbac/role.yaml, copied by task generate).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubecomputer
+  labels: {{- include "kubecomputer.labels" . | nindent 4 }}
+rules: {{- (.Files.Get "files/manager-role.yaml" | fromYaml).rules | toYaml | nindent 2 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubecomputer
+  labels: {{- include "kubecomputer.labels" . | nindent 4 }}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: kubecomputer}
+subjects:
+  - {kind: ServiceAccount, name: kubecomputer, namespace: {{ .Values.namespace }}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubecomputer-leader-election
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "kubecomputer.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubecomputer-leader-election
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "kubecomputer.labels" . | nindent 4 }}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: kubecomputer-leader-election}
+subjects:
+  - {kind: ServiceAccount, name: kubecomputer, namespace: {{ .Values.namespace }}}

@@ -1,0 +1,12 @@
+{{- range .Values.clients }}
+---
+apiVersion: kubecomputer.olsen.cloud/v1alpha1
+kind: ComputerClient
+metadata:
+  name: {{ .name }}
+  labels: {{- include "kubecomputer.labels" $ | nindent 4 }}
+  annotations:
+    # The CRD arrives in the same sync.
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec: {{- omit . "name" | toYaml | nindent 2 }}
+{{- end }}

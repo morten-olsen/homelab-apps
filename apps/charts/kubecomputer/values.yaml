@@ -1,0 +1,20 @@
+# kubecomputer: named computers for agents and quick work (code.olsen.cloud/homelab/kubecomputer).
+# The chart's templates, CRDs and RBAC are copied from that repository with
+# `task homelab:sync APPS=<this repo> TAG=<image tag>`; only this file is the homelab's own.
+
+image:
+  repository: code.olsen.cloud/homelab/kubecomputer
+  tag: "273ada72"
+namespace: kubecomputer
+computersNamespaces:
+  - computers
+host: kubecomputer.olsen.cloud
+gateway: shared/private
+clients:
+  # The smoke checks' client (kubecomputer's test/smoke); its key is written to
+  # kubecomputer/smoke-client.
+  - name: smoke
+    namespaces: [computers]
+    access: [manage, exec]
+    apiKey:
+      secretRef: {namespace: kubecomputer, name: smoke-client}

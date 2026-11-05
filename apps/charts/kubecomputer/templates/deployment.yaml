@@ -1,0 +1,46 @@
+# The server: the Reconcilers and the public API. Its pods carry app.kubernetes.io/name:
+# kubecomputer, the label every computer's NetworkPolicy admits.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubecomputer
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "kubecomputer.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: kubecomputer}
+  template:
+    metadata:
+      labels: {{- include "kubecomputer.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: kubecomputer
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: kubecomputer
+          image: {{ include "kubecomputer.image" . }}
+          args:
+            - --leader-elect
+            - --health-probe-bind-address=:8081
+            - --api-bind-address=:8090
+            - --computerd-image={{ include "kubecomputer.image" . }}
+            - --client-url={{ include "kubecomputer.url" . }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
+          ports:
+            - {name: api, containerPort: 8090, protocol: TCP}
+            - {name: health, containerPort: 8081, protocol: TCP}
+          livenessProbe:
+            httpGet: {path: /healthz, port: health}
+            periodSeconds: 20
+          readinessProbe:
+            httpGet: {path: /readyz, port: health}
+            periodSeconds: 10
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}

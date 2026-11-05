@@ -1,0 +1,20 @@
+{{- if .Values.host }}
+# The API on the private gateway (LAN only). Not the public one: its WAF would inspect, and
+# likely block, shell commands in exec requests. No retries: an exec is not safe to replay
+# without its key.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: kubecomputer
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "kubecomputer.labels" . | nindent 4 }}
+spec:
+  hosts: [{{ .Values.host | quote }}]
+  gateways: [{{ .Values.gateway | quote }}]
+  http:
+    - retries: {attempts: 0}
+      route:
+        - destination:
+            host: kubecomputer.{{ .Values.namespace }}.svc.cluster.local
+            port: {number: 8090}
+{{- end }}

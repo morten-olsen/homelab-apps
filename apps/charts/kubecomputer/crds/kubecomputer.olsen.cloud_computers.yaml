@@ -1,0 +1,418 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.22.0
+  name: computers.kubecomputer.olsen.cloud
+spec:
+  group: kubecomputer.olsen.cloud
+  names:
+    kind: Computer
+    listKind: ComputerList
+    plural: computers
+    shortNames:
+    - comp
+    singular: computer
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.image
+      name: Image
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          Computer is a named place to run commands: an image plus a persistent home, running only while
+          it is needed.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: |-
+              ComputerSpec is the configuration of a computer. Changes apply at the computer's next start;
+              a running computer keeps the configuration it started with.
+            properties:
+              env:
+                description: |-
+                  env sets environment variables for every command on the computer. A command's own env
+                  overrides them. Secret values are read when the computer starts, from Secrets labelled
+                  kubecomputer.olsen.cloud/attachable: "true" in the computer's namespace.
+                items:
+                  description: 'ComputerEnvVar is one environment variable: a literal
+                    value, or a key of a Secret.'
+                  properties:
+                    name:
+                      description: |-
+                        name of the variable. HOME and USER are set by kubecomputer, and names starting with
+                        COMPUTERD_ are computerd's own.
+                      maxLength: 256
+                      pattern: ^[A-Za-z_][A-Za-z0-9_]*$
+                      type: string
+                      x-kubernetes-validations:
+                      - message: HOME, USER and COMPUTERD_* are kubecomputer's own
+                        rule: '!(self in [''HOME'', ''USER'']) && !self.startsWith(''COMPUTERD_'')'
+                    value:
+                      description: value of the variable.
+                      type: string
+                    valueFrom:
+                      description: valueFrom reads the value from a Secret.
+                      properties:
+                        secretKeyRef:
+                          description: secretKeyRef is a key of a Secret in the computer's
+                            namespace.
+                          properties:
+                            key:
+                              description: key in the Secret.
+                              minLength: 1
+                              type: string
+                            name:
+                              description: name of the Secret.
+                              minLength: 1
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
+                      required:
+                      - secretKeyRef
+                      type: object
+                  required:
+                  - name
+                  type: object
+                  x-kubernetes-validations:
+                  - message: set value or valueFrom, not both
+                    rule: '!(has(self.valueFrom) && has(self.value) && size(self.value)
+                      > 0)'
+                maxItems: 128
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
+              home:
+                default: {}
+                description: home is the computer's persistent home directory. It
+                  cannot be changed after creation.
+                properties:
+                  size:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    default: 10Gi
+                    description: size is the requested size of the home volume.
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  storageClassName:
+                    description: |-
+                      storageClassName is the storage class of the home volume. Defaults to the cluster's
+                      default storage class.
+                    type: string
+                type: object
+                x-kubernetes-validations:
+                - message: home cannot be changed after creation
+                  rule: self == oldSelf
+              idle:
+                default: {}
+                description: idle sets when the computer stops by itself.
+                properties:
+                  afterLastProcess:
+                    default: 15m
+                    description: |-
+                      afterLastProcess stops the computer once no processes have run and no sessions have been
+                      open for this long. "0s" turns it off.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: must not be negative
+                      rule: duration(self) >= duration('0s')
+                type: object
+              image:
+                description: |-
+                  image is the container image the computer runs. Everything outside the home and mounts
+                  comes from it.
+                minLength: 1
+                type: string
+              resources:
+                description: |-
+                  resources are the compute resources of the computer's container. The home's size is not
+                  enforced by every storage class; an ephemeral-storage limit bounds everything else.
+                properties:
+                  claims:
+                    description: |-
+                      Claims lists the names of resources, defined in spec.resourceClaims,
+                      that are used by this container.
+
+                      This field depends on the
+                      DynamicResourceAllocation feature gate.
+
+                      This field is immutable. It can only be set for containers.
+                    items:
+                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                      properties:
+                        name:
+                          description: |-
+                            Name must match the name of one entry in pod.spec.resourceClaims of
+                            the Pod where this field is used. It makes that resource available
+                            inside a container.
+                          type: string
+                        request:
+                          description: |-
+                            Request is the name chosen for a request in the referenced claim.
+                            If empty, everything from the claim is made available, otherwise
+                            only the result of this request.
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
+                  limits:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: |-
+                      Limits describes the maximum amount of compute resources allowed.
+                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                    type: object
+                  requests:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: |-
+                      Requests describes the minimum amount of compute resources required.
+                      If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                      otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                    type: object
+                type: object
+              sandboxLimit:
+                description: |-
+                  sandboxLimit is the most any command on the computer may access. Without it, commands
+                  have whatever the container allows.
+                properties:
+                  fs:
+                    description: fs lists the paths commands may access and how. Anything
+                      not listed is denied.
+                    items:
+                      description: FSRule allows access to a path and everything below
+                        it.
+                      properties:
+                        access:
+                          description: access is what commands may do below path.
+                          items:
+                            description: FSAccess is a kind of file system access.
+                            enum:
+                            - read
+                            - write
+                            - execute
+                            type: string
+                          minItems: 1
+                          type: array
+                          x-kubernetes-list-type: set
+                        path:
+                          description: path is an absolute path. Symbolic links in
+                            it are followed.
+                          pattern: ^/.*
+                          type: string
+                      required:
+                      - access
+                      - path
+                      type: object
+                    maxItems: 64
+                    type: array
+                    x-kubernetes-list-type: atomic
+                type: object
+              user:
+                default: {}
+                description: user is the account commands run as. It is never root.
+                properties:
+                  gid:
+                    default: 1000
+                    description: gid is the account's primary group id. The root group
+                      (0) is not allowed.
+                    format: int64
+                    minimum: 1
+                    type: integer
+                  home:
+                    description: home is the absolute path of the home directory.
+                      Defaults to /home/<name>.
+                    pattern: ^/.*
+                    type: string
+                  name:
+                    default: user
+                    description: name is the account's name.
+                    pattern: ^[a-z_][a-z0-9_-]{0,31}$
+                    type: string
+                  uid:
+                    default: 1000
+                    description: uid is the account's user id. Root (0) is not allowed.
+                    format: int64
+                    minimum: 1
+                    type: integer
+                type: object
+            required:
+            - image
+            type: object
+          status:
+            description: ComputerStatus is what the Reconciler last observed of a
+              computer.
+            properties:
+              bootID:
+                description: bootID identifies the current boot. Every exec id starts
+                  with it.
+                type: string
+              conditions:
+                description: conditions are Ready and StartFailed.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              imageID:
+                description: imageID is the resolved image of the current boot.
+                type: string
+              landlockABI:
+                description: landlockABI is the Landlock ABI version the node's kernel
+                  offers; 0 means none.
+                format: int32
+                type: integer
+              lastStop:
+                description: lastStop is how the previous boot ended.
+                properties:
+                  at:
+                    description: at is when the boot ended.
+                    format: date-time
+                    type: string
+                  message:
+                    description: message gives detail, e.g. why a start failed.
+                    type: string
+                  reason:
+                    description: reason is why the boot ended.
+                    enum:
+                    - Manual
+                    - AfterLastProcess
+                    - Failed
+                    - Evicted
+                    type: string
+                required:
+                - at
+                - reason
+                type: object
+              observedGeneration:
+                description: observedGeneration is the spec generation the Reconciler
+                  last acted on.
+                format: int64
+                type: integer
+              phase:
+                description: phase is where the computer is in its lifecycle.
+                enum:
+                - Stopped
+                - Starting
+                - Running
+                - Stopping
+                type: string
+              pod:
+                description: pod is the name of the current boot's pod.
+                type: string
+              startedAt:
+                description: startedAt is when the current boot started.
+                format: date-time
+                type: string
+              startedGeneration:
+                description: startedGeneration is the spec generation the current
+                  boot was started from.
+                format: int64
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+        x-kubernetes-validations:
+        - message: name must be at most 54 characters (the pod is named computer-<name>)
+          rule: self.metadata.name.size() <= 54
+    served: true
+    storage: true
+    subresources:
+      status: {}

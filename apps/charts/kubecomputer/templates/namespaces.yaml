@@ -1,0 +1,10 @@
+# The server's namespace and the computers' namespaces, outside the mesh: no istio-injection.
+{{- range (prepend .Values.computersNamespaces .Values.namespace) }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ . }}
+  labels:
+    app.kubernetes.io/part-of: kubecomputer
+{{- end }}
