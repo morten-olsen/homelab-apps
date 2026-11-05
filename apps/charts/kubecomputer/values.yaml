@@ -1,15 +1,19 @@
 # kubecomputer: named computers for agents and quick work (code.olsen.cloud/homelab/kubecomputer).
 # The chart's templates, CRDs and RBAC are copied from that repository with
-# `task homelab:sync APPS=<this repo> TAG=<image tag>`; only this file is the homelab's own.
-
+# `task homelab:sync APPS=<this repo> TAG=<image tag>`, which also merges in the chart's new
+# defaults; the values below are the homelab's.
 image:
   repository: code.olsen.cloud/homelab/kubecomputer
-  tag: "273ada72"
+  tag: "38dd8d9a" # required
+# namespace runs the server, outside any mesh: clients in other namespaces call it directly.
 namespace: kubecomputer
+# computersNamespaces are created for computers, outside any mesh.
 computersNamespaces:
   - computers
-host: kubecomputer.olsen.cloud
+# host exposes the API on the private Istio gateway; empty means not exposed.
+host: "kubecomputer.olsen.cloud"
 gateway: shared/private
+# clients are ComputerClients declared alongside (see the ComputerClient CRD).
 clients:
   # The smoke checks' client (kubecomputer's test/smoke); its key is written to
   # kubecomputer/smoke-client.
@@ -18,3 +22,32 @@ clients:
     access: [manage, exec]
     apiKey:
       secretRef: {namespace: kubecomputer, name: smoke-client}
+  # People in Authentik's shared/admin group, logged in with kc login.
+  - name: admins
+    namespaces:
+      - '*'
+    access:
+      - manage
+      - exec
+    oidc:
+      groups:
+        - gitops/shared/admin
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+# oidc lets people log in with kc login through Authentik (an AuthentikClient, served by the
+# homelab's authentik-operator). Who may then do what is ComputerClients' spec.oidc.
+oidc:
+  enabled: true
+  serverRef:
+    name: authentik
+    namespace: shared
+  # signingKeyName signs ID tokens with a keypair (RS256), which kubecomputer verifies.
+  signingKeyName: authentik Self-signed Certificate
+  # allowedGroups may log in at all, e.g. [{name: admin, namespace: shared}].
+  allowedGroups:
+    - name: admin
+      namespace: shared
