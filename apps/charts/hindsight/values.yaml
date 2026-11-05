@@ -20,7 +20,8 @@
 #   kubectl exec -n shared postgres-cluster-1 -c postgres -- \
 #     psql -U postgres -d prod_hindsight -c 'CREATE EXTENSION IF NOT EXISTS vector;'
 #
-# Models: the LLM is llama-swap's `long` alias over cluster DNS. Embeddings
+# Models: the LLM is GLM-5.3-Flash through 9router, failing over to llama-swap's
+# `long` alias (env below). Embeddings
 # (BAAI/bge-small-en-v1.5, 384 dims) and the reranker (hindsight-ai/hs-rerank-1) run
 # on CPU inside the full API image, which ships them preloaded, so no cache volume is
 # needed. llama-swap's embedding model is not used: it swaps models one at a time,
@@ -109,25 +110,43 @@ api:
           key: apiKey
     # Stable identity so tasks claimed before a restart are picked up again.
     HINDSIGHT_API_WORKER_ID: "{release}"
+    # Primary: GLM-5.3-Flash on OpenCode Go through 9router (zero data retention).
+    # Local Gemma took 20-40s per call; see HOMEIT-530.
     HINDSIGHT_API_LLM_PROVIDER: openai
-    HINDSIGHT_API_LLM_BASE_URL: "http://llama-swap.{namespace}.svc.cluster.local:8090/v1"
-    # Same gemma-4-26b-a4b weights as `primary`, but a 32k context instead of 16k.
-    # llama-swap counts it as a separate model, so Hindsight's calls swap out
-    # `primary` while something else is using it.
-    HINDSIGHT_API_LLM_MODEL: long
-    # llama-swap takes no key, but the OpenAI client refuses to start without one.
-    HINDSIGHT_API_LLM_API_KEY: llama-swap
-    # llama-swap serves one model at a time and loads it on demand: keep the
-    # concurrency low and allow for a cold model load.
+    HINDSIGHT_API_LLM_BASE_URL: "http://ninerouter.{namespace}.svc.cluster.local/v1"
+    HINDSIGHT_API_LLM_MODEL: ocg/glm-5.3-flash
+    # Dedicated 9router API key, sealed in templates/ninerouter-key-sealed-secret.yaml.
+    HINDSIGHT_API_LLM_API_KEY:
+      valueFrom:
+        secretKeyRef:
+          name: hindsight-ninerouter
+          key: apiKey
+    # 9router has the "caveman" token saver on globally, which injects a terse-style
+    # system prompt into every request; this header opts Hindsight out.
+    HINDSIGHT_API_LLM_DEFAULT_HEADERS: '{"x-9router-token-saver":"off"}'
+    # The OpenAI client omits `stream` on plain calls, and 9router then answers
+    # with an event stream that the client cannot parse as JSON.
+    HINDSIGHT_API_LLM_EXTRA_BODY: '{"stream":false}'
     HINDSIGHT_API_LLM_MAX_CONCURRENT: "2"
-    HINDSIGHT_API_LLM_TIMEOUT: "300"
+    # Short enough that a stalled upstream fails over to the local model.
+    HINDSIGHT_API_LLM_TIMEOUT: "120"
+    HINDSIGHT_API_LLM_STRATEGY: '{"mode":"failover"}'
+    # Failover: llama-swap's `long` alias, the same gemma-4-26b-a4b weights as
+    # `primary` with a 32k context instead of 16k. llama-swap serves one model at a
+    # time and loads it on demand (about 4s from cold), so it can swap out `primary`.
+    HINDSIGHT_API_LLM_1_PROVIDER: openai
+    HINDSIGHT_API_LLM_1_BASE_URL: "http://llama-swap.{namespace}.svc.cluster.local:8090/v1"
+    HINDSIGHT_API_LLM_1_MODEL: long
+    # llama-swap takes no key, but the OpenAI client refuses to start without one.
+    HINDSIGHT_API_LLM_1_API_KEY: llama-swap
+    HINDSIGHT_API_LLM_1_TIMEOUT: "300"
     # Gemma 4 thinks by default, and at Hindsight's temperature 0.1 its reasoning
     # loops until the output limit: retain spent 16k tokens (about 200s) on a
     # two-sentence input and returned nothing. Without thinking, the same
     # extraction takes 384 tokens.
-    HINDSIGHT_API_LLM_EXTRA_BODY: '{"chat_template_kwargs":{"enable_thinking":false}}'
-    # Fit the 32k context. The defaults assume hosted models: retain asks for up to
-    # 64k output tokens, and reflect gathers up to 100k tokens of evidence.
+    HINDSIGHT_API_LLM_1_EXTRA_BODY: '{"chat_template_kwargs":{"enable_thinking":false}}'
+    # Fit the failover's 32k context. The defaults assume hosted models: retain asks
+    # for up to 64k output tokens, and reflect gathers up to 100k tokens of evidence.
     # Retain's cap must stay above HINDSIGHT_API_RETAIN_CHUNK_SIZE (3000).
     HINDSIGHT_API_RETAIN_MAX_COMPLETION_TOKENS: "16000"
     HINDSIGHT_API_REFLECT_MAX_CONTEXT_TOKENS: "20000"
