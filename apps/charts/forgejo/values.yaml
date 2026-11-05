@@ -88,7 +88,7 @@ persistentVolumeClaims:
 virtualService:
   enabled: true
   gateways:
-    public: false
+    public: true
     private: true
   servicePort: 80 # Route to the http service port
 
