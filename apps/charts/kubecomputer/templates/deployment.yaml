@@ -27,6 +27,9 @@ spec:
             - --api-bind-address=:8090
             - --computerd-image={{ include "kubecomputer.image" . }}
             - --client-url={{ include "kubecomputer.url" . }}
+            {{- with .Values.volumes.storageClass }}
+            - --volume-storage-class={{ . }}
+            {{- end }}
             {{- if .Values.oidc.enabled }}
             - --oidc-issuer=$(OIDC_ISSUER)
             - --oidc-jwks-url=$(OIDC_JWKS_URL)

@@ -153,6 +153,61 @@ spec:
                   comes from it.
                 minLength: 1
                 type: string
+              mounts:
+                description: |-
+                  mounts attach volumes at paths in the computer: volumes in its namespace whose owner
+                  consents with the label kubecomputer.olsen.cloud/attachable, "true" or, for read-only
+                  mounts only, "read-only". Checked at every start. A sandbox limit must allow the paths for
+                  commands to use them.
+                items:
+                  description: ComputerMount is a volume attached to a computer at
+                    a path.
+                  properties:
+                    path:
+                      description: |-
+                        path is where the volume appears: absolute, without . or .. segments. Not the home itself
+                        (below it is fine), nor at or below the paths kubecomputer runs the computer from: /kc,
+                        /var/run/kubecomputer, /etc/passwd and /etc/group.
+                      maxLength: 1024
+                      pattern: ^(/[^/]+)+$
+                      type: string
+                      x-kubernetes-validations:
+                      - message: path cannot have . or .. segments
+                        rule: '!self.matches(''(^|/)[.][.]?(/|$)'')'
+                      - message: 'path is kubecomputer''s own: /kc, /var/run/kubecomputer,
+                          /etc/passwd and /etc/group, and below them'
+                        rule: '![''/kc'', ''/var/run/kubecomputer'', ''/etc/passwd'',
+                          ''/etc/group''].exists(p, self == p || self.startsWith(p
+                          + ''/''))'
+                    readOnly:
+                      description: readOnly mounts the volume read-only. A volume
+                        labelled "read-only" requires it.
+                      type: boolean
+                    subPath:
+                      description: |-
+                        subPath mounts one directory of the volume instead of its root: relative, without . or ..
+                        segments.
+                      maxLength: 1024
+                      pattern: ^[^/]+(/[^/]+)*$
+                      type: string
+                      x-kubernetes-validations:
+                      - message: subPath cannot have . or .. segments
+                        rule: '!self.matches(''(^|/)[.][.]?(/|$)'')'
+                    volume:
+                      description: volume is the name of a volume in the computer's
+                        namespace.
+                      maxLength: 253
+                      pattern: ^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$
+                      type: string
+                  required:
+                  - path
+                  - volume
+                  type: object
+                maxItems: 32
+                type: array
+                x-kubernetes-list-map-keys:
+                - path
+                x-kubernetes-list-type: map
               resources:
                 description: |-
                   resources are the compute resources of the computer's container. The home's size is not
@@ -265,11 +320,13 @@ spec:
                   home:
                     description: home is the absolute path of the home directory.
                       Defaults to /home/<name>.
+                    maxLength: 1024
                     pattern: ^/.*
                     type: string
                   name:
                     default: user
                     description: name is the account's name.
+                    maxLength: 32
                     pattern: ^[a-z_][a-z0-9_-]{0,31}$
                     type: string
                   uid:
@@ -282,6 +339,10 @@ spec:
             required:
             - image
             type: object
+            x-kubernetes-validations:
+            - message: a mount cannot replace the home; mount below it instead
+              rule: '!has(self.mounts) || self.mounts.all(m, m.path != (has(self.user.home)
+                ? self.user.home : ''/home/'' + self.user.name))'
           status:
             description: ComputerStatus is what the Reconciler last observed of a
               computer.

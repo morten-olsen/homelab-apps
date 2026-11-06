@@ -4,7 +4,7 @@
 # defaults; the values below are the homelab's.
 image:
   repository: code.olsen.cloud/homelab/kubecomputer
-  tag: "0.2.0" # required
+  tag: "0.3.0" # required
 # namespace runs the server, outside any mesh: clients in other namespaces call it directly.
 namespace: kubecomputer
 # computersNamespaces are created for computers, outside any mesh.
@@ -13,6 +13,10 @@ computersNamespaces:
 # host exposes the API on the private Istio gateway; empty means not exposed.
 host: "kubecomputer.olsen.cloud"
 gateway: shared/private
+# volumes are what clients create through the API: storageClass is theirs; empty means the
+# cluster's default.
+volumes:
+  storageClass: ""
 # clients are ComputerClients declared alongside (see the ComputerClient CRD).
 clients:
   # The smoke checks' client (kubecomputer's test/smoke); its key is written to

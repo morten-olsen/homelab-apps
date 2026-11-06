@@ -135,6 +135,16 @@ spec:
                 maxItems: 64
                 type: array
                 x-kubernetes-list-type: set
+              volumes:
+                description: |-
+                  volumes are the volumes the client may mount in computers through the API: glob patterns
+                  over volume names ("cache-*"), in the client's namespaces. A volume must also be
+                  attachable. Empty means none.
+                items:
+                  type: string
+                maxItems: 64
+                type: array
+                x-kubernetes-list-type: set
             required:
             - namespaces
             type: object
