@@ -26,6 +26,10 @@ clients:
     access: [manage, exec]
     apiKey:
       secretRef: {namespace: kubecomputer, name: smoke-client}
+    secrets:
+      - smoke-*
+    volumes:
+      - smoke-*
   # People in Authentik's shared/admin group, logged in with kc login.
   - name: admins
     namespaces:
@@ -36,6 +40,10 @@ clients:
     oidc:
       groups:
         - gitops/shared/admin
+    secrets:
+      - '*'
+    volumes:
+      - '*'
 resources:
   requests:
     cpu: 10m
