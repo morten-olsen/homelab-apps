@@ -1,5 +1,6 @@
 # The server's namespace and the computers' namespaces, outside the mesh: no istio-injection.
 # The computers' namespaces carry kubecomputer.olsen.cloud/namespace: the API offers only those.
+# Helm keeps them on uninstall: they hold computers and their homes.
 ---
 apiVersion: v1
 kind: Namespace
@@ -16,4 +17,6 @@ metadata:
   labels:
     app.kubernetes.io/part-of: kubecomputer
     kubecomputer.olsen.cloud/namespace: "true"
+  annotations:
+    helm.sh/resource-policy: keep
 {{- end }}
