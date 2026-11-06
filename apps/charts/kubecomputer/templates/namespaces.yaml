@@ -1,5 +1,13 @@
 # The server's namespace and the computers' namespaces, outside the mesh: no istio-injection.
-{{- range (prepend .Values.computersNamespaces .Values.namespace) }}
+# The computers' namespaces carry kubecomputer.olsen.cloud/namespace: the API offers only those.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/part-of: kubecomputer
+{{- range .Values.computersNamespaces }}
 ---
 apiVersion: v1
 kind: Namespace
@@ -7,4 +15,5 @@ metadata:
   name: {{ . }}
   labels:
     app.kubernetes.io/part-of: kubecomputer
+    kubecomputer.olsen.cloud/namespace: "true"
 {{- end }}

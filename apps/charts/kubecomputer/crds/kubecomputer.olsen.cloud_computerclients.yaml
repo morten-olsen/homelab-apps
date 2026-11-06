@@ -93,8 +93,8 @@ spec:
                 type: object
               namespaces:
                 description: |-
-                  namespaces are where the client's computers live. The first is its default; "*" means
-                  every namespace.
+                  namespaces are where the client's computers live: namespaces labelled
+                  kubecomputer.olsen.cloud/namespace=true. "*" means every one of them.
                 items:
                   pattern: ^(\*|[a-z0-9]([-a-z0-9]*[a-z0-9])?)$
                   type: string
