@@ -59,6 +59,35 @@ restart. Only synthetic local data was used; temporary containers/data were remo
 Real Authentik login, realized mesh isolation, retention lifecycle and snapshot
 restore were not exercised. Local checks do not establish production readiness.
 
+## Initial deployment evidence
+
+HOMEIT-533 deployed the initial server at apps commit `399b5f6` through Forgejo,
+the GitHub mirror and ArgoCD. The app reached Synced/Healthy after native
+one-share/threshold-one initialization and unseal. The 10 GiB data claim is Bound
+with retention annotations and no owner reference. The injected native
+`istio-proxy` sidecar is Ready with `restartPolicy: Always`.
+
+HTTPS seal-status requests succeeded. The realized Envoy listener for port 8200
+accepts TLS with `require_client_certificate: true`; a non-mesh plaintext request
+through the Kubernetes API service proxy was rejected with EOF. Native Authentik
+registration is Ready and the dedicated issuer advertises RS256/device flow.
+The SSH engine is mounted at `ssh/`; its RSA4096 CA signed an OpenSSH-readable
+test user certificate and rejected root/host signing and signer CA administration.
+Temporary verification roles, policies, tokens and local test keys were removed.
+Native `platform-device` login was verified with `platform-admin` policy and a
+3600-second explicit token maximum. The bootstrap root token was revoked and
+subsequently rejected by the API. `platform-browser` is configured but its
+browser callback has not been exercised; project/SSH-user roles below are
+reviewed setup examples, not implicit grants made to every user.
+
+SSH CA fingerprint: `SHA256:lidb2Yfp/30UAltMG0A5ZHWm0N3UjPS6tQgcfDtRNR0`.
+No target host trust or permanent SSH principal grant is installed.
+A native post-bootstrap snapshot was saved off-cluster as
+`~/openbao-bootstrap-20261108T224313Z.snap` with mode `0600`, SHA256
+`abcdfe363cfd6135588dd56a2f3e8fce2c6f3ac7dce2eece8e3a111ab8ac6b04`.
+Its archive structure was verified; snapshot restore and scheduled backup
+delivery are not yet verified/configured.
+
 ## Approval boundary and preflight
 
 After review/approval, publish through the repository's normal GitOps process and
@@ -70,6 +99,7 @@ commit, push or production sync. Do not run `helm install` alongside ArgoCD.
 ```bash
 kubectl -n prod get statefulset openbao
 kubectl -n prod get pod openbao-0 -o jsonpath='{.spec.containers[*].name}{"\n"}'
+kubectl -n prod get pod openbao-0 -o jsonpath='{.spec.initContainers[*].name}{"\n"}'
 kubectl -n prod get pvc data-openbao-0
 kubectl -n prod get peerauthentication,destinationrule,virtualservice
 kubectl -n prod get authentikclient openbao
@@ -78,14 +108,17 @@ bao version
 bao status
 ```
 
-Expect server container `openbao` and sidecar `istio-proxy`, bound retained storage,
-private routing and matching mTLS policies. Before initialization the pod is
-Running but not Ready: the native readiness check correctly fails while sealed.
-`bao status` exit 2 means sealed, not necessarily a network error. Do not wait for
-Ready before initializing/unsealing. Stop if the endpoint is public, TLS fails,
-the sidecar is absent or non-mesh plaintext requests are accepted. Validating the
-negative mTLS boundary requires an approved disposable client, not weakening
-`STRICT`. [Status semantics](https://openbao.org/docs/commands/status/).
+Expect server container `openbao` and sidecar `istio-proxy`; current Istio injects
+the latter as a native init-container sidecar with `restartPolicy: Always`.
+Inspect `status.initContainerStatuses` as well as regular container status. Expect
+bound retained storage, private routing and matching mTLS policies. Before
+initialization the pod is Running but not Ready: native readiness correctly fails
+while sealed. `bao status` exit 2 means sealed, not necessarily a network error.
+Do not wait for Ready before initializing/unsealing. Stop if the endpoint is
+public, TLS fails, the sidecar is absent or non-mesh plaintext requests succeed.
+Validate the negative mTLS boundary with a non-mesh client or read-only Kubernetes
+API service proxy, never by weakening `STRICT`.
+[Status semantics](https://openbao.org/docs/commands/status/).
 
 ### Authentik prerequisites (not automatically proven by reconciliation)
 
@@ -106,6 +139,12 @@ Before setup, verify the reconciled provider has:
 - Exact redirects `https://openbao.olsen.cloud/ui/vault/auth/oidc/oidc/callback`
   and `http://localhost:8250/oidc/callback`. The latter is a loopback callback,
   not a remotely exposed plaintext OpenBao API.
+- Set the dedicated `prod-openbao` provider's **Access code validity** to
+  `minutes=5` in the native Authentik admin UI. This controls device approval
+  codes and browser authorization codes, not OpenBao's one-hour session cap.
+  The current AuthentikClient CRD does not expose this field; the operator's
+  provider updates omit it. This native provider setting survives normal
+  reconciliation, but must be reapplied if the provider is recreated.
 - An active Authentik **Brand device-code flow**, designation `Stage Configuration`,
   requiring authentication. Authentik does not supply this flow by default.
   Allowing the device grant or seeing a discovery endpoint is not proof this
@@ -174,6 +213,19 @@ Bitwarden, plus an encrypted offline recovery copy. This is single-operator
 custody, not separation of duties: anyone with the key can unseal the database.
 If Bitwarden depends on this cluster, recovery must also work while the cluster
 is down.
+
+### Owner-approved one-time handoff
+
+For the initial HOMEIT-533 setup, the owner explicitly approved a plaintext
+handoff at `~/openbao-unseal-key.txt`. It was created exclusively with mode `0600`
+outside Git and fsynced before unseal. Only the unseal key was written; the
+bootstrap root token stayed in process memory. Key/token values were not printed.
+The owner imports the key into Bitwarden, keeps an independently recoverable
+encrypted offline copy, then deletes this plaintext handoff. Do not assume that
+deleting a file securely erases it from SSDs/backups. This exception does not
+authorize saving bearer tokens or committing any secret material.
+
+### Optional server-encrypted initialization
 
 Before initialization, provide the operator's **verified public** OpenPGP
 encryption key as `root-operator.gpg` (binary/base64 public export). Its private
@@ -411,6 +463,14 @@ Verify unauthorized subject/group denial through login, not just policy inspecti
 Do not weaken claim constraints to make a smoke check pass. Record results without
 bearer tokens or provider payloads; no successful browser/device smoke is claimed
 until actually exercised after approved deployment.
+
+Authentik 2026.8.5 returns **"Failed to resolve application"** for expired device
+codes as well as unknown codes. The initial provider default was only one minute;
+HOMEIT-533 observed native `expired_token` and changed this dedicated provider to
+five minutes before verifying login. Expired URLs cannot be revived: start a new
+native login and approve within the current window. Do not remove consent or
+weaken application/group policies to fix an expired code.
+[Pinned expired-code behavior](https://github.com/goauthentik/authentik/blob/version/2026.8.5/authentik/providers/oauth2/tests/test_device_init.py#L195-L222).
 
 An existing Authentik SSO session may satisfy login with no new password or MFA
 prompt. OIDC/device login is **not proof of fresh MFA**. If fresh MFA is required,
