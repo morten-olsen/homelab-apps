@@ -77,6 +77,9 @@ subdomain: my-app
 
 See ./apps/common/README.md for guide on writing charts
 
+Before changing Renovate or re-enabling a `.disabled` chart, follow
+[the update runbook](docs/renovate.md), including retained-data and migration review.
+
 
 ## Pull-request validation
 
