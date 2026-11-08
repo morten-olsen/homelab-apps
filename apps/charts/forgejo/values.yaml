@@ -156,7 +156,7 @@ actions:
     dind:
       image:
         repository: code.forgejo.org/oci/docker
-        tag: dind@sha256:9e79b879b177fbd72c34376a3dd3d91747da5db49e1f560f76aea59561471977
+        tag: dind@sha256:08a98015fce594af7c382883bea080ea206de74402a95da9dc52b6428c8cd121
         pullPolicy: IfNotPresent
     name: default
     replicas: 1
@@ -166,5 +166,5 @@ actions:
       - "ubuntu-latest:docker://gitea/runner-images:ubuntu-latest-slim@sha256:1241f498a84062d219e28aea36ed7e6b9fc69d014ef75d7dfee785a5a1b5abca"
       - "ubuntu-slim-latest:docker://gitea/runner-images:ubuntu-latest-slim@sha256:1241f498a84062d219e28aea36ed7e6b9fc69d014ef75d7dfee785a5a1b5abca"
       - "ubuntu-full-latest:docker://gitea/runner-images:ubuntu-latest-full@sha256:e387ebe347230c35e1a7f173a0dcf1947d6726c6c542e9b65b0ffc1c6928a601"
-      - "docker-cli:docker://code.forgejo.org/oci/docker:cli@sha256:5e6baf67325a79f64ed3bed6863954d5e05d0f3d4e57cbdb14809346814bbfdb"
+      - "docker-cli:docker://code.forgejo.org/oci/docker:cli@sha256:2357639ad1ea7d0194134bf3292622fd4e562483966ed674e5d7c945b5f3b28d"
       - "node-bookworm:docker://code.forgejo.org/oci/node:20-bookworm"

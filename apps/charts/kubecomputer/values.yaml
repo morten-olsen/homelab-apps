@@ -4,7 +4,7 @@
 # defaults; the values below are the homelab's.
 image:
   repository: code.olsen.cloud/homelab/kubecomputer
-  tag: "0.5.0" # required
+  tag: "0.5.0@sha256:e99700f2e501bb065ff58f54acb5b7adc62aa6e085a87464b782b462ed8524f3" # required
 # namespace runs the server, outside any mesh: clients in other namespaces call it directly.
 namespace: kubecomputer
 # computersNamespaces are created for computers, outside any mesh.
