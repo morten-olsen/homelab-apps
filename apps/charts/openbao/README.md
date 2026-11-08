@@ -220,10 +220,11 @@ For the initial HOMEIT-533 setup, the owner explicitly approved a plaintext
 handoff at `~/openbao-unseal-key.txt`. It was created exclusively with mode `0600`
 outside Git and fsynced before unseal. Only the unseal key was written; the
 bootstrap root token stayed in process memory. Key/token values were not printed.
-The owner imports the key into Bitwarden, keeps an independently recoverable
-encrypted offline copy, then deletes this plaintext handoff. Do not assume that
-deleting a file securely erases it from SSDs/backups. This exception does not
-authorize saving bearer tokens or committing any secret material.
+The owner confirmed saving the key in Bitwarden and deleting the plaintext
+handoff. An independently recoverable encrypted offline copy remains the owner's
+responsibility and has not been verified. Do not assume deletion securely erases
+a file from SSDs/backups. This exception does not authorize saving bearer tokens
+or committing any secret material.
 
 ### Optional server-encrypted initialization
 
