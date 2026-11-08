@@ -113,6 +113,45 @@ Apps that don't use `common.all` (e.g., immich, jellyfin, home-assistant) need a
 This is already added to: coder, forgejo, gitea, home-assistant, immich,
 jellyfin, jellyfin-kids, n8n, wger, zot.
 
+## OpenBao: native Raft snapshots, not live PVC copies
+
+OpenBao uses single-node Integrated Storage on `prod/data-openbao-0`.
+**Do not enable `backup: true` / Volsync `copyMethod: Direct` for this live Raft
+data claim**: copying its changing files is not an application-consistent
+OpenBao backup. No scheduled OpenBao snapshot or off-node delivery is installed
+by the chart, so adding the application does not establish a backup service.
+
+Use the native `bao operator raft snapshot save` API through the private HTTPS
+endpoint, with an approved narrowly authorized operator session. Store the
+snapshot outside the node/data PVC in encrypted, access-controlled backup storage;
+record checksum, timestamp, server/chart/config versions and custody-key epoch.
+Retain the matching original Shamir unseal key in Bitwarden plus an independently
+recoverable encrypted offline copy: the snapshot alone cannot recover access.
+
+The snapshot includes secrets, auth/policy/identity state and the native SSH
+engine's CA private key/issuers/roles once configured. Take a new snapshot after
+SSH CA setup or rotation, and compare the restored CA public fingerprint with the
+separately approved target-host trust inventory before resuming signing.
+
+Snapshot restore replaces server state and can invalidate/reintroduce token or
+credential state. It, replacement initialization, force restore, pod replacement
+and upgrades all require explicit approval. A forced restore into new storage
+bypasses seal-key consistency checks; it does not recover lost original unseal
+keys. Rollback requires the matching pre-upgrade snapshot and binary/config, not
+only an older image. The single-node server must be manually unsealed
+after every restart. PVC retention/prune protection is not an off-node backup.
+
+Follow the [OpenBao operational runbook](../apps/charts/openbao/README.md) for
+concrete credential-safe snapshot, recovery and upgrade commands and approval
+boundaries. Define/approve scheduling, retention, encrypted off-node delivery,
+alerting and an isolated restore rehearsal before claiming backup coverage.
+The generic PVC restore examples below are **not** OpenBao's restore procedure.
+
+Sources: [native Raft snapshot commands](https://openbao.org/docs/commands/operator/raft/#snapshot),
+[snapshot/force-restore API](https://openbao.org/docs/api/system/storage/raft/),
+[official upgrade/rollback guidance](https://openbao.org/docs/upgrading/),
+[native SSH CA storage](https://openbao.org/docs/secrets/ssh/signed-ssh-certificates/).
+
 ## What is NOT backed up
 
 | App | PVC | Reason |

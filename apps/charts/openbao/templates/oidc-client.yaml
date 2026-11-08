@@ -1,0 +1,31 @@
+{{- /* Use the common group/grant helpers, with an absolute localhost callback
+       for the native bao CLI that common.oidc's relative paths cannot express. */ -}}
+{{- if .Values.oidc.enabled }}
+{{ include "common.oidcGroup" (list . .Values) }}
+---
+apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
+kind: AuthentikClient
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  serverRef:
+    name: {{ .Values.globals.authentik.ref.name }}
+    namespace: {{ .Values.globals.authentik.ref.namespace }}
+  name: {{ include "common.fullname" . }}
+  clientType: confidential
+  secretName: {{ printf "%s-oidc-credentials" (include "common.fullname" .) }}
+  allowedGroups:
+    {{- include "common.allowedGroups" (list . .Values) | nindent 4 }}
+  redirectUris:
+    - {{ printf "https://%s%s" (include "common.domain" .) .Values.oidc.browserCallbackPath | quote }}
+    - {{ .Values.oidc.cliCallbackUri | quote }}
+  subjectMode: {{ .Values.oidc.subjectMode }}
+  scopes:
+    {{- toYaml .Values.oidc.scopes | nindent 4 }}
+  grantTypes:
+    {{- toYaml .Values.oidc.grantTypes | nindent 4 }}
+  signingKeyName: {{ .Values.oidc.signingKeyName | quote }}
+{{- end }}

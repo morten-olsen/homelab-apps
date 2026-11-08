@@ -1,0 +1,162 @@
+subdomain: openbao
+
+# Platform integration only: upstream owns the server, Service and storage.
+# Kyverno derives private DNS and mesh ServiceEntry resources from this route.
+service:
+  port: 8200
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+forwardAuth:
+  enabled: false
+
+# The operator registers this dedicated native OpenBao OIDC provider. It does
+# not enable/configure OpenBao's auth mount; that requires the manual runbook.
+oidc:
+  enabled: true
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
+  subjectMode: user_uuid
+  scopes:
+    - openid
+    - profile
+    - email
+  grantTypes:
+    - authorization_code
+    - urn:ietf:params:oauth:grant-type:device_code
+  signingKeyName: authentik Self-signed Certificate
+  browserCallbackPath: /ui/vault/auth/oidc/oidc/callback
+  cliCallbackUri: http://localhost:8250/oidc/callback
+
+openbao:
+  fullnameOverride: openbao
+  global:
+    enabled: true
+    # HTTPS terminates at shared/private; the remaining network hop is Istio
+    # mTLS, enforced by templates/transport.yaml. Loopback is HTTP for bao CLI.
+    tlsDisable: true
+  injector:
+    enabled: false
+  csi:
+    enabled: false
+  ui:
+    # UI is served by the normal API service, not an extra exposure service.
+    enabled: false
+  snapshotAgent:
+    # Native Raft snapshots are manual until a separate backup design is approved.
+    enabled: false
+  serverTelemetry:
+    serviceMonitor:
+      enabled: false
+    prometheusRules:
+      enabled: false
+    grafanaDashboard:
+      enabled: false
+  server:
+    enabled: true
+    image:
+      registry: quay.io
+      repository: openbao/openbao
+      tag: 2.7.2@sha256:5046911075e137e154ce49ab051502f4ec7cf367d484ae4a4dce665d9b90561f
+      pullPolicy: IfNotPresent
+    # Upgrades/restarts require an operator and manual unseal, never a rolling
+    # restart that assumes automatic unseal or a second Raft voter exists.
+    updateStrategyType: OnDelete
+    configAnnotation: true
+    terminationGracePeriodSeconds: 60
+    affinity: {}
+    extraLabels:
+      sidecar.istio.io/inject: "true"
+    annotations:
+      sidecar.istio.io/inject: "true"
+      proxy.istio.io/config: '{"holdApplicationUntilProxyStarts":true}'
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
+    statefulSet:
+      securityContext:
+        container:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+    readinessProbe:
+      enabled: true
+      # Default health codes stay intact: sealed=503, uninitialized=501.
+      path: /v1/sys/health
+      port: 8200
+    livenessProbe:
+      # A sealed/uninitialized production server is alive, not crash-looping.
+      enabled: false
+    service:
+      enabled: true
+      type: ClusterIP
+      port: 8200
+      targetPort: 8200
+      # Keep native initialization/unseal reachable without marking the pod
+      # Ready. This is intentional and does not bypass OpenBao authentication.
+      publishNotReadyAddresses: true
+      active:
+        enabled: false
+      standby:
+        enabled: false
+    dataStorage:
+      enabled: true
+      size: 10Gi
+      mountPath: /openbao/data
+      storageClass: local-path
+      accessMode: ReadWriteOnce
+      annotations:
+        helm.sh/resource-policy: keep
+        argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    # StatefulSet-created PVCs are not Helm/Argo manifest resources. Explicit
+    # retention is what prevents their deletion when the set is removed/scaled.
+    persistentVolumeClaimRetentionPolicy:
+      whenDeleted: Retain
+      whenScaled: Retain
+    auditStorage:
+      enabled: false
+    dev:
+      enabled: false
+    standalone:
+      enabled: false
+    ha:
+      # This upstream mode enables Raft. One voter is NOT highly available.
+      enabled: true
+      replicas: 1
+      apiAddr: https://openbao.olsen.cloud
+      raft:
+        enabled: true
+        setNodeId: true
+        config: |
+          ui = true
+          disable_mlock = true
+
+          listener "tcp" {
+            address = "[::]:8200"
+            cluster_address = "[::]:8201"
+            tls_disable = true
+          }
+
+          storage "raft" {
+            path = "/openbao/data"
+          }
+      disruptionBudget:
+        enabled: false
+    # No Kubernetes auth/bootstrap privileges or service-registration labels
+    # are required by this single-node native OIDC/API deployment.
+    authDelegator:
+      enabled: false
+    serviceAccount:
+      create: true
+      createSecret: false
+      serviceDiscovery:
+        enabled: false

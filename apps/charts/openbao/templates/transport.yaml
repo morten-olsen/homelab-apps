@@ -1,0 +1,36 @@
+# Install the transport policy before the HTTP listener is first deployed.
+# Only the same-pod proxy/loopback hop is plaintext; remote callers require mTLS.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openbao
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      component: server
+  mtls:
+    mode: STRICT
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  host: {{ printf "openbao.%s.svc.cluster.local" .Release.Namespace }}
+  exportTo:
+    - "*"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL

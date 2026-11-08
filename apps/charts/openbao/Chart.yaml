@@ -1,0 +1,12 @@
+apiVersion: v2
+name: openbao
+description: Private single-node OpenBao with native Raft storage and manual unseal
+version: 0.1.0
+appVersion: "2.7.2"
+dependencies:
+  - name: openbao
+    version: 0.30.7
+    repository: https://openbao.github.io/openbao-helm
+  - name: homelab-common
+    version: 0.3.0
+    repository: https://mortenolsen.pro/homelab-core/
