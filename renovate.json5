@@ -2,6 +2,8 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended"],
   internalChecksFilter: "strict",
+  // Disabled charts may retain data that needs migration before a future upgrade.
+  ignorePaths: ["**/*.disabled/**"],
   packageRules: [
     {
       groupName: "Docker images",
