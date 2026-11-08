@@ -1,7 +1,7 @@
 {{- define "kubecomputer.labels" -}}
 app.kubernetes.io/name: kubecomputer
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+app.kubernetes.io/version: {{ .Values.image.tag | splitList "@" | first | trunc 63 | trimAll "-_." | quote }}
 {{- end }}
 
 {{- define "kubecomputer.image" -}}
