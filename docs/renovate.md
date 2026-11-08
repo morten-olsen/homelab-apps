@@ -23,9 +23,12 @@ scheduled update.
 
 ## Release notes
 
-The Renovate step receives `RENOVATE_GITHUB_COM_TOKEN` from the repository-scoped
-Woodpecker secret `renovate_github_com_token`. It is limited to cron/manual events
-and the `code.olsen.cloud/ci/renovate` image, not pull-request validation. The
+The Renovate plugin's `github_com_token` setting exports
+`RENOVATE_GITHUB_COM_TOKEN` from the repository-scoped Woodpecker secret
+`renovate_github_com_token`. Keep this a settings-only plugin step so Woodpecker
+can enforce the secret's image filter; `environment` overrides are rejected.
+The secret is limited to cron/manual events and the `code.olsen.cloud/ci/renovate`
+image, not pull-request validation. The
 initial token was copied from the operator's authenticated `gh` account; it has
 broader access than necessary. Prefer a dedicated read-only GitHub token when
 replacing it, and update the secret if that login token is revoked.
