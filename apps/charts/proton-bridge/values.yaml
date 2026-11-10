@@ -1,0 +1,48 @@
+# Proton Mail Bridge as an in-cluster IMAP server for automations.
+# Image, login, and recovery: https://code.olsen.cloud/homelab/proton-bridge
+# Cluster-only (ClusterIP, no DNS or gateway), IMAP only, volume not backed up.
+image:
+  repository: code.olsen.cloud/homelab/proton-bridge
+  tag: "v3.27.2@sha256:b9741212df20f4557b8cf5aa900751f40a9d5f9e62baab20a3813d845ce43b83"
+  pullPolicy: IfNotPresent
+
+subdomain: proton-bridge
+
+deployment:
+  # Bridge cannot share its vault between instances.
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  ports:
+    - name: tcp-imap
+      port: 2143
+  healthProbe:
+    type: tcpSocket
+    port: tcp-imap
+
+service:
+  ports:
+    - name: tcp-imap
+      port: 143
+      targetPort: 2143
+      type: ClusterIP
+
+volumes:
+  - name: data
+    mountPath: /data
+    persistentVolumeClaim: data
+
+persistentVolumeClaims:
+  - name: data
+    # Holds the vault, its keychain, and the full message cache.
+    size: 10Gi
+    storageClassName: local-path
+    backup: false
+
+probe:
+  enabled: false
+
+virtualService:
+  enabled: false
