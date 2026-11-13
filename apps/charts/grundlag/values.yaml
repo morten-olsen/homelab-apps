@@ -1,6 +1,6 @@
 image:
   repository: code.olsen.cloud/incubator/grundlag
-  tag: latest@sha256:979d5ec0cfddcb1b7a13c90bebafdab48466d1c45a721e432d58e6fb3475772d
+  tag: v0.5.0@sha256:979d5ec0cfddcb1b7a13c90bebafdab48466d1c45a721e432d58e6fb3475772d
   pullPolicy: IfNotPresent
 
 subdomain: grundlag

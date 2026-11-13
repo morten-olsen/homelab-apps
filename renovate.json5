@@ -2,14 +2,31 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended"],
   internalChecksFilter: "strict",
+  automergeType: "pr",
+  // No branch protections: Renovate must see passing CI before performing the merge.
+  platformAutomerge: false,
   // Disabled charts may retain data that needs migration before a future upgrade.
   ignorePaths: ["**/*.disabled/**"],
   packageRules: [
+    {
+      description: "Track runner image releases while preserving Ubuntu and slim/full variants",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["gitea/runner-images"],
+      versioning: "regex:^(?<compatibility>ubuntu-\\d+\\.\\d+-(?:slim|full))-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
+    },
     {
       groupName: "Docker images",
       groupSlug: "dockerimages",
       matchDatasources: ["docker"],
       pinDigests: true,
+    },
+    {
+      description: "Merge container image minor and patch updates after CI passes",
+      matchDatasources: ["docker"],
+      matchUpdateTypes: ["minor", "patch"],
+      groupName: "Docker images (minor and patch)",
+      groupSlug: "dockerimages-minor-patch",
+      automerge: true,
     },
   ],
   customManagers: [

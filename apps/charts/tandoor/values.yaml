@@ -1,6 +1,6 @@
 image:
   repository: vabene1111/recipes
-  tag: latest@sha256:1b6d43c3c0f5d2888aa564d9daf29883212b79ad496f59f3c684c099eb1a57b9
+  tag: 2.7.2@sha256:1b6d43c3c0f5d2888aa564d9daf29883212b79ad496f59f3c684c099eb1a57b9
   pullPolicy: IfNotPresent
 
 subdomain: recipes
@@ -45,7 +45,7 @@ volumes:
 
 initContainers:
   - name: create-social-providers
-    image: alpine:latest@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a
+    image: alpine:3.24.4@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a
     command: ["/bin/sh", "-c"]
     args:
       - |
