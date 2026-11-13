@@ -37,19 +37,19 @@ netbird:
 images:
   dashboardImage:
     repository: netbirdio/dashboard
-    tag: v2.96.0@sha256:340b13c00b84349572a2acc5605e907cb09250a9e6461c757097eabdb8e02f2c
+    tag: v2.97.0@sha256:203b2dc90dc20d3fd45729caac7c922deb399586a68202e0a35be099720bac7d
     pullPolicy: IfNotPresent
   managementImage:
     repository: netbirdio/management
-    tag: 0.82.0@sha256:07c8f979fcc980678cc64e584cf6b7b27204ceb4c871531b29e2dce39592e9ff
+    tag: 0.83.0@sha256:58323749db9fd70fdf941fb5b379108463f4fdbe38bf35c1fe053214997f523a
     pullPolicy: IfNotPresent
   signalImage:
     repository: netbirdio/signal
-    tag: 0.82.0@sha256:0c0c38bbef7dcdfa1822b6d59844615db55dc7303b664e7aed498151edc0dbfb
+    tag: 0.83.0@sha256:2728b7e8c53addb29c08f2f3841260a571847798f02051eef0349244a35bccbe
     pullPolicy: IfNotPresent
   relayImage:
     repository: netbirdio/relay
-    tag: 0.82.0@sha256:8f6b9e4193653ede89e83dd4aa4e2cf2562579b3e2481dcf259a7ab28bcd5fa1
+    tag: 0.83.0@sha256:e42eb6426c4115b2f51c33e613e30f76308c00ce4c81c5d727af57b73295e62e
     pullPolicy: IfNotPresent
   coturnImage:
     repository: coturn/coturn
@@ -57,7 +57,7 @@ images:
     pullPolicy: IfNotPresent
   routerImage:
     repository: netbirdio/netbird
-    tag: 0.82.0@sha256:eca5b274c635bfbb04ec6724a0712d1146190dd450eea199eeb83916fdd94965
+    tag: 0.83.0@sha256:5258db864905c4a06eb55a7d14f742afeeecc740659e2b687f56e0047820a9ec
     pullPolicy: IfNotPresent
   busyboxImage:
     repository: docker.io/library/busybox
