@@ -78,7 +78,7 @@ persistentVolumeClaims:
 virtualService:
   enabled: true
   gateways:
-    public: false
+    public: true
     private: true
   servicePort: 80 # Port of the main server service
   # Immich has no CORS support of its own; Envoy answers preflights and adds
