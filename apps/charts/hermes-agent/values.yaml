@@ -7,15 +7,14 @@
 #                 no inbound port. Configure interactively post-deploy via:
 #                 `kubectl exec -it deploy/hermes-agent-gateway -n prod -- hermes gateway setup`
 #
-# Phase 1: no app-level SSO. Hermes' built-in OAuth only speaks Nous Portal
-# (no generic OIDC), so we run with HERMES_DASHBOARD_INSECURE=1 and rely on
-# the private-gateway perimeter (LAN/VPN). Phase 2 will add forward-auth.
+# Authentik OIDC protects the dashboard in addition to the private gateway.
+# See README.md before deploying against retained data.
 
 # Shared image — anchored so dashboard and gateway pin the same digest and
 # Renovate updates them together.
 image: &image
   repository: nousresearch/hermes-agent
-  tag: v2026.8.16.2@sha256:a39fc11620213e3669a327aff5c6cb1eb2b8a238c6044e33e7ef8885833d89a7
+  tag: v0.23.1@sha256:276d44685c65c0cb2a25f190b63c65c8906f9dc76486fb1c05ae71b5826bda08
   pullPolicy: IfNotPresent
 
 dashboard:
@@ -30,19 +29,14 @@ dashboard:
     replicas: 1
     revisionHistoryLimit: 0
 
-  # /init (s6-overlay PID 1) is the image's ENTRYPOINT; the wrapper script
-  # takes the hermes subcommand as its args. Don't override command — only args.
-  #
-  # --insecure is required when binding to a non-loopback host: the dashboard's
-  # auth-gate refuses 0.0.0.0 unless a DashboardAuthProvider plugin is registered
-  # (only Nous Portal exists). With Authentik unreachable, --insecure bypasses
-  # the gate and we depend on the private-gateway perimeter for access control.
+  # Keep the image entrypoint for s6 bootstrap and privilege dropping.
+  # The bundled self-hosted OIDC provider activates from the env vars below.
   args:
     - dashboard
     - --host
     - 0.0.0.0
     - --no-open
-    - --insecure
+    - --skip-build
 
   container:
     port: 9119
@@ -81,13 +75,37 @@ dashboard:
       public: false
       private: true
 
+  oidc:
+    enabled: true
+    redirectUris:
+      - /auth/callback
+    signingKeyName: authentik Self-signed Certificate
+    allowedGroups:
+      - name: admin
+        namespace: shared
+    group:
+      members: []
+
   env:
     HERMES_UID: "10000"
     HERMES_GID: "10000"
-    # Disable Hermes' built-in Nous-Portal OAuth gate. The dashboard stores
-    # API keys, so the private-gateway perimeter is doing the access control
-    # for now (see top-of-file phase 1/phase 2 note).
-    HERMES_DASHBOARD_INSECURE: "1"
+    HERMES_DASHBOARD_PUBLIC_URL: "https://{subdomain}.{domain}"
+    HERMES_DASHBOARD_OIDC_ISSUER:
+      valueFrom:
+        secretKeyRef:
+          name: "{fullname}-oidc-credentials"
+          key: issuer
+    HERMES_DASHBOARD_OIDC_CLIENT_ID:
+      valueFrom:
+        secretKeyRef:
+          name: "{fullname}-oidc-credentials"
+          key: clientId
+    HERMES_DASHBOARD_OIDC_CLIENT_SECRET:
+      valueFrom:
+        secretKeyRef:
+          name: "{fullname}-oidc-credentials"
+          key: clientSecret
+    HERMES_DASHBOARD_OIDC_SCOPES: "openid profile email"
 
 gateway:
   nameOverride: gateway
