@@ -7,7 +7,7 @@
 #                 no inbound port. Configure interactively post-deploy via:
 #                 `kubectl exec -it deploy/hermes-agent-gateway -n prod -- hermes gateway setup`
 #
-# Authentik OIDC protects the dashboard in addition to the private gateway.
+# Built-in password login protects the dashboard in addition to the private gateway.
 # See README.md before deploying against retained data.
 
 # Shared image — anchored so dashboard and gateway pin the same digest and
@@ -30,7 +30,7 @@ dashboard:
     revisionHistoryLimit: 0
 
   # Keep the image entrypoint for s6 bootstrap and privilege dropping.
-  # The bundled self-hosted OIDC provider activates from the env vars below.
+  # The bundled password provider activates from the env vars below.
   args:
     - dashboard
     - --host
@@ -75,37 +75,33 @@ dashboard:
       public: false
       private: true
 
-  oidc:
-    enabled: true
-    redirectUris:
-      - /auth/callback
-    signingKeyName: authentik Self-signed Certificate
-    allowedGroups:
-      - name: admin
-        namespace: shared
-    group:
-      members: []
+  # Generated once in-cluster; keep both login and session signing stable on restart.
+  externalSecrets:
+    - name: "{fullname}-login"
+      passwords:
+        - name: credentials
+          length: 32
+          encoding: hex
+          allowRepeat: true
+          secretKeys:
+            - password
+            - session-secret
 
   env:
     HERMES_UID: "10000"
     HERMES_GID: "10000"
     HERMES_DASHBOARD_PUBLIC_URL: "https://{subdomain}.{domain}"
-    HERMES_DASHBOARD_OIDC_ISSUER:
+    HERMES_DASHBOARD_BASIC_AUTH_USERNAME: admin
+    HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:
       valueFrom:
         secretKeyRef:
-          name: "{fullname}-oidc-credentials"
-          key: issuer
-    HERMES_DASHBOARD_OIDC_CLIENT_ID:
+          name: "{fullname}-login"
+          key: password
+    HERMES_DASHBOARD_BASIC_AUTH_SECRET:
       valueFrom:
         secretKeyRef:
-          name: "{fullname}-oidc-credentials"
-          key: clientId
-    HERMES_DASHBOARD_OIDC_CLIENT_SECRET:
-      valueFrom:
-        secretKeyRef:
-          name: "{fullname}-oidc-credentials"
-          key: clientSecret
-    HERMES_DASHBOARD_OIDC_SCOPES: "openid profile email"
+          name: "{fullname}-login"
+          key: session-secret
 
 gateway:
   nameOverride: gateway

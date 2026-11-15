@@ -1,17 +1,28 @@
 # Hermes Agent
 
-The dashboard is private-only at `https://hermes.olsen.cloud`, with Authentik
-login through Hermes' bundled self-hosted OIDC provider. The chart grants
-`shared/admin` access; its own application group starts empty. Membership follows
-[the application access policy](../../../docs/authentik-groups.md).
+The dashboard is private-only at `https://hermes.olsen.cloud`, with Hermes'
+bundled username/password provider. Password login is intentional: the operator's
+client cannot use OIDC. This is a login form with session cookies, not HTTP Basic
+authentication or an API bearer token; verify the client's actual login flow.
+The shared account has access to this Hermes instance's configuration and data.
 
-The Authentik client is `prod/hermes-agent-dashboard`. Its operator-managed
-Secret, `hermes-agent-dashboard-oidc-credentials`, supplies issuer, client ID and
-client secret. The callback is `/auth/callback`. The provider uses authorization
-code + PKCE, OIDC discovery and signed ID tokens; the Authentik signing key is
-explicit because Hermes accepts RS256/ES256, not HS256. No forward-auth or
-password fallback is configured. An unavailable IdP prevents new logins; existing
-sessions must be checked separately.
+Username: `admin`. External Secrets generates a password and a separate persistent
+session-signing key once in `prod/hermes-agent-dashboard-login`. They are injected
+via Secret references, never stored in Git. The password is hashed in memory by
+Hermes. No Authentik resources, OIDC env vars or insecure bypass are configured.
+
+After deployment, retrieve the password privately (do not paste it into chat or
+shared logs):
+
+```sh
+kubectl --context default -n prod get secret hermes-agent-dashboard-login \
+  -o jsonpath='{.data.password}' | base64 -d
+```
+
+Ordinary reconciles and pod restarts retain both values. Deleting the
+ExternalSecret also deletes its owned Secret; recreating it generates new
+credentials and invalidates sessions. Deliberate credential rotation requires
+separate approval and a dashboard restart to reload injected env vars.
 
 ## Upgrade and re-enable gate
 
@@ -55,10 +66,12 @@ Validate the chart with `scripts/ci/validate-charts.sh apps/charts/hermes-agent`
 Merging the directory without `.disabled` enables ApplicationSet discovery;
 Argo can then start both workloads automatically.
 
-After rollout, verify Authentik client/group readiness, successful admin login,
-rejection of an ungranted user, an unauthenticated dashboard's login gate,
-gateway health and a new backup. Chart rendering is not an authentication or
-migration test; a successful backup job is not a restore rehearsal.
+After rollout, verify the ExternalSecret is Ready, `/api/auth/providers` offers
+password login rather than OIDC, the unauthenticated dashboard requires login,
+the generated password succeeds and an incorrect password fails. Confirm the
+actual client's session flow, gateway health and a new backup. Chart rendering
+is not an authentication or migration test; a successful backup job is not a
+restore rehearsal.
 
 If rollback is needed, stop both workloads through an approved GitOps change,
 restore the verified pre-upgrade home while stopped, and restore the old image

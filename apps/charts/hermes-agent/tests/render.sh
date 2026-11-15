@@ -17,15 +17,19 @@ def resource(kind, name):
     assert len(matches) == 1, (kind, name, matches)
     return matches[0]
 
-client = resource("AuthentikClient", "hermes-agent-dashboard")
-assert client["spec"]["redirectUris"] == ["https://hermes.olsen.cloud/auth/callback"]
-assert client["spec"]["signingKeyName"] == "authentik Self-signed Certificate"
-assert client["spec"]["allowedGroups"] == [
-    {"name": "hermes-agent-dashboard", "namespace": "prod"},
-    {"name": "admin", "namespace": "shared"},
-]
-assert resource("AuthentikGroup", "hermes-agent-dashboard")["spec"]["members"] == []
-assert len([r for r in resources if r["kind"] == "AuthentikClient"]) == 1
+assert not any(r["kind"] in ("AuthentikClient", "AuthentikGroup", "Secret") for r in resources)
+generator = resource("Password", "hermes-agent-dashboard-login-credentials-generator")
+assert generator["spec"] == {
+    "length": 32, "allowRepeat": True, "noUpper": False,
+    "encoding": "hex", "secretKeys": ["password", "session-secret"],
+}
+secret = resource("ExternalSecret", "hermes-agent-dashboard-login")
+assert secret["spec"]["refreshInterval"] == "0"
+assert secret["spec"]["target"]["name"] == "hermes-agent-dashboard-login"
+assert secret["spec"]["dataFrom"] == [{"sourceRef": {"generatorRef": {
+    "apiVersion": "generators.external-secrets.io/v1alpha1", "kind": "Password",
+    "name": generator["metadata"]["name"],
+}}}]
 images = []
 for name in ("hermes-agent-dashboard", "hermes-agent-gateway"):
     deployment = resource("Deployment", name)
@@ -38,16 +42,17 @@ for name in ("hermes-agent-dashboard", "hermes-agent-gateway"):
     assert "--insecure" not in container["args"]
     env = {e["name"]: e for e in container["env"]}
     assert "HERMES_DASHBOARD_INSECURE" not in env
+    assert not any(key.startswith("HERMES_DASHBOARD_OIDC_") for key in env)
     images.append(container["image"])
     if name.endswith("dashboard"):
         assert container["args"] == ["dashboard", "--host", "0.0.0.0", "--no-open", "--skip-build"]
         assert env["HERMES_DASHBOARD_PUBLIC_URL"]["value"] == "https://hermes.olsen.cloud"
-        assert env["HERMES_DASHBOARD_OIDC_SCOPES"]["value"] == "openid profile email"
-        for variable, key in (("ISSUER", "issuer"), ("CLIENT_ID", "clientId"), ("CLIENT_SECRET", "clientSecret")):
-            entry = env["HERMES_DASHBOARD_OIDC_" + variable]
+        assert env["HERMES_DASHBOARD_BASIC_AUTH_USERNAME"]["value"] == "admin"
+        for variable, key in (("PASSWORD", "password"), ("SECRET", "session-secret")):
+            entry = env["HERMES_DASHBOARD_BASIC_AUTH_" + variable]
             assert "value" not in entry
             assert entry["valueFrom"]["secretKeyRef"] == {
-                "name": "hermes-agent-dashboard-oidc-credentials", "key": key,
+                "name": "hermes-agent-dashboard-login", "key": key,
             }
     else:
         assert container["args"] == ["gateway", "run"]
@@ -61,5 +66,5 @@ routes = [r for r in resources if r["kind"] == "VirtualService"]
 assert len(routes) == 1
 assert routes[0]["spec"]["gateways"] == ["shared/private", "mesh"]
 assert routes[0]["spec"]["hosts"] == ["hermes.olsen.cloud", "mesh"]
-print("Hermes OIDC, private ingress, shared image, and retained storage render correctly")
+print("Hermes generated password login, private ingress, shared image, and retained storage render correctly")
 PY

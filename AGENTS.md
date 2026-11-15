@@ -79,7 +79,7 @@ See ./apps/common/README.md for guide on writing charts
 
 Before changing Renovate or re-enabling a `.disabled` chart, follow
 [the update runbook](docs/renovate.md), including retained-data and migration review.
-For Hermes upgrades or rollout, also read its [OIDC and retained-data gate](apps/charts/hermes-agent/README.md).
+For Hermes authentication changes, upgrades or rollout, read its [password-login and retained-data guidance](apps/charts/hermes-agent/README.md); its client requires password login rather than OIDC.
 
 
 ## Pull-request validation
