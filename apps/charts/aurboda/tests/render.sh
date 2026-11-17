@@ -32,7 +32,7 @@ env = {e["name"]: e for e in c["env"]}
 assert env["PGHOST"]["value"] == "aurboda-db"
 assert env["PGUSER"]["value"] == "aurboda_service"
 assert env["PGPASSWORD"]["valueFrom"]["secretKeyRef"] == {"name": "aurboda-secrets", "key": "dbPassword"}
-assert env["SESSION_SECRET"]["valueFrom"]["secretKeyRef"] == {"name": "aurboda-secrets", "key": "sessionSecret"}
+assert env["SESSION_SECRET"]["valueFrom"]["secretKeyRef"] == {"name": "aurboda-session", "key": "sessionSecret"}
 assert env["WEB_HOST"]["value"] == "https://aurboda.olsen.cloud"
 assert env["API_BASE_URL"]["value"] == "https://aurboda.olsen.cloud/api"
 # ALLOW_SIGNUP is migrated into the DB once and would override the admin setting.
@@ -60,5 +60,18 @@ assert gateways == ["shared/private"], gateways
 for d in (app, db):
     for ctr in d["spec"]["template"]["spec"]["containers"]:
         assert "limits" in ctr.get("resources", {}) and "memory" in ctr["resources"]["limits"], ctr["name"]
+# Aurboda requires SESSION_SECRET to be exactly 32 bytes (Buffer.from(secret).length).
+gen = [d for d in docs if d["kind"] == "Password" and d["metadata"]["name"] == "aurboda-session-session-secret-generator"]
+assert len(gen) == 1, gen
+# A separate ExternalSecret: the DB password must never be regenerated with it.
+es = [d for d in docs if d["kind"] == "ExternalSecret"]
+refs = {e["metadata"]["name"]: [r["sourceRef"]["generatorRef"]["name"] for r in e["spec"]["dataFrom"]] for e in es}
+assert refs.get("aurboda-session") == [gen[0]["metadata"]["name"]], refs
+# The DB password's ExternalSecret keeps its first-rollout spec, so ESO never
+# regenerates a password the initialised database does not know.
+assert refs.get("aurboda-secrets") == ["aurboda-secrets-session-secret-generator", "aurboda-secrets-db-password-generator"], refs
+spec = gen[0]["spec"]
+per_char = {"raw": 1, "hex": 2}[spec.get("encoding", "raw")]
+assert spec["length"] * per_char == 32, f"session secret renders {spec['length'] * per_char} bytes, Aurboda needs 32"
 print("Aurboda renders private-only, wired to its own PostGIS 16 with a backed-up volume")
 PY
