@@ -97,6 +97,12 @@ env:
   # on GitHub releases (read from v1.0.3750; aurboda.net lists the same key).
   # Play Store builds are re-signed by Google and would need their key added.
   ANDROID_APP_FINGERPRINTS: "80:EA:56:64:44:9D:8D:28:BC:8E:D0:EC:ED:AA:6A:4D:91:BD:B9:82:E2:AA:68:5C:4E:4C:D2:F9:8A:10:49:56"
+  # Lets a user's Home Assistant URL point at a private address and plain http.
+  # Needed for https://home-assistant.olsen.cloud, which resolves privately.
+  # All or nothing: any Aurboda user can make the server request LAN and
+  # cluster addresses. Morten accepted that on 2026-11-17 while he is the only
+  # user (signup invite-only); revisit before inviting anyone.
+  HOME_ASSISTANT_ALLOW_PRIVATE_ADDRESSES: "true"
   # ALLOW_SIGNUP is left unset on purpose: the first account becomes admin,
   # then signup is closed in Admin settings (the env var would be migrated
   # into the DB and is deprecated upstream).

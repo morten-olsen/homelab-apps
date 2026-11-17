@@ -38,6 +38,10 @@ assert env["API_BASE_URL"]["value"] == "https://aurboda.olsen.cloud/api"
 # Passkeys in the Android app need assetlinks.json to trust the APK's signing key:
 # the official GitHub-release APK (v1.0.3750, APK signature scheme v2 certificate).
 assert env["ANDROID_APP_FINGERPRINTS"]["value"] == "80:EA:56:64:44:9D:8D:28:BC:8E:D0:EC:ED:AA:6A:4D:91:BD:B9:82:E2:AA:68:5C:4E:4C:D2:F9:8A:10:49:56"
+# Home Assistant is only reachable at a private address (home-assistant.olsen.cloud);
+# Morten accepted the SSRF widening while he is the only user. Calendars stay public-only.
+assert env["HOME_ASSISTANT_ALLOW_PRIVATE_ADDRESSES"]["value"] == "true"
+assert "CALENDAR_ALLOW_PRIVATE_ADDRESSES" not in env
 # ALLOW_SIGNUP is migrated into the DB once and would override the admin setting.
 assert "ALLOW_SIGNUP" not in env
 
