@@ -68,7 +68,7 @@ env:
   SESSION_SECRET:
     valueFrom:
       secretKeyRef:
-        name: "{release}-secrets"
+        name: "{release}-session"
         key: sessionSecret
   WEB_HOST:
     value: "https://{subdomain}.{domain}"
@@ -79,7 +79,21 @@ env:
   # then signup is closed in Admin settings (the env var would be migrated
   # into the DB and is deprecated upstream).
 
+# Generated once (refreshInterval 0).
 externalSecrets:
+  - name: "{release}-session"
+    passwords:
+      # Aurboda requires exactly 32 bytes; raw is one byte per character (hex
+      # would double it).
+      - name: session-secret
+        length: 32
+        encoding: raw
+        allowRepeat: true
+        secretKeys:
+          - sessionSecret
+  # Unchanged since the first rollout: changing this spec makes ESO regenerate
+  # both keys, and a new dbPassword would no longer match the database. Its
+  # sessionSecret (64 hex characters) is unused.
   - name: "{release}-secrets"
     passwords:
       - name: session-secret
