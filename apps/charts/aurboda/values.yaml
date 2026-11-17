@@ -1,0 +1,119 @@
+# Aurboda: self-hosted quantified-self aggregator (https://github.com/fiddur/aurboda).
+# One image runs nginx (port 80) in front of the Node backend; data lives in
+# PostgreSQL with PostGIS, one database per user plus a central one.
+
+subdomain: aurboda
+
+# Personal health data: reachable from the home network only, like the
+# earlier health app. Public exposure (phone push away from home, Oura/Strava
+# webhooks, federation) is a separate decision.
+dns:
+  enabled: true
+  type: A
+  dnsClassRef:
+    name: private-dns
+
+image:
+  repository: docker.io/fiddur/aurboda
+  # Tags are a release counter (v1.0.<n>); schema changes are expand-only.
+  tag: v1.0.3750@sha256:7f67e21f75a101f35616cf8b824c1f0b0280503f93d0a4aee0c520d7875de92d
+  pullPolicy: IfNotPresent
+
+deployment:
+  strategy: Recreate
+  replicas: 1
+  revisionHistoryLimit: 0
+
+container:
+  port: 80
+  # Goes through nginx to the backend, which listens only after startup and
+  # migrations, and reads the central DB.
+  healthProbe:
+    type: httpGet
+    path: /api/status
+    port: http
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 6
+  resources:
+    requests:
+      cpu: 50m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+
+service:
+  port: 80
+  type: ClusterIP
+
+probe:
+  path: /api/status
+
+virtualService:
+  enabled: true
+  gateways:
+    public: false
+    private: true
+
+env:
+  PGHOST:
+    value: "{release}-db"
+  PGPORT: "5432"
+  PGUSER: aurboda_service
+  PGPASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: dbPassword
+  SESSION_SECRET:
+    valueFrom:
+      secretKeyRef:
+        name: "{release}-secrets"
+        key: sessionSecret
+  WEB_HOST:
+    value: "https://{subdomain}.{domain}"
+  API_BASE_URL:
+    value: "https://{subdomain}.{domain}/api"
+  NODE_ENV: production
+  # ALLOW_SIGNUP is left unset on purpose: the first account becomes admin,
+  # then signup is closed in Admin settings (the env var would be migrated
+  # into the DB and is deprecated upstream).
+
+externalSecrets:
+  - name: "{release}-secrets"
+    passwords:
+      - name: session-secret
+        length: 32
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - sessionSecret
+      - name: db-password
+        length: 32
+        encoding: hex
+        allowRepeat: true
+        secretKeys:
+          - dbPassword
+
+persistentVolumeClaims:
+  - name: db-data
+    size: 10Gi
+    storageClassName: local-path
+    backup: true
+
+db:
+  image:
+    repository: docker.io/postgis/postgis
+    # Keep the major at 16: the app image ships postgresql16-client for data
+    # export, and pg_dump refuses a newer server.
+    tag: 16-3.5-alpine@sha256:47e961a569fd52ff31f0fe205ed91eeab17d9f5fff6722e6d7ea6b588748b293
+    pullPolicy: IfNotPresent
+  user: aurboda_service
+  # Upstream's compose value: each user database gets its own pool.
+  maxConnections: 200
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
