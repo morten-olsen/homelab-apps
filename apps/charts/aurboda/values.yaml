@@ -75,6 +75,11 @@ env:
   API_BASE_URL:
     value: "https://{subdomain}.{domain}/api"
   NODE_ENV: production
+  # Published in /.well-known/assetlinks.json so the Android app (net.aurboda)
+  # may use this site's passkeys. The signing certificate of the official APK
+  # on GitHub releases (read from v1.0.3750; aurboda.net lists the same key).
+  # Play Store builds are re-signed by Google and would need their key added.
+  ANDROID_APP_FINGERPRINTS: "80:EA:56:64:44:9D:8D:28:BC:8E:D0:EC:ED:AA:6A:4D:91:BD:B9:82:E2:AA:68:5C:4E:4C:D2:F9:8A:10:49:56"
   # ALLOW_SIGNUP is left unset on purpose: the first account becomes admin,
   # then signup is closed in Admin settings (the env var would be migrated
   # into the DB and is deprecated upstream).

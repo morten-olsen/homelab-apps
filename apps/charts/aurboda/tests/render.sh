@@ -35,6 +35,9 @@ assert env["PGPASSWORD"]["valueFrom"]["secretKeyRef"] == {"name": "aurboda-secre
 assert env["SESSION_SECRET"]["valueFrom"]["secretKeyRef"] == {"name": "aurboda-session", "key": "sessionSecret"}
 assert env["WEB_HOST"]["value"] == "https://aurboda.olsen.cloud"
 assert env["API_BASE_URL"]["value"] == "https://aurboda.olsen.cloud/api"
+# Passkeys in the Android app need assetlinks.json to trust the APK's signing key:
+# the official GitHub-release APK (v1.0.3750, APK signature scheme v2 certificate).
+assert env["ANDROID_APP_FINGERPRINTS"]["value"] == "80:EA:56:64:44:9D:8D:28:BC:8E:D0:EC:ED:AA:6A:4D:91:BD:B9:82:E2:AA:68:5C:4E:4C:D2:F9:8A:10:49:56"
 # ALLOW_SIGNUP is migrated into the DB once and would override the admin setting.
 assert "ALLOW_SIGNUP" not in env
 
