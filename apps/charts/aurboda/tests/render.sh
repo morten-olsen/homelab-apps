@@ -76,5 +76,11 @@ assert refs.get("aurboda-secrets") == ["aurboda-secrets-session-secret-generator
 spec = gen[0]["spec"]
 per_char = {"raw": 1, "hex": 2}[spec.get("encoding", "raw")]
 assert spec["length"] * per_char == 32, f"session secret renders {spec['length'] * per_char} bytes, Aurboda needs 32"
+# Authentik SSO: the provider is added in Aurboda's admin UI, whose redirect
+# URI is <API_BASE_URL>/auth/oidc/callback. The app returns via its own scheme.
+client = one("AuthentikClient", "aurboda")
+assert client["spec"]["redirectUris"] == ["https://aurboda.olsen.cloud/api/auth/oidc/callback"], client["spec"]["redirectUris"]
+assert client["spec"].get("clientType", "confidential") == "confidential"
+assert {"name": "admin", "namespace": "shared"} in client["spec"]["allowedGroups"], client["spec"]["allowedGroups"]
 print("Aurboda renders private-only, wired to its own PostGIS 16 with a backed-up volume")
 PY

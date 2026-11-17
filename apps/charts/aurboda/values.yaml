@@ -55,6 +55,23 @@ virtualService:
     public: false
     private: true
 
+# Authentik client for Aurboda's SSO. The operator writes clientId,
+# clientSecret and issuer to {release}-oidc-credentials; an admin adds them
+# under Admin settings -> SSO providers (Aurboda keeps providers in its DB, not
+# env). The Android app signs in through it via net.aurboda.oidc://, which
+# needs no public assetlinks.json.
+oidc:
+  enabled: true
+  # Additional application access; the chart always retains its own group.
+  allowedGroups:
+    - name: admin
+      namespace: shared
+  group:
+    members: []
+  redirectUris:
+    - "/api/auth/oidc/callback"
+  subjectMode: user_username
+
 env:
   PGHOST:
     value: "{release}-db"
