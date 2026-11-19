@@ -1,0 +1,51 @@
+{{- $authentik := .Values.globals.authentik.ref }}
+# Workforce's users: the Authentik group gitops/<namespace>/workforce, which the server reads
+# from the token's groups claim (WORKFORCE_OIDC_USER_GROUP).
+apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
+kind: AuthentikGroup
+metadata:
+  name: workforce
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    app.kubernetes.io/name: workforce
+spec:
+  serverRef:
+    name: {{ $authentik.name }}
+    namespace: {{ $authentik.namespace }}
+  members: {{ toJson .Values.oidc.members }}
+---
+# A public client: the CLI signs in with the device code grant and refreshes its tokens. The
+# operator writes clientId, issuer and jwksUrl to workforce-oidc-credentials.
+apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
+kind: AuthentikClient
+metadata:
+  name: workforce
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: workforce
+spec:
+  serverRef:
+    name: {{ $authentik.name }}
+    namespace: {{ $authentik.namespace }}
+  name: workforce
+  clientId: {{ .Values.oidc.clientId }}
+  clientType: public
+  signingKeyName: {{ .Values.oidc.signingKeyName | quote }}
+  # Stable across renames: workforce keeps its users by subject.
+  subjectMode: user_uuid
+  scopes: [openid, profile, email, offline_access]
+  grantTypes:
+    - urn:ietf:params:oauth:grant-type:device_code
+    - refresh_token
+  # Required by the operator; nothing uses it until workforce has a web sign-in.
+  redirectUris:
+    - "https://workforce.{{ .Values.globals.domain }}/auth/callback"
+  allowedGroups:
+    - name: workforce
+      namespace: {{ .Release.Namespace }}
+    {{- range .Values.oidc.allowedGroups }}
+    - name: {{ .name }}
+      namespace: {{ .namespace }}
+    {{- end }}

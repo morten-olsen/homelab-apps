@@ -1,0 +1,5 @@
+apiVersion: v2
+name: workforce
+description: Agents built once and served as ACP agents (code.olsen.cloud/morten-olsen/workforce)
+type: application
+version: 0.1.0

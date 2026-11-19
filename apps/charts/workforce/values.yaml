@@ -1,0 +1,17 @@
+# Workforce: agents built once and served as ACP agents over WebSocket.
+# For now only its OIDC client; the server's Deployment follows once it has an image.
+
+# People sign in through this client: the workforce CLI with the device code grant, so it is a
+# public client. The operator writes the issuer and client id to workforce-oidc-credentials.
+oidc:
+  clientId: workforce
+  # Signs tokens with a keypair (RS256); workforce checks them against the issuer's JWKS.
+  signingKeyName: authentik Self-signed Certificate
+  # Who uses workforce (the Authentik group gitops/prod/workforce), as id and uuid of existing
+  # Authentik users, like the shared groups.
+  members: []
+  # Others who may sign in at all. Members of shared/admin become workforce admins, set on the
+  # server as WORKFORCE_OIDC_ADMIN_GROUP=gitops/shared/admin.
+  allowedGroups:
+    - name: admin
+      namespace: shared
