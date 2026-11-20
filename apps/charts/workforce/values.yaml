@@ -1,5 +1,48 @@
-# Workforce: agents built once and served as ACP agents over WebSocket.
-# For now only its OIDC client; the server's Deployment follows once it has an image.
+# Workforce: agents built once and served as ACP agents over WebSocket
+# (code.olsen.cloud/morten-olsen/workforce). The server, its OIDC client and its keys.
+image:
+  repository: code.olsen.cloud/morten-olsen/workforce
+  # Pinned by tag and digest; the registry's tags move.
+  tag: 073c378c@sha256:b6dc4feea5e846f512db87c52f5ecae5da16c56ce5cf0c93fde55649d77312e5
+  pullPolicy: IfNotPresent
+
+# Private gateway only: https://workforce.<domain>, LAN and VPN. People sign in through OIDC.
+subdomain: workforce
+
+deployment:
+  strategy: Recreate # SQLite on one ReadWriteOnce claim: never two writers
+  replicas: 1
+  revisionHistoryLimit: 2
+  # Running agents get their stdin closed and a grace period before they are killed.
+  terminationGracePeriodSeconds: 30
+  uid: 10001
+  gid: 10001
+
+container:
+  port: 3000
+  resources:
+    requests: { cpu: 50m, memory: 128Mi, ephemeral-storage: 256Mi }
+    limits: { cpu: "1", memory: 512Mi, ephemeral-storage: 1Gi }
+
+service:
+  port: 3000
+
+probe:
+  path: /api/health
+
+persistentVolumeClaims:
+  - name: data
+    size: 5Gi
+    # local-path: the only class in the cluster.
+    storageClassName: local-path
+    backup: true
+
+config:
+  # Generated once by External Secrets, never rotated by the chart: WORKFORCE_SECRET_KEY seals every
+  # secret in the database.
+  keysSecret: workforce-keys
+  # How long a session process with no turn and no consumer is kept.
+  sessionIdleSeconds: 1800
 
 # People sign in through this client: the workforce CLI with the device code grant, so it is a
 # public client. The operator writes the issuer and client id to workforce-oidc-credentials.
@@ -10,8 +53,13 @@ oidc:
   # Who uses workforce (the Authentik group gitops/prod/workforce), as id and uuid of existing
   # Authentik users, like the shared groups.
   members: []
-  # Others who may sign in at all. Members of shared/admin become workforce admins, set on the
-  # server as WORKFORCE_OIDC_ADMIN_GROUP=gitops/shared/admin.
+  # Others who may sign in at all. Members of shared/admin are workforce admins.
   allowedGroups:
     - name: admin
       namespace: shared
+  adminGroup: gitops/shared/admin
+
+# The kubecomputer client (apps chart kubecomputer, client workforce) writes its URL, namespace and
+# key here; a kubecomputer provider created without settings of its own uses them.
+kubecomputer:
+  secretName: workforce-kubecomputer

@@ -1,0 +1,93 @@
+{{- $c := .Values.container }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: {{ .Values.deployment.strategy }}
+  replicas: {{ .Values.deployment.replicas }}
+  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+        sidecar.istio.io/inject: "false"
+    spec:
+      # Workforce reaches Kubernetes only through kubecomputer, with the key of its client.
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.deployment.uid }}
+        runAsGroup: {{ .Values.deployment.gid }}
+        fsGroup: {{ .Values.deployment.gid }}
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $c.port }}
+              protocol: TCP
+          startupProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml $c.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          env:
+            - { name: PORT, value: {{ $c.port | quote }} }
+            - { name: WORKFORCE_HOST, value: "0.0.0.0" }
+            - { name: WORKFORCE_SERVER_DB, value: /data/workforce.db }
+            - { name: WORKFORCE_SESSION_IDLE_SECONDS, value: {{ .Values.config.sessionIdleSeconds | quote }} }
+            - { name: TZ, value: {{ .Values.globals.timezone | default "UTC" | quote }} }
+            - name: WORKFORCE_SECRET_KEY
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.config.keysSecret }}, key: WORKFORCE_SECRET_KEY }
+            - name: WORKFORCE_OIDC_ISSUER
+              valueFrom:
+                secretKeyRef: { name: workforce-oidc-credentials, key: issuer }
+            - name: WORKFORCE_OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef: { name: workforce-oidc-credentials, key: clientId }
+            - { name: WORKFORCE_OIDC_USER_GROUP, value: "gitops/{{ .Release.Namespace }}/workforce" }
+            - { name: WORKFORCE_OIDC_ADMIN_GROUP, value: {{ .Values.oidc.adminGroup | quote }} }
+          # KUBECOMPUTER_URL, KUBECOMPUTER_NAMESPACE, KUBECOMPUTER_TOKEN from the kubecomputer client.
+          envFrom:
+            - secretRef:
+                name: {{ .Values.kubecomputer.secretName }}
+                optional: true
+          volumeMounts:
+            - { name: data, mountPath: /data }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data
+        - name: tmp
+          emptyDir: { sizeLimit: 256Mi }
