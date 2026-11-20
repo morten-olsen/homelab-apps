@@ -3,7 +3,7 @@
 image:
   repository: code.olsen.cloud/morten-olsen/workforce
   # Pinned by tag and digest; the registry's tags move.
-  tag: 0.4.1@sha256:4ab49f20989a83c38e711372d650560325ef98bcec83a53c8ca8c70fc8528d1b
+  tag: 0.5.0@sha256:c107e43a0c82a1c0b3296a3d4a70f7577a5a15b3bb4674236b58dabd639206b2
   pullPolicy: IfNotPresent
 
 # Private gateway only: https://workforce.<domain>, LAN and VPN. People sign in through OIDC.
