@@ -16,8 +16,10 @@ spec:
     namespace: {{ $authentik.namespace }}
   members: {{ toJson .Values.oidc.members }}
 ---
-# A public client: the CLI signs in with the device code grant and refreshes its tokens. The
-# operator writes clientId, issuer and jwksUrl to workforce-oidc-credentials.
+# A public client: the CLI signs in with the device code grant, the app with the authorization code
+# grant and PKCE (in the browser at /auth/callback, natively at workforce://auth/callback, and
+# Metro's dev server at localhost:8081); both refresh their tokens. The operator writes clientId,
+# issuer and jwksUrl to workforce-oidc-credentials.
 apiVersion: authentik.homelab.mortenolsen.pro/v1alpha1
 kind: AuthentikClient
 metadata:
@@ -38,10 +40,12 @@ spec:
   scopes: [openid, profile, email, offline_access]
   grantTypes:
     - urn:ietf:params:oauth:grant-type:device_code
+    - authorization_code
     - refresh_token
-  # Required by the operator; nothing uses it until workforce has a web sign-in.
   redirectUris:
     - "https://workforce.{{ .Values.globals.domain }}/auth/callback"
+    - "workforce://auth/callback"
+    - "http://localhost:8081/auth/callback"
   allowedGroups:
     - name: workforce
       namespace: {{ .Release.Namespace }}
