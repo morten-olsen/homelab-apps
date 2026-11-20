@@ -2,4 +2,8 @@ apiVersion: v2
 name: workforce
 description: Agents built once and served as ACP agents (code.olsen.cloud/morten-olsen/workforce)
 type: application
-version: 0.1.0
+version: 0.2.0
+dependencies:
+  - name: homelab-common
+    version: 0.3.0
+    repository: https://mortenolsen.pro/homelab-core/

@@ -1,0 +1,43 @@
+# The sealing key is generated in the cluster, once, and never appears in Git. The Secret is
+# deliberately orphaned from the ExternalSecret: deleting or pruning the ExternalSecret must not
+# delete the key, because what the server sealed with it is unreadable without it. The server needs
+# WORKFORCE_SECRET_KEY to decode from base64 to exactly 32 bytes: 32 generated characters,
+# base64-encoded, are that. Both sync before the Deployment (wave -1).
+---
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: {{ .Release.Name }}-keys-generator
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  length: 32
+  allowRepeat: true
+  encoding: base64
+  secretKeys:
+    - WORKFORCE_SECRET_KEY
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ .Values.config.keysSecret }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  refreshInterval: "0"
+  target:
+    name: {{ .Values.config.keysSecret }}
+    creationPolicy: Orphan
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: {{ .Release.Name }}-keys-generator
