@@ -30,6 +30,16 @@ clients:
       - smoke-*
     volumes:
       - smoke-*
+  # Workforce (apps chart workforce) runs its agents' computers here, as wf-<id>; its key is
+  # written to prod/workforce-kubecomputer, which the workforce server reads. wf-* volumes are
+  # for its credential volumes.
+  - name: workforce
+    namespaces: [computers]
+    access: [manage, exec]
+    apiKey:
+      secretRef: {namespace: prod, name: workforce-kubecomputer}
+    volumes:
+      - wf-*
   # People in Authentik's shared/admin group, logged in with kc login.
   - name: admins
     namespaces:
