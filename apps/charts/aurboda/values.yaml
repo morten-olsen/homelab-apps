@@ -21,7 +21,8 @@ image:
 
 deployment:
   strategy: Recreate
-  replicas: 1
+  # The common chart treats numeric zero as empty. A string renders as integer zero.
+  replicas: "0"
   revisionHistoryLimit: 0
 
 container:
@@ -47,6 +48,7 @@ service:
   type: ClusterIP
 
 probe:
+  enabled: false
   path: /api/status
 
 virtualService:
@@ -144,6 +146,7 @@ persistentVolumeClaims:
     backup: true
 
 db:
+  replicas: 0
   image:
     repository: docker.io/postgis/postgis
     # Keep the major at 16: the app image ships postgresql16-client for data
