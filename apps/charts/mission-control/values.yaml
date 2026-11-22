@@ -1,5 +1,6 @@
-# Mission Control server, in the cluster (ADR 0021, docs/spec/kubernetes-runner.md in the Mission Control repo).
-# Deployed by the ApplicationSet homelab-apps as Application mission-control (enabled 2026-10-07).
+# Mission Control server, in the cluster. Agents are ACP servers it connects to, such as workforce's (ADR 0038 in the
+# Mission Control repo); it starts nothing itself. Deployed by the ApplicationSet homelab-apps as Application
+# mission-control (enabled 2026-10-07).
 image:
   repository: code.olsen.cloud/ai/mission-control
   # Pinned by tag and digest; the registry's tags move.
@@ -8,10 +9,6 @@ image:
 
 # Private gateway only: https://mission-control.<domain>, LAN and VPN. Mission Control has its own login.
 subdomain: mission-control
-
-# The agent image agents run in, pinned by digest (`code.olsen.cloud/ai/mission-control-agent:<tag>@sha256:...`).
-# The chart refuses to render without a digest-pinned reference.
-agentImage: code.olsen.cloud/ai/mission-control-agent:0.63.0@sha256:b9ed185977473f23cd6e153646e97b31a333c6160597884ae53df293b65f2355
 
 deployment:
   strategy: Recreate # SQLite on one ReadWriteOnce claim: never two writers
@@ -41,7 +38,10 @@ probe:
   path: /api/health
 
 persistentVolumeClaims:
-  - name: data
+  # `store`, not `data`: 0.64.0 started from an empty database (ADR 0038's cut), on a new volume with a backup
+  # repository of its own. The old claim mission-control-data is kept on prune (Delete=false) and its volume on
+  # deletion (Retain), and its backups stay at <backups>/mission-control-data, until someone removes them.
+  - name: store
     size: 30Gi
     # local-path: the only class in the cluster. Not expandable, size not enforced, reclaim Delete.
     storageClassName: local-path
@@ -58,77 +58,10 @@ config:
     enabled: true
     secretName: mission-control-forge-webhook
 
-# Who may connect to the server besides agent pods (templates/server-network-policy.yaml).
+# Who may connect to the server (templates/server-network-policy.yaml).
 networkPolicy:
   ingressFrom:
     - namespace: istio-ingress # the gateway serving shared/private
       podLabels: { istio: gateway }
     - namespace: monitoring # the blackbox Probe
       podLabels: { app.kubernetes.io/name: prometheus-blackbox-exporter }
-
-# Where agent pods run, and what fences them in.
-agents:
-  namespace: mission-control-agents
-  # The host directory of the server's data volume (pvc-12f6c36d…, made 2026-10-07), for agent pods' claim
-  # (templates/agents-data.yaml). If the server's claim is ever recreated, this must follow its new directory.
-  dataPath: /var/lib/rancher/k3s/storage/pvc-12f6c36d-d4ef-4927-be81-deac67c406d7_prod_mission-control-data
-  serviceAccount: mission-control-agent
-  priorityClass: mission-control-agent
-  # Sized for 10 concurrent runs at the limitRange defaults (2 CPU / 4Gi / ~12Gi ephemeral of limits each).
-  # At 5 runs the limits.* totals refused the next pod outright and the run failed (2026-10-20); the limits
-  # are caps, not reservations, and agent pods are evicted first (priority -100).
-  quota:
-    pods: "10"
-    requests.cpu: 2500m
-    limits.cpu: "20"
-    requests.memory: 8Gi
-    limits.memory: 40Gi
-    requests.ephemeral-storage: 30Gi
-    limits.ephemeral-storage: 120Gi
-  limitRange:
-    defaultRequest: { cpu: 250m, memory: 512Mi, ephemeral-storage: 1Gi }
-    default: { cpu: "2", memory: 4Gi, ephemeral-storage: 10Gi }
-    max: { cpu: "4", memory: 6Gi }
-  # Cluster access for chosen roles' agent pods (templates/agents-cluster-access.yaml). Each account is a service
-  # account in the agents namespace bound to a ClusterRole: `read` is the chart's read tier, any other value names an
-  # existing ClusterRole. A mapped role's pods run as its account (MC_K8S_ROLE_ACCESS) and may also reach the API
-  # server. Decided by Morten after the Mission Control move retro (2026-10-07): the Software Engineer acts as an
-  # operator, trusted until there is a reason not to. Every other Home IT role reads (Morten, 2026-10-10).
-  clusterAccess:
-    accounts:
-      mission-control-cluster-read: read
-      mission-control-operator: cluster-admin
-    roles:
-      ef11b6ea-d46b-4dc7-8957-24e4d9a3f154: mission-control-operator # Home IT: Software Engineer
-      5b3ee2c8-e788-41f4-9fe7-09d77329781a: mission-control-cluster-read # Home IT: Security Engineer
-      7eb27033-d5cd-49c1-a7c5-3a0484ec6108: mission-control-cluster-read # Home IT: Solution Architect
-      8556f3a2-7d0f-4316-b97a-9ed8d31bd5bb: mission-control-cluster-read # Home IT: Head of IT
-      c643ade4-6f9e-4498-827a-7b3ea3ec0c12: mission-control-cluster-read # Home IT: Designer
-      17b8bf9a-4ffa-4dbf-89c6-329a47cc4904: mission-control-cluster-read # Home IT: Device Deployment Engineer
-    apiServer: { cidr: 192.168.20.180/32, port: 6443 }
-  # The private gateway every agent pod may reach (templates/agents-namespace.yaml, allow-gateway): code.olsen.cloud and
-  # the other private hosts resolve to it inside the cluster, so without it a role cannot clone from the forge. It was
-  # part of cluster access until a new role (LAN Admin, 2026-10-17) could not clone; Morten chose to give it to all.
-  gateway: { namespace: istio-ingress, podLabels: { istio: gateway }, port: 443 }
-  # Everything private, link-local, CGNAT and multicast is denied to agents (the node and the LAN sit in them).
-  egressExcept:
-    - 10.0.0.0/8
-    - 172.16.0.0/12
-    - 192.168.0.0/16
-    - 100.64.0.0/10
-    - 169.254.0.0/16
-    - 0.0.0.0/8
-    - 198.18.0.0/15
-    - 192.0.0.0/24
-    - 224.0.0.0/4
-  # Home network subnets every agent pod may also reach (templates/agents-namespace.yaml, allow-lan): the devices and
-  # hosts roles manage, the homelab host 192.168.20.180 among them. Decided by Morten (2026-10-10, task 74527fd7) in
-  # place of host networking; a per-role choice of subnets in Mission Control is planned. Empty for none.
-  lan:
-    - 192.168.10.0/24
-    - 192.168.20.0/24
-    - 192.168.30.0/24
-  cleanup:
-    schedule: "*/15 * * * *"
-    terminatedAfter: 1h
-    runningAfter: 24h

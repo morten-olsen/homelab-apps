@@ -1,5 +1,5 @@
-# The server has no sidecar (agents outside the mesh must reach it), so the mesh's ns-isolation policy does not
-# guard it. Only the ingress gateway, agent pods and the blackbox probe may connect, on the server's port.
+# The server has no sidecar, so the mesh's ns-isolation policy does not guard it. Only the ingress gateway and the
+# blackbox probe may connect, on the server's port. Its own connections out, to agents' endpoints, are not limited.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -14,8 +14,6 @@ spec:
   policyTypes: [Ingress]
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: {{ .Values.agents.namespace }} }
         {{- range .Values.networkPolicy.ingressFrom }}
         - namespaceSelector:
             matchLabels: { kubernetes.io/metadata.name: {{ .namespace }} }

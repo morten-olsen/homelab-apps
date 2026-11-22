@@ -1,8 +1,9 @@
 # mission-control
 
 The Mission Control server (one replica, SQLite on one claim) at `https://mission-control.olsen.cloud`,
-private gateway only, with Mission Control's own login (no Authentik client). Agents run as pods in
-`mission-control-agents`. Design: ADR 0021 and `docs/spec/kubernetes-runner.md` in the Mission Control repository.
+private gateway only, with Mission Control's own login (no Authentik client). Agents are ACP servers it connects
+to, such as workforce's, added in Mission Control with an endpoint and a token; it starts nothing in the cluster.
+Design: ADR 0038 in the Mission Control repository.
 
 Enabled on 2026-10-07: the ApplicationSet `homelab-apps` deploys it to `prod` as Application `mission-control`.
 
@@ -18,57 +19,35 @@ The forge token is entered in the web app after the first start; the chart holds
 
 ## Before it was enabled
 
-1. The `apps` AppProject allows the destination namespace `mission-control-agents` (done 2026-10-07). It comes from
-   `apps/root`, the hand-installed `argocd-apps` release: a change there needs `helm upgrade argocd-apps ./apps/root -n argocd`.
-2. `agentImage` and `image.tag` are pinned by digest (0.6.3 today); bump both together. The chart refuses to render an agent image without a digest.
-3. The decisions and cluster checks of the pull request (secrets encryption, `podPidsLimit`, mesh policy, CNI).
+1. `image.tag` is pinned by tag and digest; the release pipeline writes it.
+2. The decisions and cluster checks of the pull request (secrets encryption, mesh policy, CNI).
 
 It was enabled with `git mv mission-control.disabled mission-control`. The first start is an empty instance; the laptop's data is
 copied in later (the migration runbook).
 
-## After the first start: the agents' claim
+## The cut to ACP agents (0.64.0)
 
-Agent pods mount the server's data claim, but a claim belongs to one namespace. `templates/agents-data.yaml` adds a
-volume on the host directory of the server's volume, and a claim of the same name in `mission-control-agents`. The
-directory exists only once local-path has provisioned the server's claim, so:
+0.64.0 stopped running agents (ADR 0038): the agents namespace, its accounts, rights, quota, network policies and
+cleanup went from the chart, and the server started from an empty database on a new claim, `mission-control-store`
+(see `values.yaml`). What that left, for a person to remove when nothing from before is wanted:
 
-1. Read it: `kubectl get pv "$(kubectl -n prod get pvc mission-control-data -o jsonpath='{.spec.volumeName}')" -o jsonpath='{.spec.local.path}'` (local-path makes `local` volumes)
-2. Keep the server's volume on deletion of its claim (local-path's default is Delete):
-   `kubectl patch pv <that volume> -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'`
-3. Set `agents.dataPath` to the path in a pull request. Until then agent pods cannot start (their claim is missing).
-
-If the server's claim is ever recreated, its directory changes and `agents.dataPath` must follow.
+- the old claim `mission-control-data` in `prod`, kept on prune, and its volume (Retain): the old database, homes and
+  runs. `kubectl -n prod delete pvc mission-control-data`, then the volume and its host directory.
+- the agents' volume `mission-control-agents-data` (Retain, released when the namespace went): it points at the old
+  claim's host directory and holds nothing of its own. `kubectl delete pv mission-control-agents-data`.
+- the old backups at `/mnt/HDD/k8s/backups/mission-control-data` on the NAS (and their copy), no longer pruned.
+- the `apps` AppProject's destination namespace `mission-control-agents`, in `apps/root` (the hand-installed
+  `argocd-apps` release: `helm upgrade argocd-apps ./apps/root -n argocd`).
 
 ## Network
 
 The server has no sidecar, so the mesh's `ns-isolation` does not guard it; `templates/server-network-policy.yaml`
-admits only agent pods, the ingress gateway and the blackbox probe, on 7420.
+admits only the ingress gateway and the blackbox probe, on 7420. It reaches agents' endpoints (for workforce,
+`wss://workforce.olsen.cloud/agents/<agent>/acp`) through the private gateway, as any client does.
 
 ## Test
 
 `tests/render.sh` renders the chart and asserts the design (needs `helm`, `yq`, `jq`). Extra arguments go to `helm template`.
-
-## Cluster access for roles
-
-`agents.clusterAccess` maps Mission Control roles to service accounts in the agents namespace (`MC_K8S_ROLE_ACCESS`):
-the Software Engineer runs as `mission-control-operator` (bound to `cluster-admin`: it operates the homelab like
-Morten, trusted until there is a reason not to), every other Home IT role as `mission-control-cluster-read`
-(get/list/watch; no Secrets, ConfigMaps, logs or exec). Mapped pods may also reach the API server. A new role needs
-adding here. To take access back, remove the role from `roles`.
-
-## Private gateway for agents
-
-`code.olsen.cloud` and the other private hosts resolve inside the cluster to the Istio gateway, which allow-internet
-leaves out. `agents.gateway` lets every agent pod reach it on 443 (`allow-gateway`), so any role can clone from the
-forge and talk to CI, mapped or not. Until 2026-10-17 this was part of cluster access, and a new role (LAN Admin)
-could not clone until someone added it to `roles`.
-
-## Home network for agents
-
-Agent pods reach the internet but none of the private ranges (`agents.egressExcept`). `agents.lan` lists the home
-network subnets every agent pod may reach as well, on any port (`allow-lan`), so roles can manage the hosts and
-devices there: today 192.168.10.0/24, 192.168.20.0/24 (with the homelab host) and 192.168.30.0/24. Empty it to take
-the access back. Choosing subnets per role in Mission Control is planned (task 74527fd7).
 
 ## Forge webhooks
 
@@ -110,9 +89,3 @@ read fails. Startup and liveness use `/api/health`, so thrown read errors remove
 from Service endpoints without directly causing restarts. A synchronous SQLite I/O stall can
 block the event loop and cause liveness timeouts and restarts; probe timeouts do not cancel SQL. This read check does not prove that
 `/data` is writable. Deploy a server release containing `/api/ready` before merging this probe change.
-
-
-The render test pins the agents ResourceQuota to Morten's October 20 decision
-(HOMEIT-369, commit `156e6c1`): 10 pods; limits 20 CPU, 40Gi memory and 120Gi
-ephemeral storage; requests 2500m CPU, 8Gi memory and 30Gi ephemeral storage.
-When an approved quota changes, update these exact expectations alongside values.

@@ -17,15 +17,15 @@ spec:
   template:
     metadata:
       annotations:
-        # The agents' namespace is outside the mesh, so its plain-text calls would be refused by the
-        # ns-isolation policy at an injected pod. The gateway reaches a pod with no sidecar in plain text.
+        # Outside the mesh: the gateway reaches it in plain text, and it reaches agents' ACP endpoints
+        # through the gateway like any other client (ADR 0038 in the Mission Control repository).
         sidecar.istio.io/inject: "false"
       labels:
         {{- include "common.selectorLabels" . | nindent 8 }}
         sidecar.istio.io/inject: "false"
     spec:
-      serviceAccountName: {{ include "common.fullname" . }}
-      automountServiceAccountToken: true
+      # It no longer talks to the Kubernetes API: agents are ACP servers it connects to, not pods it starts.
+      automountServiceAccountToken: false
       enableServiceLinks: false
       terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
       securityContext:
@@ -69,22 +69,7 @@ spec:
             - { name: TZ, value: {{ .Values.globals.timezone | default "UTC" | quote }} }
             - { name: MC_PUBLIC_URL, value: {{ include "common.url" . | quote }} }
             - { name: MC_SERVER_REGISTRATION, value: {{ .Values.config.registration | quote }} }
-            - { name: MC_RUN_LAUNCHER, value: kubernetes }
-            {{- with .Values.agents.clusterAccess.roles }}
-            - { name: MC_K8S_ROLE_ACCESS, value: {{ . | toJson | quote }} }
-            {{- end }}
-            # The cluster CA as an extra root. Needed by 0.6.2, a Bun executable whose TLS ignored the CA the
-            # Kubernetes client passes; from 0.6.3 the server runs on Node, which uses it either way.
-            - { name: NODE_EXTRA_CA_CERTS, value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt }
             - { name: MC_RUN_MAX_ACTIVE, value: {{ .Values.config.maxActiveRuns | quote }} }
-            - { name: MC_AGENT_IMAGE, value: {{ include "mission-control.agentImage" . | quote }} }
-            - { name: MC_K8S_NAMESPACE, value: {{ .Values.agents.namespace | quote }} }
-            - { name: MC_K8S_DATA_CLAIM, value: "{{ .Release.Name }}-data" }
-            - { name: MC_K8S_API_HOST, value: "{{ include "common.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}" }
-            - { name: MC_K8S_SERVICE_ACCOUNT, value: {{ .Values.agents.serviceAccount | quote }} }
-            - { name: MC_K8S_PRIORITY_CLASS, value: {{ .Values.agents.priorityClass | quote }} }
-            - { name: MC_K8S_UID, value: {{ .Values.deployment.uid | quote }} }
-            - { name: MC_K8S_GID, value: {{ .Values.deployment.gid | quote }} }
             - name: MC_SERVER_SECRET_KEY
               valueFrom:
                 secretKeyRef: { name: {{ $keys }}, key: MC_SERVER_SECRET_KEY }
@@ -103,7 +88,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-data
+            claimName: {{ .Release.Name }}-{{ (index .Values.persistentVolumeClaims 0).name }}
         - name: tmp
           emptyDir: { sizeLimit: 1Gi }
         - name: home
