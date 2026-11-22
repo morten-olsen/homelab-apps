@@ -3,7 +3,7 @@
 image:
   repository: code.olsen.cloud/ai/mission-control
   # Pinned by tag and digest; the registry's tags move.
-  tag: 0.63.0@sha256:33cd6b1675596a3536341202045261cb432e9a4ab0fc6254c0edaf80498f4e55
+  tag: 0.64.0@sha256:2badae565085311754033ec3d30e7518ec6a8eaeec294ccca10dbed8cde75568
   pullPolicy: IfNotPresent
 
 # Private gateway only: https://mission-control.<domain>, LAN and VPN. Mission Control has its own login.
