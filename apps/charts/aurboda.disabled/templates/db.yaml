@@ -12,7 +12,7 @@ metadata:
 spec:
   strategy:
     type: Recreate
-  replicas: {{ .Values.db.replicas }}
+  replicas: 1
   revisionHistoryLimit: 0
   selector:
     matchLabels:
