@@ -62,7 +62,7 @@ assert "no Authentik client" "[.[] | select(.kind == \"AuthentikClient\")] | len
 assert "Service on 7420" "[.[] | select(.kind == \"Service\" and .metadata.name == \"mission-control\" and .spec.ports[0].port == 7420)] | length == 1"
 
 # Nothing to start agents with: no rights, no namespace, no accounts, no volumes but its own
-assert "the server mounts no service account token" "[$dep | select(.spec.template.spec.automountServiceAccountToken == false and (.spec.template.spec.serviceAccountName // \"default\") == \"default\")] | length == 1"
+assert "the server runs as the namespace's default account, named outright, and mounts no token" "[$dep | select(.spec.template.spec.automountServiceAccountToken == false and .spec.template.spec.serviceAccountName == \"default\")] | length == 1"
 assert "no namespace, accounts, roles, bindings, quotas, priority classes or cleanup policies" "[.[] | select(.kind == \"Namespace\" or .kind == \"ServiceAccount\" or .kind == \"Role\" or .kind == \"RoleBinding\" or .kind == \"ClusterRole\" or .kind == \"ClusterRoleBinding\" or .kind == \"ResourceQuota\" or .kind == \"LimitRange\" or .kind == \"PriorityClass\" or .kind == \"CleanupPolicy\")] | length == 0"
 assert "no persistent volume, and one claim" "([.[] | select(.kind == \"PersistentVolume\")] | length == 0) and ([.[] | select(.kind == \"PersistentVolumeClaim\")] | length == 1)"
 assert "everything namespaced is in the release namespace" "[.[] | select(.metadata.namespace != null and .metadata.namespace != \"prod\")] | length == 0"

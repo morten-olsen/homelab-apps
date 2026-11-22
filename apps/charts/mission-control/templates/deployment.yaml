@@ -25,6 +25,9 @@ spec:
         sidecar.istio.io/inject: "false"
     spec:
       # It no longer talks to the Kubernetes API: agents are ACP servers it connects to, not pods it starts.
+      # The namespace's default account, named outright: left out, the API server copied the old account back
+      # from the pod's deprecated `serviceAccount` field after the chart stopped setting it, and that account is gone.
+      serviceAccountName: default
       automountServiceAccountToken: false
       enableServiceLinks: false
       terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
