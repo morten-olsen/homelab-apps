@@ -5,7 +5,7 @@ version: 0.1.0
 appVersion: "2.7.2"
 dependencies:
   - name: openbao
-    version: 0.30.7
+    version: 0.30.8
     repository: https://openbao.github.io/openbao-helm
   - name: homelab-common
     version: 0.3.0
