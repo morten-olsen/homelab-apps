@@ -148,7 +148,7 @@ actions:
   runner:
     image:
       repository: code.forgejo.org/forgejo/runner
-      tag: "13.2.1@sha256:568cea8c15ddc01fc8f330124892f572af7db37fa28344a2c1914405793bf61d"
+      tag: "13.2.2@sha256:a8543a45fe62bebef0534d5c223cf485d3294e6dd2e42a82dbcbfd40c54a6a22"
       pullPolicy: IfNotPresent
     curlImage:
       repository: curlimages/curl
@@ -163,8 +163,8 @@ actions:
     storage:
       size: 10Gi
     labels:
-      - "ubuntu-latest:docker://gitea/runner-images:ubuntu-24.04-slim-v26.11.03@sha256:1241f498a84062d219e28aea36ed7e6b9fc69d014ef75d7dfee785a5a1b5abca"
-      - "ubuntu-slim-latest:docker://gitea/runner-images:ubuntu-24.04-slim-v26.11.03@sha256:1241f498a84062d219e28aea36ed7e6b9fc69d014ef75d7dfee785a5a1b5abca"
-      - "ubuntu-full-latest:docker://gitea/runner-images:ubuntu-24.04-full-v26.11.03@sha256:e387ebe347230c35e1a7f173a0dcf1947d6726c6c542e9b65b0ffc1c6928a601"
+      - "ubuntu-latest:docker://gitea/runner-images:ubuntu-24.04-slim-v26.11.19@sha256:b60d2ff3f33a436926c1fc6d40be69edde2c7fe17355f52d4d252c4fc8587704"
+      - "ubuntu-slim-latest:docker://gitea/runner-images:ubuntu-24.04-slim-v26.11.19@sha256:b60d2ff3f33a436926c1fc6d40be69edde2c7fe17355f52d4d252c4fc8587704"
+      - "ubuntu-full-latest:docker://gitea/runner-images:ubuntu-24.04-full-v26.11.19@sha256:e387ebe347230c35e1a7f173a0dcf1947d6726c6c542e9b65b0ffc1c6928a601"
       - "docker-cli:docker://code.forgejo.org/oci/docker:cli@sha256:5a7af0dcb0e46c803efe9b45371dd21cb500e5b4453250394ac6f06d49b6e6f1"
       - "node-bookworm:docker://code.forgejo.org/oci/node:20-bookworm"

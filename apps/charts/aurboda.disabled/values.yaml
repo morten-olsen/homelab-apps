@@ -16,7 +16,7 @@ dns:
 image:
   repository: docker.io/fiddur/aurboda
   # Tags are a release counter (v1.0.<n>); schema changes are expand-only.
-  tag: v1.0.3750@sha256:7f67e21f75a101f35616cf8b824c1f0b0280503f93d0a4aee0c520d7875de92d
+  tag: v1.0.3921@sha256:9dee4d6f38ba03eb220f734967c20d05a1fdc1058138effabc340431175448f3
   pullPolicy: IfNotPresent
 
 deployment:

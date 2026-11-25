@@ -2,7 +2,7 @@
 # integration. In-cluster only: no VirtualService, no authentication.
 image:
   repository: gotenberg/gotenberg
-  tag: 9.4.1@sha256:7d790c081a944f4d30cacb59a2cdccbe71569532af691b93c36551f6a877b4fc
+  tag: 9.9.2@sha256:f6b4b6f7c8ae0ca7805f9e105ef989bf13b02d548378fa784c3630a9c479c31b
   pullPolicy: IfNotPresent
 
 # Paperless-ngx's recommended flags: no JavaScript in converted HTML and no

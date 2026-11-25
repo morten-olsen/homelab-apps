@@ -11,7 +11,7 @@
 # them under Users.
 image:
   repository: samanhappy/mcphub
-  tag: 1.2.3@sha256:c7fa512abc83b6ba99054c8a2bad555889dfb8b6c708d6e2e45ba44d04c35639
+  tag: 1.3.0@sha256:327e4de056d2ae730633cd4fc3d656f9db97bb49fd9566d81a06cfd033a890ea
   pullPolicy: IfNotPresent
 
 subdomain: mcphub
